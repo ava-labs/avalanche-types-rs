@@ -5,4 +5,10 @@
 
 https://crates.io/crates/avalanche-types
 
-`avalanche-types` crate implements Avalanche primitive types in Rust: transaction types/serialization, keys, addresses, peer-to-peer messages, etc.. The basic types available in this crate will be foundational for many upcoming Rust projects for Avalanche (e.g., Rust SDK for custom VM, distributed load tester, [`avalanche-ops`](https://github.com/ava-labs/avalanche-ops)).
+`avalanche-types` crate implements Avalanche primitive types in Rust:
+- Ids (e.g., [`src/ids`](./src/ids))
+- Transaction types/serialization (e.g., [`src/platformvm/txs`](./src/platformvm/txs))
+- Keys and addresses (e.g., [`src/key/secp256k1`](./src/key/secp256k1))
+- Peer-to-peer messages (e.g., [`src/messages`](./src/messages))
+
+The basic types available in this crate are use in other Avalanche Rust projects (e.g., distributed load tester [`blizzard`](https://talks.gyuho.dev/distributed-load-generator-avalanche-2022.html), [`avalanche-ops`](https://github.com/ava-labs/avalanche-ops)).
