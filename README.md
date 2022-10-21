@@ -14,4 +14,4 @@ https://crates.io/crates/avalanche-types
 - RPC chain VM (e.g., [`src/rpcchainvm`](./src/rpcchainvm))
 - Genesis generate helper (e.g., [`src/subnet_evm`](./src/subnet_evm))
 
-The basic types available in this crate are use in other Avalanche Rust projects (e.g., distributed load tester [`blizzard`](https://talks.gyuho.dev/distributed-load-generator-avalanche-2022.html), [`avalanche-ops`](https://github.com/ava-labs/avalanche-ops)).
+The basic types available in this crate are used in other Avalanche Rust projects (e.g., distributed load tester [`blizzard`](https://talks.gyuho.dev/distributed-load-generator-avalanche-2022.html), [`avalanche-ops`](https://github.com/ava-labs/avalanche-ops)).
