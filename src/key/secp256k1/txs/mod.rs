@@ -2,7 +2,7 @@ pub mod transfer;
 
 use std::cmp::Ordering;
 
-use crate::{codec, formatting::serde::hex::Hex0x, ids::short};
+use crate::{codec, formatting::serde::hex_0x_bytes::HexBytes, ids::short};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -14,7 +14,7 @@ use serde_with::serde_as;
 pub struct Credential {
     /// Signatures, each must be length of 65.
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#SECP256K1RSigLen
-    #[serde_as(as = "Vec<Hex0x>")]
+    #[serde_as(as = "Vec<HexBytes>")]
     pub signatures: Vec<Vec<u8>>,
 }
 

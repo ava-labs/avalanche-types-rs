@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::{
-    formatting,
+    codec, formatting,
     ids::{self, short},
     key, packer, platformvm,
 };
@@ -171,12 +171,72 @@ impl Utxo {
         }
     }
 
+    /// Hex-encodes the Utxo with the prepended "0x".
+    pub fn to_hex(&self) -> io::Result<String> {
+        let packer = self.pack(codec::VERSION)?;
+        let b = packer.take_bytes();
+
+        let d = formatting::encode_hex_with_checksum(&b);
+        Ok(format!("0x{}", d))
+    }
+
     /// Parses the raw hex-encoded data from the "getUTXOs" API.
     pub fn from_hex(d: &str) -> io::Result<Self> {
         // ref. "utils/formatting.encode" prepends "0x" for "Hex" encoding
-        let d = d.trim_start_matches(key::secp256k1::private_key::HEX_ENCODE_PREFIX);
+        let d = d.trim_start_matches("0x");
+
         let decoded = formatting::decode_hex_with_checksum(d.as_bytes())?;
         Self::unpack(&decoded)
+    }
+
+    /// Packes the Utxo.
+    pub fn pack(&self, codec_version: u16) -> io::Result<packer::Packer> {
+        // ref. "avalanchego/codec.manager.Marshal", "vms/avm.newCustomCodecs"
+        // ref. "math.MaxInt32" and "constants.DefaultByteSliceCap" in Go
+        let packer = packer::Packer::new((1 << 31) - 1, 128);
+
+        // codec version
+        // ref. "avalanchego/codec.manager.Marshal"
+        packer.pack_u16(codec_version).map_err(|e| {
+            return Error::new(
+                ErrorKind::InvalidInput,
+                format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
+            );
+        })?;
+
+        packer.pack_bytes(self.utxo_id.tx_id.as_ref())?;
+        packer.pack_u32(self.utxo_id.output_index)?;
+
+        packer.pack_bytes(self.asset_id.as_ref())?;
+
+        if let Some(out) = &self.transfer_output {
+            packer.pack_u32(key::secp256k1::txs::transfer::Output::type_id())?;
+            packer.pack_u64(out.amount)?;
+
+            packer.pack_u64(out.output_owners.locktime)?;
+            packer.pack_u32(out.output_owners.threshold)?;
+
+            packer.pack_u32(out.output_owners.addresses.len() as u32)?;
+            for addr in out.output_owners.addresses.iter() {
+                packer.pack_bytes(addr.as_ref())?;
+            }
+        } else if let Some(lock_out) = &self.stakeable_lock_out {
+            packer.pack_u32(platformvm::txs::StakeableLockOut::type_id())?;
+            packer.pack_u64(lock_out.locktime)?;
+
+            packer.pack_u32(key::secp256k1::txs::transfer::Output::type_id())?;
+            packer.pack_u64(lock_out.transfer_output.amount)?;
+
+            packer.pack_u64(lock_out.transfer_output.output_owners.locktime)?;
+            packer.pack_u32(lock_out.transfer_output.output_owners.threshold)?;
+
+            packer.pack_u32(lock_out.transfer_output.output_owners.addresses.len() as u32)?;
+            for addr in lock_out.transfer_output.output_owners.addresses.iter() {
+                packer.pack_bytes(addr.as_ref())?;
+            }
+        }
+
+        Ok(packer)
     }
 
     /// Parses raw bytes to "Utxo".
@@ -287,11 +347,11 @@ impl Utxo {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- txs::utxo::test_utxo_unpack_hex --exact --show-output
 #[test]
 fn test_utxo_unpack_hex() {
-    let d = "0x000000000000000000000000000000000000000000000000000000000000000000000000000088eec2e099c6a528e689618e8721e04ae85ea574c7a15a7968644d14d54780140000000702c68af0bb1400000000000000000000000000010000000165844a05405f3662c1928142c6c2a783ef871de939b564db";
-    let addr = short::Id::from_slice(&<Vec<u8>>::from([
-        101, 132, 74, 5, 64, 95, 54, 98, 193, 146, 129, 66, 198, 194, 167, 131, 239, 135, 29, 233,
-    ]));
-    let utxo = Utxo::from_hex(d).unwrap();
+    let utxo_hex_1 = "0x000000000000000000000000000000000000000000000000000000000000000000000000000088eec2e099c6a528e689618e8721e04ae85ea574c7a15a7968644d14d54780140000000702c68af0bb1400000000000000000000000000010000000165844a05405f3662c1928142c6c2a783ef871de939b564db";
+    let utxo = Utxo::from_hex(utxo_hex_1).unwrap();
+    let utxo_hex_2 = utxo.to_hex().unwrap();
+    assert_eq!(utxo_hex_1, utxo_hex_2);
+
     let expected = Utxo {
         utxo_id: Id::default(),
         asset_id: ids::Id::from_slice(&<Vec<u8>>::from([
@@ -303,11 +363,15 @@ fn test_utxo_unpack_hex() {
             output_owners: key::secp256k1::txs::OutputOwners {
                 locktime: 0,
                 threshold: 1,
-                addresses: vec![addr],
+                addresses: vec![short::Id::from_slice(&<Vec<u8>>::from([
+                    101, 132, 74, 5, 64, 95, 54, 98, 193, 146, 129, 66, 198, 194, 167, 131, 239,
+                    135, 29, 233,
+                ]))],
             },
         }),
         ..Utxo::default()
     };
     assert_eq!(utxo, expected);
+
     println!("{:?}", utxo);
 }

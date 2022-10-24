@@ -173,8 +173,8 @@ impl Tx {
                 }
             }
         }
-        let signed_tx_bytes = packer.take_bytes();
-        let tx_id: Vec<u8> = digest(&SHA256, &signed_tx_bytes).as_ref().into();
+        let tx_bytes_with_signatures = packer.take_bytes();
+        let tx_id: Vec<u8> = digest(&SHA256, &tx_bytes_with_signatures).as_ref().into();
 
         // update "BaseTx.Metadata" with id/unsigned bytes/bytes
         // ref. "avalanchego/vms/platformvm.Tx.Sign"
@@ -182,7 +182,7 @@ impl Tx {
         self.base_tx.metadata = Some(txs::Metadata {
             id: ids::Id::from_slice(&tx_id),
             unsigned_bytes: unsigned_tx_bytes.to_vec(),
-            bytes: signed_tx_bytes.to_vec(),
+            bytes: tx_bytes_with_signatures.to_vec(),
         });
 
         Ok(())
@@ -390,7 +390,7 @@ fn test_create_chain_tx_serialization_with_one_signer() {
     let signers: Vec<Vec<key::secp256k1::private_key::Key>> = vec![keys1, keys2];
     ab!(tx.sign(signers)).expect("failed to sign");
     let tx_metadata = tx.base_tx.metadata.clone().unwrap();
-    let signed_bytes = tx_metadata.bytes;
+    let tx_bytes_with_signatures = tx_metadata.bytes;
     assert_eq!(
         tx.tx_id().to_string(),
         "2nWs4EB5gmBz99pn4Vck3dBjnPysv44HRiXvNQNpQUonfTNsTf"
@@ -654,6 +654,6 @@ fn test_create_chain_tx_serialization_with_one_signer() {
     // }
     assert!(cmp_manager::eq_vectors(
         expected_signed_bytes,
-        &signed_bytes
+        &tx_bytes_with_signatures
     ));
 }

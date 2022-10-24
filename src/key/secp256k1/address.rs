@@ -1,6 +1,5 @@
 use std::io::{self, Error, ErrorKind};
 
-use ethereum_types::H256;
 use ring::digest::{digest, SHA256};
 use ripemd::{Digest, Ripemd160};
 use sha3::Keccak256;
@@ -35,8 +34,8 @@ where
     Ok(sha256_ripemd160.to_vec())
 }
 
-pub fn keccak256(data: impl AsRef<[u8]>) -> H256 {
-    H256::from_slice(&Keccak256::digest(data.as_ref()))
+pub fn keccak256(data: impl AsRef<[u8]>) -> primitive_types::H256 {
+    primitive_types::H256::from_slice(&Keccak256::digest(data.as_ref()))
 }
 
 /// ref. https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md

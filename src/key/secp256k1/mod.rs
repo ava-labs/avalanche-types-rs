@@ -37,7 +37,7 @@ pub trait ReadOnly {
     fn get_short_address(&self) -> io::Result<short::Id>;
     fn get_short_address_bytes(&self) -> io::Result<Vec<u8>>;
     fn get_eth_address(&self) -> String;
-    fn get_h160_address(&self) -> ethers::prelude::H160;
+    fn get_h160_address(&self) -> primitive_types::H160;
 }
 
 /// Key interface that "only" allows "sign" operations.
@@ -56,6 +56,7 @@ pub trait SignOnly {
     async fn sign_digest(&self, digest: &[u8]) -> io::Result<[u8; 65]>;
 
     /// Returns the ethers signing key.
+    #[cfg(feature = "ethers_core")]
     fn ethers_signing_key(&self) -> io::Result<ethers_core::k256::ecdsa::SigningKey>;
 }
 

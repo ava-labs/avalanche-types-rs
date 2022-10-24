@@ -168,9 +168,7 @@ impl Genesis {
             xp_allocs.push(xp_alloc);
 
             c_allocs.insert(
-                k.get_eth_address()
-                    .trim_start_matches(key::secp256k1::private_key::HEX_ENCODE_PREFIX)
-                    .to_string(),
+                k.get_eth_address().trim_start_matches("0x").to_string(),
                 default_c_alloc.clone(),
             );
         }

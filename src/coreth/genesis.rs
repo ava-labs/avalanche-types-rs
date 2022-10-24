@@ -18,17 +18,17 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<ChainConfig>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub nonce: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub timestamp: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra_data: Option<String>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub gas_limit: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub difficulty: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -41,9 +41,9 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alloc: Option<BTreeMap<String, AllocAccount>>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub number: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub gas_used: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -236,7 +236,7 @@ pub struct AllocAccount {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<BTreeMap<String, String>>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub balance: BigInt,
 
     /// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisMultiCoinBalance

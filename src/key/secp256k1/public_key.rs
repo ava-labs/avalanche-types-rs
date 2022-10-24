@@ -108,21 +108,21 @@ impl Key {
         short::Id::from_public_key_bytes(&compressed)
     }
 
-    pub fn to_prelude_h160(&self) -> ethers::prelude::H160 {
+    pub fn to_h160(&self) -> primitive_types::H160 {
         let uncompressed = self.to_uncompressed_bytes();
 
         // ref. "Keccak256(pubBytes[1:])[12:]"
         let digest_h256 = address::keccak256(&uncompressed[1..]);
         let digest_h256 = &digest_h256.0[12..];
 
-        ethers::prelude::H160::from_slice(digest_h256)
+        primitive_types::H160::from_slice(digest_h256)
     }
 
     /// Encodes the public key in ETH address format.
     /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
     /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
     pub fn to_eth_address(&self) -> String {
-        let h160_addr = self.to_prelude_h160();
+        let h160_addr = self.to_h160();
         let addr_hex = hex::encode(h160_addr);
 
         // make EIP-55 compliant
@@ -195,8 +195,8 @@ impl key::secp256k1::ReadOnly for Key {
         self.to_eth_address()
     }
 
-    fn get_h160_address(&self) -> ethers::prelude::H160 {
-        self.to_prelude_h160()
+    fn get_h160_address(&self) -> primitive_types::H160 {
+        self.to_h160()
     }
 }
 
@@ -238,7 +238,7 @@ fn test_public_key() {
 
     log::info!("public key: {}", pubkey1);
     log::info!("short id: {}", pubkey1.to_short_id().unwrap());
-    log::info!("prelude h160: {}", pubkey1.to_prelude_h160());
+    log::info!("prelude h160: {}", pubkey1.to_h160());
     log::info!("eth address: {}", pubkey1.to_eth_address());
 
     let x_avax_addr = pubkey1.to_avax_address(1, "X").unwrap();

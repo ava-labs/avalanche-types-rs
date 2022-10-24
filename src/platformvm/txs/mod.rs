@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 
 use crate::{
     codec,
-    formatting::serde::hex::Hex0x,
+    formatting::serde::hex_0x_bytes::HexBytes,
     ids::{self, node},
     key,
     txs::transferable,
@@ -59,7 +59,7 @@ pub struct UnsignedTx {
     #[serde(rename = "owner")]
     pub output_owners: key::secp256k1::txs::OutputOwners,
 
-    #[serde_as(as = "Option<Hex0x>")]
+    #[serde_as(as = "Option<HexBytes>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub memo: Option<Vec<u8>>,
 }

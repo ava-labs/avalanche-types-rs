@@ -4,12 +4,12 @@ pub mod health;
 pub mod info;
 pub mod platformvm;
 
-use crate::{ids, txs};
+use crate::{formatting::serde::hex_0x_utxo::HexUtxo, ids, txs};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::{
     collections::HashMap,
     io::{self, Error, ErrorKind},
-    str::FromStr,
 };
 
 pub const DEFAULT_VERSION: &str = "2.0";
@@ -21,7 +21,9 @@ pub const DEFAULT_ID: u32 = 1;
 pub struct Data {
     pub jsonrpc: String,
     pub id: u32,
+
     pub method: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<HashMap<String, String>>,
 }
@@ -60,7 +62,9 @@ impl Data {
 pub struct DataWithParamsArray {
     pub jsonrpc: String,
     pub id: u32,
+
     pub method: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<Vec<String>>,
 }
@@ -94,31 +98,10 @@ impl DataWithParamsArray {
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RawUtxoId {
-    #[serde(rename = "txID")]
-    pub tx_id: String,
-    #[serde(rename = "outputIndex")]
-    pub output_index: u32,
-}
-
-impl RawUtxoId {
-    pub fn convert(&self) -> io::Result<crate::txs::utxo::Id> {
-        let tx_id = crate::ids::Id::from_str(&self.tx_id)?;
-        Ok(crate::txs::utxo::Id {
-            tx_id,
-            output_index: self.output_index,
-            ..crate::txs::utxo::Id::default()
-        })
-    }
-}
-
 /// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct EndIndex {
     pub address: String,
     pub utxo: String,
@@ -126,7 +109,7 @@ pub struct EndIndex {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct IssueTxRequest {
     pub tx: String,
     pub encoding: String,
@@ -137,7 +120,9 @@ pub struct IssueTxRequest {
 pub struct DataForIssueTx {
     pub jsonrpc: String,
     pub id: u32,
+
     pub method: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<IssueTxRequest>,
 }
@@ -199,22 +184,24 @@ impl ResponseError {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct IssueTxResponse {
+pub struct IssueTx {
     pub jsonrpc: String,
     pub id: u32,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<IssueTxResult>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<ResponseError>,
 }
 
-impl Default for IssueTxResponse {
+impl Default for IssueTx {
     fn default() -> Self {
         Self::default()
     }
 }
 
-impl IssueTxResponse {
+impl IssueTx {
     pub fn default() -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
@@ -225,9 +212,10 @@ impl IssueTxResponse {
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxResult {
+    #[serde(rename = "txID")]
     pub tx_id: ids::Id,
 }
 
@@ -245,80 +233,13 @@ impl IssueTxResult {
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RawIssueTxResponse {
-    pub jsonrpc: String,
-    pub id: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<RawIssueTxResult>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<ResponseError>,
-}
-
-impl Default for RawIssueTxResponse {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
-impl RawIssueTxResponse {
-    pub fn default() -> Self {
-        Self {
-            jsonrpc: "2.0".to_string(),
-            id: 1,
-            result: None,
-            error: None,
-        }
-    }
-
-    pub fn convert(&self) -> IssueTxResponse {
-        let result = {
-            if self.result.is_some() {
-                let raw_result = self.result.clone().expect("unexpected None result");
-                Some(raw_result.convert())
-            } else {
-                None
-            }
-        };
-        IssueTxResponse {
-            jsonrpc: self.jsonrpc.clone(),
-            id: self.id,
-            result,
-            error: self.error.clone(),
-        }
-    }
-}
-
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RawIssueTxResult {
-    #[serde(rename = "txID", skip_serializing_if = "Option::is_none")]
-    pub tx_id: Option<String>,
-}
-
-impl RawIssueTxResult {
-    pub fn default() -> Self {
-        Self { tx_id: None }
-    }
-
-    pub fn convert(&self) -> IssueTxResult {
-        let tx_id = {
-            if self.tx_id.is_some() {
-                ids::Id::from_str(&self.tx_id.clone().unwrap()).unwrap()
-            } else {
-                ids::Id::empty()
-            }
-        };
-        IssueTxResult { tx_id }
-    }
-}
-
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- api::platformvm::test_issue_tx --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::test_issue_tx --exact --show-output
 #[test]
 fn test_issue_tx() {
-    // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-    let resp: RawIssueTxResponse = serde_json::from_str(
+    use std::str::FromStr;
+
+    // ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
+    let resp: IssueTx = serde_json::from_str(
         "
 
 {
@@ -332,9 +253,8 @@ fn test_issue_tx() {
 ",
     )
     .unwrap();
-    let converted = resp.convert();
 
-    let expected = IssueTxResponse {
+    let expected = IssueTx {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(IssueTxResult {
@@ -342,11 +262,11 @@ fn test_issue_tx() {
         }),
         error: None,
     };
-    assert_eq!(converted, expected);
+    assert_eq!(resp, expected);
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct IssueStopVertexRequest {}
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
@@ -354,7 +274,9 @@ pub struct IssueStopVertexRequest {}
 pub struct DataForIssueStopVertex {
     pub jsonrpc: String,
     pub id: u32,
+
     pub method: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<IssueStopVertexRequest>,
 }
@@ -390,7 +312,7 @@ impl DataForIssueStopVertex {
 
 /// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct GetUtxosRequest {
     pub addresses: Vec<String>,
     pub limit: u32,
@@ -402,7 +324,9 @@ pub struct GetUtxosRequest {
 pub struct DataForGetUtxos {
     pub jsonrpc: String,
     pub id: u32,
+
     pub method: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<GetUtxosRequest>,
 }
@@ -438,23 +362,30 @@ impl DataForGetUtxos {
 
 /// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetUtxosResponse {
+pub struct GetUtxos {
     pub jsonrpc: String,
     pub id: u32,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetUtxosResult>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<ResponseError>,
 }
 
 /// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct GetUtxosResult {
-    #[serde(rename = "numFetched", skip_serializing_if = "Option::is_none")]
-    pub num_fetched: Option<u32>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub num_fetched: u32,
+
+    #[serde_as(as = "Option<Vec<HexUtxo>>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub utxos: Option<Vec<txs::utxo::Utxo>>,
-    #[serde(rename = "endIndex", skip_serializing_if = "Option::is_none")]
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_index: Option<EndIndex>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encoding: Option<String>,
@@ -469,7 +400,7 @@ impl Default for GetUtxosResult {
 impl GetUtxosResult {
     pub fn default() -> Self {
         Self {
-            num_fetched: None,
+            num_fetched: 0,
             utxos: None,
             end_index: None,
             encoding: None,
@@ -477,131 +408,11 @@ impl GetUtxosResult {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RawGetUtxosResponse {
-    pub jsonrpc: String,
-    pub id: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<RawGetUtxosResult>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<ResponseError>,
-}
-
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RawGetUtxosResult {
-    #[serde(rename = "numFetched", skip_serializing_if = "Option::is_none")]
-    pub num_fetched: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub utxos: Option<Vec<String>>,
-    #[serde(rename = "endIndex", skip_serializing_if = "Option::is_none")]
-    pub end_index: Option<EndIndex>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub encoding: Option<String>,
-}
-
-impl RawGetUtxosResponse {
-    pub fn convert(&self) -> io::Result<GetUtxosResponse> {
-        let result = {
-            if self.result.is_some() {
-                let mut result = GetUtxosResult::default();
-                if self
-                    .result
-                    .clone()
-                    .expect("unexpected None result")
-                    .num_fetched
-                    .is_some()
-                {
-                    let num_fetched = self
-                        .result
-                        .clone()
-                        .expect("unexpected None result")
-                        .num_fetched
-                        .expect("unexpected None num_fetched");
-                    let num_fetched = num_fetched.parse::<u32>().unwrap();
-                    result.num_fetched = Some(num_fetched);
-                }
-
-                if self
-                    .result
-                    .clone()
-                    .expect("unexpected None result")
-                    .utxos
-                    .is_some()
-                {
-                    let utxos_raw = self
-                        .result
-                        .clone()
-                        .expect("unexpected None result")
-                        .utxos
-                        .expect("unexpected None utxos");
-
-                    let mut utxos: Vec<txs::utxo::Utxo> = Vec::new();
-                    for s in utxos_raw.iter() {
-                        let utxo = txs::utxo::Utxo::from_hex(s)
-                            .expect("failed to unpack raw utxo from hex string");
-                        if utxo.transfer_output.is_none() && utxo.stakeable_lock_out.is_none() {
-                            return Err(Error::new(
-                                ErrorKind::InvalidData,
-                                "both Utxo.transfer_output and stakeable_lock_out None",
-                            ));
-                        }
-                        utxos.push(utxo);
-                    }
-                    result.utxos = Some(utxos);
-                }
-
-                if self
-                    .result
-                    .clone()
-                    .expect("unexpected None result")
-                    .end_index
-                    .is_some()
-                {
-                    let end_index = self
-                        .result
-                        .clone()
-                        .expect("unexpected None result")
-                        .end_index
-                        .expect("unexpected None end_index");
-                    result.end_index = Some(end_index);
-                }
-
-                if self
-                    .result
-                    .clone()
-                    .expect("unexpected None result")
-                    .encoding
-                    .is_some()
-                {
-                    let encoding = self
-                        .result
-                        .clone()
-                        .expect("unexpected None result")
-                        .encoding
-                        .expect("unexpected None encoding");
-                    result.encoding = Some(encoding);
-                }
-                Some(result)
-            } else {
-                None
-            }
-        };
-        Ok(GetUtxosResponse {
-            jsonrpc: self.jsonrpc.clone(),
-            id: self.id,
-            result,
-            error: self.error.clone(),
-        })
-    }
-}
-
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- api::avm::test_convert_get_utxos_empty --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::test_get_utxos_empty --exact --show-output
 #[test]
-fn test_convert_get_utxos_empty() {
+fn test_get_utxos_empty() {
     // ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
-    let resp: RawGetUtxosResponse = serde_json::from_str(
+    let resp: GetUtxos = serde_json::from_str(
         "
 
 {
@@ -621,12 +432,12 @@ fn test_convert_get_utxos_empty() {
 ",
     )
     .unwrap();
-    let parsed = resp.convert().unwrap();
-    let expected = GetUtxosResponse {
+
+    let expected = GetUtxos {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetUtxosResult {
-            num_fetched: Some(0),
+            num_fetched: 0,
             utxos: Some(Vec::new()),
             end_index: Some(EndIndex {
                 address: String::from("P-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5"),
@@ -636,14 +447,14 @@ fn test_convert_get_utxos_empty() {
         }),
         error: None,
     };
-    assert_eq!(parsed, expected);
+    assert_eq!(resp, expected);
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- api::avm::test_convert_get_utxos_non_empty --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::test_get_utxos_non_empty --exact --show-output
 #[test]
-fn test_convert_get_utxos_non_empty() {
+fn test_get_utxos_non_empty() {
     // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
-    let resp: RawGetUtxosResponse = serde_json::from_str(
+    let resp: GetUtxos = serde_json::from_str(
         "
 
 {
@@ -669,12 +480,11 @@ fn test_convert_get_utxos_non_empty() {
     let raw_utxo =  String::from("0x000000000000000000000000000000000000000000000000000000000000000000000000000088eec2e099c6a528e689618e8721e04ae85ea574c7a15a7968644d14d54780140000000702c68af0bb1400000000000000000000000000010000000165844a05405f3662c1928142c6c2a783ef871de939b564db");
     let utxo = txs::utxo::Utxo::from_hex(&raw_utxo).unwrap();
 
-    let parsed = resp.convert().unwrap();
-    let expected = GetUtxosResponse {
+    let expected = GetUtxos {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetUtxosResult {
-            num_fetched: Some(1),
+            num_fetched: 1,
             utxos: Some(vec![utxo]),
             end_index: Some(EndIndex {
                 address: String::from("X-avax1x459sj0ssujguq723cljfty4jlae28evjzt7xz"),
@@ -684,5 +494,5 @@ fn test_convert_get_utxos_non_empty() {
         }),
         error: None,
     };
-    assert_eq!(parsed, expected);
+    assert_eq!(resp, expected);
 }

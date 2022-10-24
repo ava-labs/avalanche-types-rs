@@ -2,9 +2,9 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_with::{formats, DeserializeAs, SerializeAs};
 
 /// ref. "serde_with::hex::Hex"
-pub struct Hex0x<FORMAT: formats::Format = formats::Lowercase>(std::marker::PhantomData<FORMAT>);
+pub struct HexBytes<FORMAT: formats::Format = formats::Lowercase>(std::marker::PhantomData<FORMAT>);
 
-impl<T> SerializeAs<T> for Hex0x<formats::Lowercase>
+impl<T> SerializeAs<T> for HexBytes<formats::Lowercase>
 where
     T: AsRef<[u8]>,
 {
@@ -17,7 +17,7 @@ where
     }
 }
 
-impl<T> SerializeAs<T> for Hex0x<formats::Uppercase>
+impl<T> SerializeAs<T> for HexBytes<formats::Uppercase>
 where
     T: AsRef<[u8]>,
 {
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<'de, T, FORMAT> DeserializeAs<'de, T> for Hex0x<FORMAT>
+impl<'de, T, FORMAT> DeserializeAs<'de, T> for HexBytes<FORMAT>
 where
     T: TryFrom<Vec<u8>>,
     FORMAT: formats::Format,
@@ -63,7 +63,7 @@ fn test_custom_de_serializer() {
     #[serde_as]
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
     struct Credential {
-        #[serde_as(as = "Vec<Hex0x>")]
+        #[serde_as(as = "Vec<HexBytes>")]
         signatures: Vec<Vec<u8>>,
     }
 

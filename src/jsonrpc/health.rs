@@ -6,11 +6,12 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_with::serde_as;
 
 /// Represents AvalancheGo health status.
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#APIHealthReply
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
-pub struct Response {
+pub struct Health {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checks: Option<HashMap<String, CheckResult>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -19,26 +20,25 @@ pub struct Response {
 
 /// Represents AvalancheGo health status.
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#Result
+#[serde_as]
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    #[serde(with = "rfc_manager::serde_format::rfc_3339")]
+    #[serde_as(as = "crate::formatting::serde::rfc_3339::DateTimeUtc")]
     pub timestamp: DateTime<Utc>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contiguous_failures: Option<i64>,
-    #[serde(
-        default,
-        deserialize_with = "rfc_manager::serde_format::rfc_3339_with_option::deserialize"
-    )]
+    #[serde_as(as = "Option<crate::formatting::serde::rfc_3339::DateTimeUtc>")]
+    #[serde(default)]
     pub time_of_first_failure: Option<DateTime<Utc>>,
 }
 
 /// ref. https://doc.rust-lang.org/std/str/trait.FromStr.html
-impl FromStr for Response {
+impl FromStr for Health {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         serde_json::from_str(s).map_err(|e| {
@@ -50,7 +50,7 @@ impl FromStr for Response {
     }
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- api::health::test_parse --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::health::test_parse --exact --show-output
 #[test]
 fn test_parse() {
     use log::info;
@@ -128,7 +128,8 @@ fn test_parse() {
 }
 
 ";
-    let parsed = Response::from_str(data).unwrap();
+
+    let parsed = Health::from_str(data).unwrap();
     info!("parsed: {:?}", parsed);
     assert!(parsed.healthy.unwrap());
 }

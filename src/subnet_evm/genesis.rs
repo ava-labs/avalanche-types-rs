@@ -18,9 +18,9 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<ChainConfig>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub nonce: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub timestamp: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -30,9 +30,9 @@ pub struct Genesis {
     /// ref. https://github.com/ava-labs/subnet-evm/pull/63
     ///
     /// Use https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert.
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub gas_limit: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub difficulty: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,9 +53,9 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub airdrop_amount: Option<String>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub number: BigInt,
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub gas_used: BigInt,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_hash: Option<String>,
@@ -138,9 +138,7 @@ impl Genesis {
         for k in seed_keys.iter() {
             let eth_addr = k.get_eth_address();
             allocs.insert(
-                eth_addr
-                    .trim_start_matches(key::secp256k1::private_key::HEX_ENCODE_PREFIX)
-                    .to_string(),
+                eth_addr.trim_start_matches("0x").to_string(),
                 default_alloc.clone(),
             );
         }
@@ -489,7 +487,7 @@ pub struct AllocAccount {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<BTreeMap<String, String>>,
 
-    #[serde(with = "big_num_manager::serde_format::big_int_hex")]
+    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
     pub balance: BigInt,
 
     /// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisMultiCoinBalance

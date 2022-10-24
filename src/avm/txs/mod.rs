@@ -25,7 +25,7 @@ pub struct Tx {
     /// as long as "avax.BaseTx.Metadata" is "None".
     /// Once Metadata is updated with signing and "Tx.Initialize",
     /// Tx.ID() is non-empty.
-    pub unsigned_tx: txs::Tx,
+    pub base_tx: txs::Tx,
     pub fx_creds: Vec<fx::Credential>,
 }
 
@@ -38,14 +38,14 @@ impl Default for Tx {
 impl Tx {
     pub fn default() -> Self {
         Self {
-            unsigned_tx: txs::Tx::default(),
+            base_tx: txs::Tx::default(),
             fx_creds: Vec::new(),
         }
     }
 
     pub fn new(unsigned_tx: txs::Tx) -> Self {
         Self {
-            unsigned_tx,
+            base_tx: unsigned_tx,
             ..Self::default()
         }
     }
@@ -54,8 +54,8 @@ impl Tx {
     /// Only non-empty if the embedded metadata is updated
     /// with the signing process.
     pub fn tx_id(&self) -> ids::Id {
-        if self.unsigned_tx.metadata.is_some() {
-            let m = self.unsigned_tx.metadata.clone().unwrap();
+        if self.base_tx.metadata.is_some() {
+            let m = self.base_tx.metadata.clone().unwrap();
             m.id
         } else {
             ids::Id::default()
@@ -79,7 +79,7 @@ impl Tx {
     ) -> io::Result<()> {
         // marshal "unsigned tx" with the codec version
         let type_id = Self::type_id();
-        let packer = self.unsigned_tx.pack(codec::VERSION, type_id)?;
+        let packer = self.base_tx.pack(codec::VERSION, type_id)?;
 
         // "avalanchego" marshals the whole struct again for signed bytes
         // even when the underlying "unsigned_tx" is already once marshaled
@@ -133,16 +133,16 @@ impl Tx {
                 }
             }
         }
-        let signed_tx_bytes = packer.take_bytes();
-        let tx_id: Vec<u8> = digest(&SHA256, &signed_tx_bytes).as_ref().into();
+        let tx_bytes_with_signatures = packer.take_bytes();
+        let tx_id: Vec<u8> = digest(&SHA256, &tx_bytes_with_signatures).as_ref().into();
 
         // update "BaseTx.Metadata" with id/unsigned bytes/bytes
         // ref. "avalanchego/vms/avm.Tx.SignSECP256K1Fx"
         // ref. "avalanchego/vms/components/avax.BaseTx.Metadata.Initialize"
-        self.unsigned_tx.metadata = Some(txs::Metadata {
+        self.base_tx.metadata = Some(txs::Metadata {
             id: ids::Id::from_slice(&tx_id),
             unsigned_bytes: unsigned_tx_bytes.to_vec(),
-            bytes: signed_tx_bytes.to_vec(),
+            bytes: tx_bytes_with_signatures.to_vec(),
         });
 
         Ok(())
@@ -215,8 +215,8 @@ fn test_tx_serialization_with_two_signers() {
     let signers: Vec<Vec<key::secp256k1::private_key::Key>> = vec![keys1, keys2];
     let mut tx_with_two_signers = Tx::new(unsigned_tx);
     ab!(tx_with_two_signers.sign(signers)).expect("failed to sign");
-    let tx_with_two_signers_metadata = tx_with_two_signers.unsigned_tx.metadata.clone().unwrap();
-    let signed_bytes = tx_with_two_signers_metadata.bytes;
+    let tx_with_two_signers_metadata = tx_with_two_signers.base_tx.metadata.clone().unwrap();
+    let tx_bytes_with_signatures = tx_with_two_signers_metadata.bytes;
     assert_eq!(
         tx_with_two_signers.tx_id().to_string(),
         "QnTUuie2qe6BKyYrC2jqd73bJ828QNhYnZbdA2HWsnVRPjBfV"
@@ -369,6 +369,6 @@ fn test_tx_serialization_with_two_signers() {
     // }
     assert!(cmp_manager::eq_vectors(
         expected_signed_bytes,
-        &signed_bytes
+        &tx_bytes_with_signatures
     ));
 }

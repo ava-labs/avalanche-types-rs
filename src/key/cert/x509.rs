@@ -341,8 +341,6 @@ fn test_default_pem() {
 }
 
 /// Creates default certificate parameters.
-/// RSA for Apple M1.
-/// ref. https://github.com/sfackler/rust-native-tls/issues/225
 #[cfg(not(all(target_arch = "aarch64", target_os = "macos")))]
 pub fn create_default_params() -> io::Result<CertificateParams> {
     let mut cert_params = CertificateParams::default();
@@ -385,7 +383,7 @@ pub fn create_default_params() -> io::Result<CertificateParams> {
 }
 
 /// Creates default certificate parameters.
-/// RSA for Apple M1.
+/// Use RSA for Apple M1.
 /// ref. https://github.com/sfackler/rust-native-tls/issues/225
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]
 pub fn create_default_params() -> io::Result<CertificateParams> {
