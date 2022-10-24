@@ -6,7 +6,7 @@ use serde_with::{serde_as, DisplayFromStr};
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetNetworkName {
+pub struct GetNetworkNameResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -37,7 +37,7 @@ impl GetNetworkNameResult {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetNetworkId {
+pub struct GetNetworkIdResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -70,7 +70,7 @@ impl GetNetworkIdResult {
 #[test]
 fn test_get_network_id() {
     // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid
-    let resp: GetNetworkId = serde_json::from_str(
+    let resp: GetNetworkIdResponse = serde_json::from_str(
         "
 
 {
@@ -85,7 +85,7 @@ fn test_get_network_id() {
     )
     .unwrap();
 
-    let expected = GetNetworkId {
+    let expected = GetNetworkIdResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetNetworkIdResult {
@@ -97,7 +97,7 @@ fn test_get_network_id() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetblockchainid
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetBlockchainId {
+pub struct GetBlockchainIdResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -132,7 +132,7 @@ fn test_get_blockchain_id() {
     use std::str::FromStr;
 
     // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetblockchainid
-    let resp: GetBlockchainId = serde_json::from_str(
+    let resp: GetBlockchainIdResponse = serde_json::from_str(
         "
 
 {
@@ -147,7 +147,7 @@ fn test_get_blockchain_id() {
     )
     .unwrap();
 
-    let expected = GetBlockchainId {
+    let expected = GetBlockchainIdResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetBlockchainIdResult {
@@ -160,7 +160,7 @@ fn test_get_blockchain_id() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetNodeId {
+pub struct GetNodeIdResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -195,7 +195,7 @@ fn test_get_node_id() {
     use std::str::FromStr;
 
     // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid
-    let resp: GetNodeId = serde_json::from_str(
+    let resp: GetNodeIdResponse = serde_json::from_str(
         "
 
 {
@@ -209,7 +209,7 @@ fn test_get_node_id() {
 ",
     )
     .unwrap();
-    let expected = GetNodeId {
+    let expected = GetNodeIdResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetNodeIdResult {
@@ -221,7 +221,7 @@ fn test_get_node_id() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetNodeVersion {
+pub struct GetNodeVersionResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -284,7 +284,7 @@ impl VmVersions {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_get_node_version --exact --show-output
 #[test]
 fn test_get_node_version() {
-    let resp: GetNodeVersion = serde_json::from_str(
+    let resp: GetNodeVersionResponse = serde_json::from_str(
         "
 
 {
@@ -305,7 +305,7 @@ fn test_get_node_version() {
 ",
     )
     .unwrap();
-    let expected = GetNodeVersion {
+    let expected = GetNodeVersionResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetNodeVersionResult {
@@ -324,7 +324,7 @@ fn test_get_node_version() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetvms
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetVms {
+pub struct GetVmsResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -354,7 +354,7 @@ impl GetVmsResult {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct IsBootstrapped {
+pub struct IsBootstrappedResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -385,7 +385,7 @@ impl IsBootstrappedResult {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetTxFee {
+pub struct GetTxFeeResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -423,7 +423,7 @@ impl GetTxFeeResult {
 #[test]
 fn test_get_tx_fee() {
     // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee
-    let resp: GetTxFee = serde_json::from_str(
+    let resp: GetTxFeeResponse = serde_json::from_str(
         "
 
 {
@@ -439,7 +439,7 @@ fn test_get_tx_fee() {
     )
     .unwrap();
 
-    let expected = GetTxFee {
+    let expected = GetTxFeeResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetTxFeeResult {
@@ -452,7 +452,7 @@ fn test_get_tx_fee() {
 
 /// ref. https://docs.avax.network/apis/avalanchego/apis/info#infouptime
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct Uptime {
+pub struct UptimeResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -490,7 +490,7 @@ impl UptimeResult {
 #[test]
 fn test_uptime() {
     // ref. https://docs.avax.network/apis/avalanchego/apis/info#infouptime
-    let resp: Uptime = serde_json::from_str(
+    let resp: UptimeResponse = serde_json::from_str(
         "
 
 {
@@ -506,7 +506,7 @@ fn test_uptime() {
     )
     .unwrap();
 
-    let expected = Uptime {
+    let expected = UptimeResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(UptimeResult {

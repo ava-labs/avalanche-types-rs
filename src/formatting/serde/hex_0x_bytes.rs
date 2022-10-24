@@ -8,11 +8,11 @@ impl<T> SerializeAs<T> for HexBytes<formats::Lowercase>
 where
     T: AsRef<[u8]>,
 {
-    fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_as<S>(x: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let s = hex::encode(source);
+        let s = hex::encode(x);
         serializer.serialize_str(&format!("0x{}", s))
     }
 }
@@ -21,11 +21,11 @@ impl<T> SerializeAs<T> for HexBytes<formats::Uppercase>
 where
     T: AsRef<[u8]>,
 {
-    fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_as<S>(x: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&hex::encode_upper(source))
+        serializer.serialize_str(&hex::encode_upper(x))
     }
 }
 

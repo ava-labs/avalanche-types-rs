@@ -1,13 +1,145 @@
+use std::io::{self, Error, ErrorKind};
+
 use crate::{
+    formatting::serde::hex_0x_utxo::HexUtxo,
     ids::{self, node},
     jsonrpc, platformvm, txs,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct IssueTxRequest {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<IssueTxParams>,
+}
+
+impl Default for IssueTxRequest {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl IssueTxRequest {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: String::from(super::DEFAULT_VERSION),
+            id: super::DEFAULT_ID,
+            method: String::new(),
+            params: None,
+        }
+    }
+
+    pub fn encode_json(&self) -> io::Result<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("failed to serialize to JSON {}", e),
+                ));
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueTxParams {
+    pub tx: String,
+    pub encoding: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct IssueTxResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<IssueTxResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<super::ResponseError>,
+}
+
+impl Default for IssueTxResponse {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl IssueTxResponse {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: "2.0".to_string(),
+            id: 1,
+            result: None,
+            error: None,
+        }
+    }
+}
+
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct IssueTxResult {
+    #[serde(rename = "txID")]
+    pub tx_id: ids::Id,
+}
+
+impl Default for IssueTxResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl IssueTxResult {
+    pub fn default() -> Self {
+        Self {
+            tx_id: ids::Id::empty(),
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_issue_tx --exact --show-output
+#[test]
+fn test_issue_tx() {
+    use std::str::FromStr;
+
+    let resp: IssueTxResponse = serde_json::from_str(
+        "
+    
+    {
+        \"jsonrpc\": \"2.0\",
+        \"result\": {
+            \"txID\": \"G3BuH6ytQ2averrLxJJugjWZHTRubzCrUZEXoheG5JMqL5ccY\"
+        },
+        \"id\": 1
+    }
+    
+    ",
+    )
+    .unwrap();
+
+    let expected = IssueTxResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(IssueTxResult {
+            tx_id: ids::Id::from_str("G3BuH6ytQ2averrLxJJugjWZHTRubzCrUZEXoheG5JMqL5ccY").unwrap(),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
 /// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetTx {
+pub struct GetTxResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -18,13 +150,13 @@ pub struct GetTx {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-impl Default for GetTx {
+impl Default for GetTxResponse {
     fn default() -> Self {
         Self::default()
     }
 }
 
-impl GetTx {
+impl GetTxResponse {
     pub fn default() -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
@@ -60,7 +192,7 @@ impl GetTxResult {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_tx --exact --show-output
 #[test]
 fn test_get_tx() {
-    let parsed_resp: GetTx = serde_json::from_str(
+    let parsed_resp: GetTxResponse = serde_json::from_str(
         "
 
 {
@@ -130,7 +262,7 @@ fn test_get_tx() {
 
 /// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetTxStatus {
+pub struct GetTxStatusResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -141,13 +273,13 @@ pub struct GetTxStatus {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-impl Default for GetTxStatus {
+impl Default for GetTxStatusResponse {
     fn default() -> Self {
         Self::default()
     }
 }
 
-impl GetTxStatus {
+impl GetTxStatusResponse {
     pub fn default() -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
@@ -183,7 +315,7 @@ impl GetTxStatusResult {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_tx_status --exact --show-output
 #[test]
 fn test_get_tx_status() {
-    let resp: GetTxStatus = serde_json::from_str(
+    let resp: GetTxStatusResponse = serde_json::from_str(
         "
 
 {
@@ -198,7 +330,7 @@ fn test_get_tx_status() {
     )
     .unwrap();
 
-    let expected = GetTxStatus {
+    let expected = GetTxStatusResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetTxStatusResult {
@@ -211,7 +343,7 @@ fn test_get_tx_status() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetHeight {
+pub struct GetHeightResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -246,7 +378,7 @@ impl GetHeightResult {
 #[test]
 fn test_get_height() {
     // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight
-    let resp: GetHeight = serde_json::from_str(
+    let resp: GetHeightResponse = serde_json::from_str(
         "
 
 {
@@ -261,7 +393,7 @@ fn test_get_height() {
     )
     .unwrap();
 
-    let expected = GetHeight {
+    let expected = GetHeightResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetHeightResult { height: 0 }),
@@ -270,9 +402,196 @@ fn test_get_height() {
     assert_eq!(resp, expected);
 }
 
+/// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetUtxosRequest {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<GetUtxosParams>,
+}
+
+impl Default for GetUtxosRequest {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetUtxosRequest {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: String::from(super::DEFAULT_VERSION),
+            id: super::DEFAULT_ID,
+            method: String::new(),
+            params: None,
+        }
+    }
+
+    pub fn encode_json(&self) -> io::Result<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("failed to serialize to JSON {}", e),
+                ));
+            }
+        }
+    }
+}
+
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GetUtxosParams {
+    pub addresses: Vec<String>,
+    pub limit: u32,
+    pub encoding: String,
+}
+
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetUtxosResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetUtxosResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<super::ResponseError>,
+}
+
+/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GetUtxosResult {
+    #[serde_as(as = "DisplayFromStr")]
+    pub num_fetched: u32,
+
+    #[serde_as(as = "Option<Vec<HexUtxo>>")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub utxos: Option<Vec<txs::utxo::Utxo>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_index: Option<super::EndIndex>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encoding: Option<String>,
+}
+
+impl Default for GetUtxosResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetUtxosResult {
+    pub fn default() -> Self {
+        Self {
+            num_fetched: 0,
+            utxos: None,
+            end_index: None,
+            encoding: None,
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_utxos_empty --exact --show-output
+#[test]
+fn test_get_utxos_empty() {
+    // ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+    let resp: GetUtxosResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"numFetched\": \"0\",
+        \"utxos\": [],
+        \"endIndex\": {
+            \"address\": \"P-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5\",
+            \"utxo\": \"11111111111111111111111111111111LpoYY\"
+        },
+        \"encoding\":\"hex\"
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+
+    let expected = GetUtxosResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetUtxosResult {
+            num_fetched: 0,
+            utxos: Some(Vec::new()),
+            end_index: Some(super::EndIndex {
+                address: String::from("P-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5"),
+                utxo: String::from("11111111111111111111111111111111LpoYY"),
+            }),
+            encoding: Some(String::from("hex")),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_utxos_non_empty --exact --show-output
+#[test]
+fn test_get_utxos_non_empty() {
+    // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
+    let resp: GetUtxosResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"numFetched\": \"1\",
+        \"utxos\": [
+            \"0x000000000000000000000000000000000000000000000000000000000000000000000000000088eec2e099c6a528e689618e8721e04ae85ea574c7a15a7968644d14d54780140000000702c68af0bb1400000000000000000000000000010000000165844a05405f3662c1928142c6c2a783ef871de939b564db\"
+        ],
+        \"endIndex\": {
+            \"address\": \"X-avax1x459sj0ssujguq723cljfty4jlae28evjzt7xz\",
+            \"utxo\": \"LUC1cmcxnfNR9LdkACS2ccGKLEK7SYqB4gLLTycQfg1koyfSq\"
+        },
+        \"encoding\": \"hex\"
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+
+    let raw_utxo =  String::from("0x000000000000000000000000000000000000000000000000000000000000000000000000000088eec2e099c6a528e689618e8721e04ae85ea574c7a15a7968644d14d54780140000000702c68af0bb1400000000000000000000000000010000000165844a05405f3662c1928142c6c2a783ef871de939b564db");
+    let utxo = txs::utxo::Utxo::from_hex(&raw_utxo).unwrap();
+
+    let expected = GetUtxosResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetUtxosResult {
+            num_fetched: 1,
+            utxos: Some(vec![utxo]),
+            end_index: Some(super::EndIndex {
+                address: String::from("X-avax1x459sj0ssujguq723cljfty4jlae28evjzt7xz"),
+                utxo: String::from("LUC1cmcxnfNR9LdkACS2ccGKLEK7SYqB4gLLTycQfg1koyfSq"),
+            }),
+            encoding: Some(String::from("hex")),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetBalance {
+pub struct GetBalanceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -328,7 +647,7 @@ fn test_get_balance() {
     use std::str::FromStr;
 
     // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
-    let resp: GetBalance = serde_json::from_str(
+    let resp: GetBalanceResponse = serde_json::from_str(
         "
 
 {
@@ -356,7 +675,7 @@ fn test_get_balance() {
     )
     .unwrap();
 
-    let expected = GetBalance {
+    let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetBalanceResult {
@@ -384,7 +703,7 @@ fn test_get_balance() {
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct GetCurrentValidators {
+pub struct GetCurrentValidatorsResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -392,13 +711,13 @@ pub struct GetCurrentValidators {
     pub result: Option<GetCurrentValidatorsResult>,
 }
 
-impl Default for GetCurrentValidators {
+impl Default for GetCurrentValidatorsResponse {
     fn default() -> Self {
         Self::default()
     }
 }
 
-impl GetCurrentValidators {
+impl GetCurrentValidatorsResponse {
     pub fn default() -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
@@ -587,7 +906,7 @@ fn test_get_current_validators() {
     use std::str::FromStr;
 
     // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-    let resp: GetCurrentValidators = serde_json::from_str(
+    let resp: GetCurrentValidatorsResponse = serde_json::from_str(
         "
 {
     \"jsonrpc\": \"2.0\",
@@ -640,7 +959,7 @@ fn test_get_current_validators() {
     )
     .unwrap();
 
-    let expected = GetCurrentValidators {
+    let expected = GetCurrentValidatorsResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetCurrentValidatorsResult {

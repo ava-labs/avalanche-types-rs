@@ -1,3 +1,5 @@
+use std::io::{self, Error, ErrorKind};
+
 use crate::formatting::serde::hex_0x_bytes::HexBytes;
 use num_bigint::BigInt;
 use serde::{Deserialize, Serialize};
@@ -6,7 +8,7 @@ use serde_with::serde_as;
 /// Response for "eth_blockNumber".
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct BlockNumber {
+pub struct BlockNumberResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -17,7 +19,7 @@ pub struct BlockNumber {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_block_number --exact --show-output
 #[test]
 fn test_block_number() {
-    let resp: BlockNumber = serde_json::from_str(
+    let resp: BlockNumberResponse = serde_json::from_str(
         "
 
 {
@@ -29,7 +31,7 @@ fn test_block_number() {
 ",
     )
     .unwrap();
-    let expected = BlockNumber {
+    let expected = BlockNumberResponse {
         jsonrpc: "2.0".to_string(),
         id: 83,
         result: big_num_manager::from_hex_to_big_int("0x4b7").unwrap(),
@@ -40,7 +42,7 @@ fn test_block_number() {
 /// Response for "eth_gasPrice".
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GasPrice {
+pub struct GasPriceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -51,7 +53,7 @@ pub struct GasPrice {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_gas_price --exact --show-output
 #[test]
 fn test_gas_price() {
-    let resp: GasPrice = serde_json::from_str(
+    let resp: GasPriceResponse = serde_json::from_str(
         "
 
 {
@@ -63,7 +65,7 @@ fn test_gas_price() {
 ",
     )
     .unwrap();
-    let expected = GasPrice {
+    let expected = GasPriceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: big_num_manager::from_hex_to_big_int("0x1dfd14000").unwrap(),
@@ -75,7 +77,7 @@ fn test_gas_price() {
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 /// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetBalance {
+pub struct GetBalanceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -88,7 +90,7 @@ pub struct GetBalance {
 #[test]
 fn test_get_balance() {
     // ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
-    let resp: GetBalance = serde_json::from_str(
+    let resp: GetBalanceResponse = serde_json::from_str(
         "
 
 {
@@ -100,14 +102,14 @@ fn test_get_balance() {
 ",
     )
     .unwrap();
-    let expected = GetBalance {
+    let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: big_num_manager::from_hex_to_big_int("0x1388").unwrap(),
     };
     assert_eq!(resp, expected);
 
-    let resp: GetBalance = serde_json::from_str(
+    let resp: GetBalanceResponse = serde_json::from_str(
         "
 
 {
@@ -119,7 +121,7 @@ fn test_get_balance() {
 ",
     )
     .unwrap();
-    let expected = GetBalance {
+    let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: big_num_manager::from_hex_to_big_int("0x0234c8a3397aab58").unwrap(),
@@ -131,7 +133,7 @@ fn test_get_balance() {
 /// Returns the number of transactions send from this address.
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetTransactionCount {
+pub struct GetTransactionCountResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -143,7 +145,7 @@ pub struct GetTransactionCount {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_transaction_count --exact --show-output
 #[test]
 fn test_get_transaction_count() {
-    let resp: GetTransactionCount = serde_json::from_str(
+    let resp: GetTransactionCountResponse = serde_json::from_str(
         "
 
 {
@@ -155,7 +157,7 @@ fn test_get_transaction_count() {
 ",
     )
     .unwrap();
-    let expected = GetTransactionCount {
+    let expected = GetTransactionCountResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: big_num_manager::from_hex_to_big_int("0x1").unwrap(),
@@ -167,7 +169,7 @@ fn test_get_transaction_count() {
 /// Returns the receipt of a transaction by transaction hash.
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct GetTransactionReceipt {
+pub struct GetTransactionReceiptResponse {
     pub jsonrpc: String,
     pub id: u32,
 
@@ -210,7 +212,7 @@ pub struct GetTransactionReceiptResult {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_transaction_receipt --exact --show-output
 #[test]
 fn test_get_transaction_receipt() {
-    let resp: GetTransactionReceipt = serde_json::from_str(
+    let resp: GetTransactionReceiptResponse = serde_json::from_str(
         "
 
 {
@@ -234,7 +236,7 @@ fn test_get_transaction_receipt() {
     .unwrap();
     // println!("{:?}", resp);
 
-    let expected = GetTransactionReceipt {
+    let expected = GetTransactionReceiptResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetTransactionReceiptResult {
@@ -262,4 +264,78 @@ fn test_get_transaction_receipt() {
         }),
     };
     assert_eq!(resp, expected);
+}
+
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct SendRawTransactionParam {
+    /// Transfer fund sender address.
+    pub sender: primitive_types::H160,
+    /// Transfer fund receiver address.
+    pub receiver: primitive_types::H160,
+
+    /// Transfer amount.
+    pub amount: primitive_types::U256,
+
+    /// Gas.
+    /// "Max priority fee (GWEI)" in Metamask maps to "GasTipCap".
+    /// "Max fee(GWEI)" in Metamask maps to "GasPrice".
+    pub gas: primitive_types::U256,
+    /// Gas price.
+    /// "Max priority fee (GWEI)" in Metamask maps to "GasTipCap".
+    /// "Max fee(GWEI)" in Metamask maps to "GasPrice".
+    pub gas_price: primitive_types::U256,
+
+    /// Integer of a nonce. This overwrites its own pending transactions
+    /// that use the same nonce.
+    pub nonce: Option<primitive_types::U256>,
+
+    /// The compiled code of a contract OR the hash of the invoked
+    /// method signature and encoded parameters.
+    pub data: Option<Vec<u8>>,
+}
+
+impl Default for SendRawTransactionParam {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl SendRawTransactionParam {
+    pub fn default() -> Self {
+        Self {
+            sender: primitive_types::H160::from(&[0_u8; 20]),
+            receiver: primitive_types::H160::from(&[0_u8; 20]),
+
+            amount: primitive_types::U256::zero(),
+
+            gas: primitive_types::U256::zero(),
+            gas_price: primitive_types::U256::zero(),
+
+            nonce: None,
+
+            data: None,
+        }
+    }
+
+    pub fn encode_rlp(&self) -> io::Result<Vec<u8>> {
+        // TODO: use rlp to encode
+        Err(Error::new(ErrorKind::Other, "not implemented"))
+    }
+}
+
+/// Response for "eth_sendRawTransaction".
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct SendRawTransactionResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    /// Transaction hash.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<String>,
 }

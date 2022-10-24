@@ -3,12 +3,12 @@ use serde::{self, Deserialize, Deserializer, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 
 /// ref. https://serde.rs/custom-date-format.html
-pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(x: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     // ref. https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html#method.to_rfc3339_opts
-    serializer.serialize_str(&dt.to_rfc3339_opts(SecondsFormat::Millis, true))
+    serializer.serialize_str(&x.to_rfc3339_opts(SecondsFormat::Millis, true))
 }
 
 /// ref. https://serde.rs/custom-date-format.html
@@ -28,11 +28,11 @@ where
 pub struct DateTimeUtc(DateTime<Utc>);
 
 impl SerializeAs<DateTime<Utc>> for DateTimeUtc {
-    fn serialize_as<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_as<S>(x: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&dt.to_rfc3339_opts(SecondsFormat::Millis, true))
+        serializer.serialize_str(&x.to_rfc3339_opts(SecondsFormat::Millis, true))
     }
 }
 

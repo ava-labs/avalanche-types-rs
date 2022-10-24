@@ -21,11 +21,11 @@ where
 pub struct HexUtxo(crate::txs::utxo::Utxo);
 
 impl SerializeAs<crate::txs::utxo::Utxo> for HexUtxo {
-    fn serialize_as<S>(source: &crate::txs::utxo::Utxo, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_as<S>(x: &crate::txs::utxo::Utxo, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let s = source.to_hex().map_err(serde::ser::Error::custom)?;
+        let s = x.to_hex().map_err(serde::ser::Error::custom)?;
 
         serializer.serialize_str(&s)
     }

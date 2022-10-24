@@ -122,12 +122,7 @@ impl Key {
     /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
     /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
     pub fn to_eth_address(&self) -> String {
-        let h160_addr = self.to_h160();
-        let addr_hex = hex::encode(h160_addr);
-
-        // make EIP-55 compliant
-        let addr_eip55 = address::eth_checksum(&addr_hex);
-        prefix_manager::prepend_0x(&addr_eip55)
+        address::h160_to_eth_address(self.to_h160())
     }
 
     pub fn to_avax_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
@@ -237,9 +232,9 @@ fn test_public_key() {
     assert!(pubkey4.verify(&hashed, &sig1.to_bytes()).unwrap());
 
     log::info!("public key: {}", pubkey1);
-    log::info!("short id: {}", pubkey1.to_short_id().unwrap());
-    log::info!("prelude h160: {}", pubkey1.to_h160());
-    log::info!("eth address: {}", pubkey1.to_eth_address());
+    log::info!("to_short_id: {}", pubkey1.to_short_id().unwrap());
+    log::info!("to_h160: {}", pubkey1.to_h160());
+    log::info!("to_eth_address: {}", pubkey1.to_eth_address());
 
     let x_avax_addr = pubkey1.to_avax_address(1, "X").unwrap();
     let p_avax_addr = pubkey1.to_avax_address(1, "P").unwrap();
