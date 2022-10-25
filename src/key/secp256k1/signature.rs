@@ -75,6 +75,21 @@ impl Sig {
     )> {
         recover_pubkeys(&self.0, digest)
     }
+
+    pub fn r(&self) -> primitive_types::U256 {
+        let b = self.0.as_ref();
+        primitive_types::U256::from_big_endian(&b[0..32])
+    }
+
+    pub fn s(&self) -> primitive_types::U256 {
+        let b = self.0.as_ref();
+        primitive_types::U256::from_big_endian(&b[32..64])
+    }
+
+    pub fn v(&self) -> u64 {
+        let v: u8 = self.0.recovery_id().into();
+        v as u64
+    }
 }
 
 fn recover_pubkeys(

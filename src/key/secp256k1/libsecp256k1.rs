@@ -1,7 +1,7 @@
 use std::io::{self, Error, ErrorKind};
 
 use crate::{
-    constants, formatting,
+    constants, formatting, hash,
     ids::short,
     key::{self, secp256k1::address},
 };
@@ -167,7 +167,7 @@ impl PublicKey {
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
     pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
         let compressed = self.to_compressed_bytes();
-        address::hash_sha256_ripemd160(&compressed)
+        hash::sha256_ripemd160(&compressed)
     }
 
     /// "hashing.PubkeyBytesToAddress"
@@ -182,7 +182,7 @@ impl PublicKey {
         let uncompressed = self.to_uncompressed_bytes();
 
         // ref. "Keccak256(pubBytes[1:])[12:]"
-        let digest_h256 = address::keccak256(&uncompressed[1..]);
+        let digest_h256 = hash::keccak256(&uncompressed[1..]);
         let digest_h256 = &digest_h256.0[12..];
 
         primitive_types::H160::from_slice(digest_h256)

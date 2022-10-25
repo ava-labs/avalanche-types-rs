@@ -1,5 +1,3 @@
-pub mod serde;
-
 use std::io::{self, Error, ErrorKind};
 
 use bech32::{ToBase32, Variant};

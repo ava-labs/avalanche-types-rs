@@ -5,9 +5,8 @@ pub mod utxo;
 use std::io::{self, Error, ErrorKind};
 
 use super::{
-    codec,
-    formatting::{self, serde::hex_0x_bytes::HexBytes},
-    ids, key, packer, platformvm,
+    codec::{self, serde::hex_0x_bytes::HexBytes},
+    formatting, ids, key, packer, platformvm,
 };
 use ring::digest::{digest, SHA256};
 use serde::{Deserialize, Serialize};
@@ -485,8 +484,8 @@ fn test_base_tx_serialization() {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Metadata {
     pub id: ids::Id,
-    pub unsigned_bytes: Vec<u8>,
-    pub bytes: Vec<u8>,
+    pub tx_bytes_with_no_signature: Vec<u8>,
+    pub tx_bytes_with_signatures: Vec<u8>,
 }
 
 impl Default for Metadata {
@@ -499,18 +498,18 @@ impl Metadata {
     pub fn default() -> Self {
         Self {
             id: ids::Id::empty(),
-            unsigned_bytes: Vec::new(),
-            bytes: Vec::new(),
+            tx_bytes_with_no_signature: Vec::new(),
+            tx_bytes_with_signatures: Vec::new(),
         }
     }
 
-    pub fn new(unsigned_bytes: &[u8], bytes: &[u8]) -> Self {
-        let id: Vec<u8> = digest(&SHA256, bytes).as_ref().into();
+    pub fn new(tx_bytes_with_no_signature: &[u8], tx_bytes_with_signatures: &[u8]) -> Self {
+        let id: Vec<u8> = digest(&SHA256, tx_bytes_with_signatures).as_ref().into();
         let id = ids::Id::from_slice(&id);
         Self {
             id,
-            unsigned_bytes: Vec::from(unsigned_bytes),
-            bytes: Vec::from(bytes),
+            tx_bytes_with_no_signature: Vec::from(tx_bytes_with_no_signature),
+            tx_bytes_with_signatures: Vec::from(tx_bytes_with_signatures),
         }
     }
 

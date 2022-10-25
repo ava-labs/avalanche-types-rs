@@ -18,9 +18,9 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<ChainConfig>,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub nonce: BigInt,
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub timestamp: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -30,9 +30,9 @@ pub struct Genesis {
     /// ref. https://github.com/ava-labs/subnet-evm/pull/63
     ///
     /// Use https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert.
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub gas_limit: BigInt,
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub difficulty: BigInt,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,9 +53,9 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub airdrop_amount: Option<String>,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub number: BigInt,
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub gas_used: BigInt,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_hash: Option<String>,
@@ -487,7 +487,7 @@ pub struct AllocAccount {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<BTreeMap<String, String>>,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub balance: BigInt,
 
     /// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisMultiCoinBalance

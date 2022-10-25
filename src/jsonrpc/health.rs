@@ -25,13 +25,13 @@ pub struct Response {
 pub struct CheckResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    #[serde_as(as = "crate::formatting::serde::rfc_3339::DateTimeUtc")]
+    #[serde_as(as = "crate::codec::serde::rfc_3339::DateTimeUtc")]
     pub timestamp: DateTime<Utc>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contiguous_failures: Option<i64>,
-    #[serde_as(as = "Option<crate::formatting::serde::rfc_3339::DateTimeUtc>")]
+    #[serde_as(as = "Option<crate::codec::serde::rfc_3339::DateTimeUtc>")]
     #[serde(default)]
     pub time_of_first_failure: Option<DateTime<Utc>>,
 }

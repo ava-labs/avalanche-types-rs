@@ -2,7 +2,10 @@ pub mod transfer;
 
 use std::cmp::Ordering;
 
-use crate::{codec, formatting::serde::hex_0x_bytes::HexBytes, ids::short};
+use crate::{
+    codec::{self, serde::hex_0x_bytes::HexBytes},
+    ids::short,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 

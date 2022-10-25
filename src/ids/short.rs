@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{formatting, key::secp256k1};
+use crate::{formatting, hash, key::secp256k1};
 use lazy_static::lazy_static;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
@@ -58,7 +58,7 @@ impl Id {
     where
         S: AsRef<[u8]>,
     {
-        let hashed = secp256k1::address::hash_sha256_ripemd160(pub_key_bytes)?;
+        let hashed = hash::sha256_ripemd160(pub_key_bytes)?;
 
         // "ids.Id.String"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#Id.String

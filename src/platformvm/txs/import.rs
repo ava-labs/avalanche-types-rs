@@ -82,8 +82,8 @@ impl Tx {
         // reuse the underlying packer to avoid marshaling the unsigned tx twice
         // just marshal the next fields in the struct and pack them all together
         // in the existing packer
-        let unsigned_tx_bytes = packer.take_bytes();
-        packer.set_bytes(&unsigned_tx_bytes);
+        let base = packer.take_bytes();
+        packer.set_bytes(&base);
 
         // pack the second field in the struct
         packer.pack_bytes(self.source_chain_id.as_ref())?;
@@ -196,14 +196,14 @@ impl Tx {
         }
 
         // take bytes just for hashing computation
-        let unsigned_tx_bytes = packer.take_bytes();
-        packer.set_bytes(&unsigned_tx_bytes);
+        let tx_bytes_with_no_signature = packer.take_bytes();
+        packer.set_bytes(&tx_bytes_with_no_signature);
 
         // compute sha256 for marshaled "unsigned tx" bytes
         // IMPORTANT: take the hash only for the type "platformvm.UnsignedImportTx" unsigned tx
         // not other fields -- only hash "platformvm.UnsignedImportTx.*" but not "platformvm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#UnsignedImportTx
-        let hash: Vec<u8> = digest(&SHA256, &unsigned_tx_bytes).as_ref().into();
+        let tx_bytes_hash: Vec<u8> = digest(&SHA256, &tx_bytes_with_no_signature).as_ref().into();
 
         // number of of credentials
         let creds_len = signers.len() as u32;
@@ -216,7 +216,7 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&hash).await?;
+                let sig = k.sign_digest(&tx_bytes_hash).await?;
                 sigs.push(Vec::from(sig));
             }
 
@@ -249,8 +249,8 @@ impl Tx {
         // ref. "avalanchego/vms/components/avax.BaseTx.Metadata.Initialize"
         self.base_tx.metadata = Some(txs::Metadata {
             id: ids::Id::from_slice(&tx_id),
-            unsigned_bytes: unsigned_tx_bytes.to_vec(),
-            bytes: tx_bytes_with_signatures.to_vec(),
+            tx_bytes_with_no_signature: tx_bytes_with_no_signature.to_vec(),
+            tx_bytes_with_signatures: tx_bytes_with_signatures.to_vec(),
         });
 
         Ok(())
@@ -313,7 +313,7 @@ fn test_import_tx_serialization_with_one_signer() {
     let signers: Vec<Vec<key::secp256k1::private_key::Key>> = vec![keys1];
     ab!(tx.sign(signers)).expect("failed to sign");
     let tx_metadata = tx.base_tx.metadata.clone().unwrap();
-    let tx_bytes_with_signatures = tx_metadata.bytes;
+    let tx_bytes_with_signatures = tx_metadata.tx_bytes_with_signatures;
     assert_eq!(
         tx.tx_id().to_string(),
         "ZzEtfXr19a76z9UwV4fBDeDvSpzsNb7KkA3nNUGqX8X8BJsML"

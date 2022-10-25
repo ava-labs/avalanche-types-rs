@@ -1,49 +1,13 @@
 use std::io::{self, Error, ErrorKind};
 
-use ring::digest::{digest, SHA256};
-use ripemd::{Digest, Ripemd160};
-use sha3::Keccak256;
-
-/// Converts public key bytes to the short address bytes (20-byte).
-/// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
-pub fn hash_sha256_ripemd160<S>(pub_key_bytes: S) -> io::Result<Vec<u8>>
-where
-    S: AsRef<[u8]>,
-{
-    let digest_sha256 = digest(&SHA256, pub_key_bytes.as_ref());
-
-    // "hashing.PubkeyBytesToAddress"
-    // acquire hash digest in the form of GenericArray,
-    // which in this case is equivalent to [u8; 20]
-    // already in "type ShortID [20]byte" format
-    let sha256_ripemd160 = Ripemd160::digest(&digest_sha256);
-
-    // "ids.ToShortID" merely enforces "ripemd160" size!
-    // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ToShortID
-    if sha256_ripemd160.len() != 20 {
-        return Err(Error::new(
-            ErrorKind::InvalidData,
-            format!(
-                "ripemd160 of sha256 must be 20-byte, got {}",
-                sha256_ripemd160.len()
-            ),
-        ));
-    }
-
-    Ok(sha256_ripemd160.to_vec())
-}
-
-pub fn keccak256(data: impl AsRef<[u8]>) -> primitive_types::H256 {
-    primitive_types::H256::from_slice(&Keccak256::digest(data.as_ref()))
-}
+use crate::hash;
 
 /// ref. https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
 pub fn eth_checksum(addr: &str) -> String {
     let addr_lower_case = addr
         .trim_start_matches(super::private_key::HEX_ENCODE_PREFIX)
         .to_lowercase();
-    let digest_h256 = keccak256(&addr_lower_case.as_bytes());
+    let digest_h256 = hash::keccak256(&addr_lower_case.as_bytes());
 
     // this also works...
     //

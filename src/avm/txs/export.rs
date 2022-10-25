@@ -13,7 +13,7 @@ pub struct Tx {
     /// as long as "avax.BaseTx.Metadata" is "None".
     /// Once Metadata is updated with signing and "Tx.Initialize",
     /// Tx.ID() is non-empty.
-    pub unsigned_tx: txs::Tx,
+    pub base_tx: txs::Tx,
     pub destination_chain_id: ids::Id,
     pub destination_chain_transferable_outputs: Option<Vec<txs::transferable::Output>>,
     pub fx_creds: Vec<fx::Credential>,
@@ -28,16 +28,16 @@ impl Default for Tx {
 impl Tx {
     pub fn default() -> Self {
         Self {
-            unsigned_tx: txs::Tx::default(),
+            base_tx: txs::Tx::default(),
             destination_chain_id: ids::Id::default(),
             destination_chain_transferable_outputs: None,
             fx_creds: Vec::new(),
         }
     }
 
-    pub fn new(unsigned_tx: txs::Tx) -> Self {
+    pub fn new(base_tx: txs::Tx) -> Self {
         Self {
-            unsigned_tx,
+            base_tx,
             ..Self::default()
         }
     }
@@ -54,8 +54,8 @@ impl Tx {
     /// Only non-empty if the embedded metadata is updated
     /// with the signing process.
     pub fn tx_id(&self) -> ids::Id {
-        if self.unsigned_tx.metadata.is_some() {
-            let m = self.unsigned_tx.metadata.clone().unwrap();
+        if self.base_tx.metadata.is_some() {
+            let m = self.base_tx.metadata.clone().unwrap();
             m.id
         } else {
             ids::Id::default()
@@ -71,7 +71,7 @@ impl Tx {
     ) -> io::Result<()> {
         // marshal "unsigned tx" with the codec version
         let type_id = Self::type_id();
-        let packer = self.unsigned_tx.pack(codec::VERSION, type_id)?;
+        let packer = self.base_tx.pack(codec::VERSION, type_id)?;
 
         // "avalanchego" marshals the whole struct again for signed bytes
         // even when the underlying "unsigned_tx" is already once marshaled
@@ -80,8 +80,8 @@ impl Tx {
         // reuse the underlying packer to avoid marshaling the unsigned tx twice
         // just marshal the next fields in the struct and pack them all together
         // in the existing packer
-        let unsigned_tx_bytes = packer.take_bytes();
-        packer.set_bytes(&unsigned_tx_bytes);
+        let b = packer.take_bytes();
+        packer.set_bytes(&b);
 
         // pack the second field in the struct
         packer.pack_bytes(self.destination_chain_id.as_ref())?;
@@ -199,14 +199,14 @@ impl Tx {
         }
 
         // take bytes just for hashing computation
-        let unsigned_tx_bytes = packer.take_bytes();
-        packer.set_bytes(&unsigned_tx_bytes);
+        let tx_bytes_with_no_signature = packer.take_bytes();
+        packer.set_bytes(&tx_bytes_with_no_signature);
 
         // compute sha256 for marshaled "unsigned tx" bytes
         // IMPORTANT: take the hash only for the type "avm.ExportTx" unsigned tx
         // not other fields -- only hash "avm.ExportTx.*" but not "avm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#ExportTx
-        let hash: Vec<u8> = digest(&SHA256, &unsigned_tx_bytes).as_ref().into();
+        let tx_bytes_hash: Vec<u8> = digest(&SHA256, &tx_bytes_with_no_signature).as_ref().into();
 
         // number of of credentials
         let fx_creds_len = signers.len() as u32;
@@ -219,7 +219,7 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&hash).await?;
+                let sig = k.sign_digest(&tx_bytes_hash).await?;
                 sigs.push(Vec::from(sig));
             }
 
@@ -250,10 +250,10 @@ impl Tx {
         // update "BaseTx.Metadata" with id/unsigned bytes/bytes
         // ref. "avalanchego/vms/avm.Tx.SignSECP256K1Fx"
         // ref. "avalanchego/vms/components/avax.BaseTx.Metadata.Initialize"
-        self.unsigned_tx.metadata = Some(txs::Metadata {
+        self.base_tx.metadata = Some(txs::Metadata {
             id: ids::Id::from_slice(&tx_id),
-            unsigned_bytes: unsigned_tx_bytes.to_vec(),
-            bytes: tx_bytes_with_signatures.to_vec(),
+            tx_bytes_with_no_signature: tx_bytes_with_no_signature.to_vec(),
+            tx_bytes_with_signatures: tx_bytes_with_signatures.to_vec(),
         });
 
         Ok(())
@@ -271,7 +271,7 @@ fn test_export_tx_serialization_with_two_signers() {
     }
 
     let mut tx = Tx {
-        unsigned_tx: txs::Tx {
+        base_tx: txs::Tx {
             network_id: 2,
             blockchain_id: ids::Id::from_slice(&<Vec<u8>>::from([
                 0xff, 0xff, 0xff, 0xff, 0xee, 0xee, 0xee, 0xee, //
@@ -322,8 +322,8 @@ fn test_export_tx_serialization_with_two_signers() {
     let keys2: Vec<key::secp256k1::private_key::Key> = vec![test_key.clone(), test_key.clone()];
     let signers: Vec<Vec<key::secp256k1::private_key::Key>> = vec![keys1, keys2];
     ab!(tx.sign(signers)).expect("failed to sign");
-    let tx_metadata = tx.unsigned_tx.metadata.clone().unwrap();
-    let tx_bytes_with_signatures = tx_metadata.bytes;
+    let tx_metadata = tx.base_tx.metadata.clone().unwrap();
+    let tx_bytes_with_signatures = tx_metadata.tx_bytes_with_signatures;
     assert_eq!(
         tx.tx_id().to_string(),
         "2oG52e7Cb7XF1yUzv3pRFndAypgbpswWRcSAKD5SH5VgaiTm5D"

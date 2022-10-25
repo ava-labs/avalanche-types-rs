@@ -25,7 +25,8 @@ where
     where
         S: Serializer,
     {
-        serializer.serialize_str(&hex::encode_upper(x))
+        let s = hex::encode_upper(x);
+        serializer.serialize_str(&format!("0x{}", s))
     }
 }
 

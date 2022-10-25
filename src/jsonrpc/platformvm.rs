@@ -1,7 +1,7 @@
 use std::io::{self, Error, ErrorKind};
 
 use crate::{
-    formatting::serde::hex_0x_utxo::HexUtxo,
+    codec::serde::hex_0x_utxo::HexUtxo,
     ids::{self, node},
     jsonrpc, platformvm, txs,
 };

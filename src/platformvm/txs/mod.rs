@@ -9,8 +9,7 @@ pub mod status;
 use std::cmp::Ordering;
 
 use crate::{
-    codec,
-    formatting::serde::hex_0x_bytes::HexBytes,
+    codec::{self, serde::hex_0x_bytes::HexBytes},
     ids::{self, node},
     key,
     txs::transferable,

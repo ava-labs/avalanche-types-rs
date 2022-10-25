@@ -1,6 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{choices, formatting::serde::hex_0x_utxo::HexUtxo, ids, jsonrpc, txs};
+use crate::{choices, codec::serde::hex_0x_utxo::HexUtxo, ids, jsonrpc, txs};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 

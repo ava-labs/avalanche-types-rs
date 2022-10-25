@@ -1,6 +1,4 @@
-use std::io::{self, Error, ErrorKind};
-
-use crate::formatting::serde::hex_0x_bytes::HexBytes;
+use crate::codec::serde::hex_0x_bytes::HexBytes;
 use num_bigint::BigInt;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -12,7 +10,7 @@ pub struct BlockNumberResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub result: BigInt,
 }
 
@@ -46,7 +44,7 @@ pub struct GasPriceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub result: BigInt,
 }
 
@@ -81,7 +79,7 @@ pub struct GetBalanceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub result: BigInt,
 }
 
@@ -138,8 +136,8 @@ pub struct GetTransactionCountResponse {
     pub id: u32,
 
     /// The number of transactions send from this address.
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
-    pub result: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_u64")]
+    pub result: u64,
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_transaction_count --exact --show-output
@@ -160,7 +158,7 @@ fn test_get_transaction_count() {
     let expected = GetTransactionCountResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
-        result: big_num_manager::from_hex_to_big_int("0x1").unwrap(),
+        result: 1_u64,
     };
     assert_eq!(resp, expected);
 }
@@ -185,7 +183,7 @@ pub struct GetTransactionReceiptResult {
     pub from: String,
     pub to: String,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub block_number: BigInt,
     #[serde_as(as = "HexBytes")]
     pub block_hash: Vec<u8>,
@@ -195,17 +193,17 @@ pub struct GetTransactionReceiptResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contract_address: Option<Vec<u8>>,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub cumulative_gas_used: BigInt,
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub gas_used: BigInt,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub transaction_index: BigInt,
     #[serde_as(as = "HexBytes")]
     pub transaction_hash: Vec<u8>,
 
-    #[serde(with = "crate::formatting::serde::hex_0x_big_int")]
+    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
     pub status: BigInt,
 }
 
@@ -264,66 +262,6 @@ fn test_get_transaction_receipt() {
         }),
     };
     assert_eq!(resp, expected);
-}
-
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
-#[derive(Debug, Eq, PartialEq, Clone)]
-pub struct SendRawTransactionParam {
-    /// Transfer fund sender address.
-    pub sender: primitive_types::H160,
-    /// Transfer fund receiver address.
-    pub receiver: primitive_types::H160,
-
-    /// Transfer amount.
-    pub amount: primitive_types::U256,
-
-    /// Gas.
-    /// "Max priority fee (GWEI)" in Metamask maps to "GasTipCap".
-    /// "Max fee(GWEI)" in Metamask maps to "GasPrice".
-    pub gas: primitive_types::U256,
-    /// Gas price.
-    /// "Max priority fee (GWEI)" in Metamask maps to "GasTipCap".
-    /// "Max fee(GWEI)" in Metamask maps to "GasPrice".
-    pub gas_price: primitive_types::U256,
-
-    /// Integer of a nonce. This overwrites its own pending transactions
-    /// that use the same nonce.
-    pub nonce: Option<primitive_types::U256>,
-
-    /// The compiled code of a contract OR the hash of the invoked
-    /// method signature and encoded parameters.
-    pub data: Option<Vec<u8>>,
-}
-
-impl Default for SendRawTransactionParam {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
-impl SendRawTransactionParam {
-    pub fn default() -> Self {
-        Self {
-            sender: primitive_types::H160::from(&[0_u8; 20]),
-            receiver: primitive_types::H160::from(&[0_u8; 20]),
-
-            amount: primitive_types::U256::zero(),
-
-            gas: primitive_types::U256::zero(),
-            gas_price: primitive_types::U256::zero(),
-
-            nonce: None,
-
-            data: None,
-        }
-    }
-
-    pub fn encode_rlp(&self) -> io::Result<Vec<u8>> {
-        // TODO: use rlp to encode
-        Err(Error::new(ErrorKind::Other, "not implemented"))
-    }
 }
 
 /// Response for "eth_sendRawTransaction".

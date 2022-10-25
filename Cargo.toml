@@ -3,7 +3,7 @@ name = "avalanche-types"
 
 # "avalanche-sdk" version must be consistent with this version
 # e.g., "0.0.x" in "avalanche-types" maps to "0.x.y" in "avalanche-sdk" 
-version = "0.0.93" # https://crates.io/crates/avalanche-types
+version = "0.0.95" # https://crates.io/crates/avalanche-types
 
 edition = "2021"
 rust-version = "1.64"
@@ -38,11 +38,14 @@ serde_yaml = "0.9.14" # https://github.com/dtolnay/serde-yaml/releases
 thiserror = "1.0.37"
 zerocopy = "0.6.1"
 
+# for "jsonrpc"
+rlp = "0.5.2"
+
 # for "secp256k1" and "address"
 ecdsa = { version = "0.14.8", optional = false }
 hmac = { version = "0.12.1", optional = false }
 k256 = { version = "0.11.6", features = ["ecdsa", "keccak256"], optional = false }
-primitive-types = { version = "0.12.0", optional = false } # https://crates.io/crates/primitive-types
+primitive-types = { version = "0.12.0", features = ["impl-rlp"], optional = false } # https://crates.io/crates/primitive-types
 rand = { version = "0.8.5", optional = false }
 ripemd = { version = "0.1.3", optional = false }
 sha2 = { version = "0.10.6", optional = false }

@@ -11,7 +11,7 @@ use lazy_static::lazy_static;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
 
-use crate::{formatting, ids::short, key::secp256k1::address};
+use crate::{formatting, hash, ids::short};
 
 #[cfg(feature = "cert")]
 use crate::key::cert;
@@ -78,7 +78,7 @@ impl Id {
     where
         S: AsRef<[u8]>,
     {
-        let short_address = address::hash_sha256_ripemd160(cert_bytes)?;
+        let short_address = hash::sha256_ripemd160(cert_bytes)?;
         let node_id = Self::from_slice(&short_address);
         Ok(node_id)
     }

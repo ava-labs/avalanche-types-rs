@@ -6,7 +6,7 @@ pub fn serialize<S>(x: &BigInt, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(&big_num_manager::big_int_to_lower_hex(x))
+    serializer.serialize_str(&format!("0x{}", big_num_manager::big_int_to_lower_hex(x)))
 }
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<BigInt, D::Error>
@@ -25,7 +25,7 @@ impl SerializeAs<BigInt> for HexBigInt {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&big_num_manager::big_int_to_lower_hex(x))
+        serializer.serialize_str(&format!("0x{}", big_num_manager::big_int_to_lower_hex(x)))
     }
 }
 
