@@ -1,5 +1,5 @@
 pub mod avm;
-pub mod eth;
+pub mod evm;
 pub mod health;
 pub mod info;
 pub mod platformvm;

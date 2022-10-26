@@ -3,7 +3,6 @@ pub mod choices;
 pub mod codec;
 pub mod constants;
 pub mod errors;
-pub mod eth;
 pub mod formatting;
 pub mod hash;
 pub mod ids;
@@ -25,6 +24,9 @@ pub mod coreth;
 
 #[cfg(feature = "subnet_evm")]
 pub mod subnet_evm;
+
+#[cfg(feature = "evm")]
+pub mod evm;
 
 #[cfg(feature = "jsonrpc")]
 pub mod jsonrpc;
