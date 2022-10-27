@@ -21,7 +21,7 @@ pub const UNCOMPRESSED_LEN: usize = 65;
 
 /// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Key(k256::PublicKey);
+pub struct Key(pub k256::PublicKey);
 
 impl Key {
     /// Decodes compressed or uncompressed public key bytes with Elliptic-Curve-Point-to-Octet-String

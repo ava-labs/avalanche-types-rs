@@ -2,9 +2,11 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_with::{formats, DeserializeAs, SerializeAs};
 
 /// ref. "serde_with::hex::Hex"
-pub struct HexBytes<FORMAT: formats::Format = formats::Lowercase>(std::marker::PhantomData<FORMAT>);
+pub struct Hex0xBytes<FORMAT: formats::Format = formats::Lowercase>(
+    std::marker::PhantomData<FORMAT>,
+);
 
-impl<T> SerializeAs<T> for HexBytes<formats::Lowercase>
+impl<T> SerializeAs<T> for Hex0xBytes<formats::Lowercase>
 where
     T: AsRef<[u8]>,
 {
@@ -17,7 +19,7 @@ where
     }
 }
 
-impl<T> SerializeAs<T> for HexBytes<formats::Uppercase>
+impl<T> SerializeAs<T> for Hex0xBytes<formats::Uppercase>
 where
     T: AsRef<[u8]>,
 {
@@ -30,7 +32,7 @@ where
     }
 }
 
-impl<'de, T, FORMAT> DeserializeAs<'de, T> for HexBytes<FORMAT>
+impl<'de, T, FORMAT> DeserializeAs<'de, T> for Hex0xBytes<FORMAT>
 where
     T: TryFrom<Vec<u8>>,
     FORMAT: formats::Format,
@@ -55,7 +57,7 @@ where
     }
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- formatting::serde::hex::test_custom_de_serializer --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- codec::serde::hex_0x_bytes::test_custom_de_serializer --exact --show-output
 #[test]
 fn test_custom_de_serializer() {
     use serde::Serialize;
@@ -63,13 +65,13 @@ fn test_custom_de_serializer() {
 
     #[serde_as]
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-    struct Credential {
-        #[serde_as(as = "Vec<HexBytes>")]
-        signatures: Vec<Vec<u8>>,
+    struct Data {
+        #[serde_as(as = "Vec<Hex0xBytes>")]
+        data: Vec<Vec<u8>>,
     }
 
-    let d = Credential {
-        signatures: vec![vec![123]],
+    let d = Data {
+        data: vec![vec![123], vec![123]],
     };
 
     let yaml_encoded = serde_yaml::to_string(&d).unwrap();
@@ -82,11 +84,11 @@ fn test_custom_de_serializer() {
     let json_decoded = serde_json::from_str(&json_encoded).unwrap();
     assert_eq!(d, json_decoded);
 
-    let json_decoded_2: Credential = serde_json::from_str(
+    let json_decoded_2: Data = serde_json::from_str(
         "
 
 {
-\"signatures\":[\"0x7b\"]
+\"data\":[\"0x7b\", \"0x7b\"]
 }
 
 ",

@@ -5,7 +5,7 @@ pub mod utxo;
 use std::io::{self, Error, ErrorKind};
 
 use super::{
-    codec::{self, serde::hex_0x_bytes::HexBytes},
+    codec::{self, serde::hex_0x_bytes::Hex0xBytes},
     formatting, ids, key, packer, platformvm,
 };
 use ring::digest::{digest, SHA256};
@@ -29,7 +29,7 @@ pub struct Tx {
     #[serde(rename = "inputs")]
     pub transferable_inputs: Option<Vec<transferable::Input>>,
 
-    #[serde_as(as = "Option<HexBytes>")]
+    #[serde_as(as = "Option<Hex0xBytes>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub memo: Option<Vec<u8>>,
 }

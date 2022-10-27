@@ -1,7 +1,7 @@
 use std::io::{self, Error, ErrorKind};
 
 use crate::{
-    codec::serde::hex_0x_utxo::HexUtxo,
+    codec::serde::hex_0x_utxo::Hex0xUtxo,
     ids::{self, node},
     jsonrpc, platformvm, txs,
 };
@@ -473,7 +473,7 @@ pub struct GetUtxosResult {
     #[serde_as(as = "DisplayFromStr")]
     pub num_fetched: u32,
 
-    #[serde_as(as = "Option<Vec<HexUtxo>>")]
+    #[serde_as(as = "Option<Vec<Hex0xUtxo>>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub utxos: Option<Vec<txs::utxo::Utxo>>,
 

@@ -5,7 +5,6 @@ use std::{
     path::Path,
 };
 
-use num_bigint::BigInt;
 use serde::{Deserialize, Serialize};
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#Genesis
@@ -18,18 +17,18 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<ChainConfig>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub nonce: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub timestamp: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub nonce: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub timestamp: primitive_types::U256,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra_data: Option<String>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub gas_limit: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub difficulty: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub gas_limit: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub difficulty: primitive_types::U256,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mix_hash: Option<String>,
@@ -41,10 +40,10 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alloc: Option<BTreeMap<String, AllocAccount>>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub number: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub gas_used: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub number: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub gas_used: primitive_types::U256,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_hash: Option<String>,
@@ -78,21 +77,20 @@ impl Genesis {
         );
         Self {
             config: Some(ChainConfig::default()),
-            nonce: BigInt::default(),
-            timestamp: BigInt::default(),
+            nonce: primitive_types::U256::zero(),
+            timestamp: primitive_types::U256::zero(),
             extra_data: Some(String::from("0x00")),
 
-            gas_limit: big_num_manager::from_hex_to_big_int("0x5f5e100")
-                .expect("failed to parse big_int"),
+            gas_limit: primitive_types::U256::from_str_radix("0x5f5e100", 16).unwrap(),
 
-            difficulty: BigInt::default(),
+            difficulty: primitive_types::U256::zero(),
             mix_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),
             coinbase: Some(String::from("0x0000000000000000000000000000000000000000")),
             alloc: Some(alloc),
-            number: BigInt::default(),
-            gas_used: BigInt::default(),
+            number: primitive_types::U256::zero(),
+            gas_used: primitive_types::U256::zero(),
             parent_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),
@@ -236,8 +234,8 @@ pub struct AllocAccount {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<BTreeMap<String, String>>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub balance: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub balance: primitive_types::U256,
 
     /// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisMultiCoinBalance
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -257,8 +255,7 @@ impl AllocAccount {
         Self {
             code: None,
             storage: None,
-            balance: big_num_manager::from_hex_to_big_int(DEFAULT_INITIAL_AMOUNT)
-                .expect("failed to parse big_int"),
+            balance: primitive_types::U256::from_str_radix(DEFAULT_INITIAL_AMOUNT, 16).unwrap(),
             mcbalance: None,
             nonce: None,
         }

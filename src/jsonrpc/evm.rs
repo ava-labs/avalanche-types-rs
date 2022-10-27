@@ -1,5 +1,4 @@
-use crate::codec::serde::hex_0x_bytes::HexBytes;
-use num_bigint::BigInt;
+use crate::codec::serde::hex_0x_bytes::Hex0xBytes;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -10,11 +9,11 @@ pub struct BlockNumberResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub result: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub result: primitive_types::U256,
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_block_number --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_block_number --exact --show-output
 #[test]
 fn test_block_number() {
     let resp: BlockNumberResponse = serde_json::from_str(
@@ -32,7 +31,41 @@ fn test_block_number() {
     let expected = BlockNumberResponse {
         jsonrpc: "2.0".to_string(),
         id: 83,
-        result: big_num_manager::from_hex_to_big_int("0x4b7").unwrap(),
+        result: primitive_types::U256::from_str_radix("0x4b7", 16).unwrap(),
+    };
+    assert_eq!(resp, expected);
+}
+
+/// Response for "eth_chainId".
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct ChainIdResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub result: primitive_types::U256,
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_chain_id --exact --show-output
+#[test]
+fn test_chain_id() {
+    let resp: ChainIdResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": \"0x4b7\",
+    \"id\": 83
+}
+
+",
+    )
+    .unwrap();
+    let expected = ChainIdResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 83,
+        result: primitive_types::U256::from_str_radix("0x4b7", 16).unwrap(),
     };
     assert_eq!(resp, expected);
 }
@@ -44,11 +77,11 @@ pub struct GasPriceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub result: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub result: primitive_types::U256,
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_gas_price --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_gas_price --exact --show-output
 #[test]
 fn test_gas_price() {
     let resp: GasPriceResponse = serde_json::from_str(
@@ -66,7 +99,7 @@ fn test_gas_price() {
     let expected = GasPriceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
-        result: big_num_manager::from_hex_to_big_int("0x1dfd14000").unwrap(),
+        result: primitive_types::U256::from_str_radix("0x1dfd14000", 16).unwrap(),
     };
     assert_eq!(resp, expected);
 }
@@ -79,12 +112,11 @@ pub struct GetBalanceResponse {
     pub jsonrpc: String,
     pub id: u32,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub result: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub result: primitive_types::U256,
 }
 
-/// Response for "eth_getBalance".
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_balance --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_get_balance --exact --show-output
 #[test]
 fn test_get_balance() {
     // ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
@@ -103,7 +135,7 @@ fn test_get_balance() {
     let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
-        result: big_num_manager::from_hex_to_big_int("0x1388").unwrap(),
+        result: primitive_types::U256::from_str_radix("0x1388", 16).unwrap(),
     };
     assert_eq!(resp, expected);
 
@@ -122,7 +154,7 @@ fn test_get_balance() {
     let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
-        result: big_num_manager::from_hex_to_big_int("0x0234c8a3397aab58").unwrap(),
+        result: primitive_types::U256::from_str_radix("0x0234c8a3397aab58", 16).unwrap(),
     };
     assert_eq!(resp, expected);
 }
@@ -136,11 +168,11 @@ pub struct GetTransactionCountResponse {
     pub id: u32,
 
     /// The number of transactions send from this address.
-    #[serde(with = "crate::codec::serde::hex_0x_u64")]
-    pub result: u64,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub result: primitive_types::U256,
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_transaction_count --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_get_transaction_count --exact --show-output
 #[test]
 fn test_get_transaction_count() {
     let resp: GetTransactionCountResponse = serde_json::from_str(
@@ -158,7 +190,7 @@ fn test_get_transaction_count() {
     let expected = GetTransactionCountResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
-        result: 1_u64,
+        result: primitive_types::U256::from_str_radix("0x1", 16).unwrap(),
     };
     assert_eq!(resp, expected);
 }
@@ -183,31 +215,31 @@ pub struct GetTransactionReceiptResult {
     pub from: String,
     pub to: String,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub block_number: BigInt,
-    #[serde_as(as = "HexBytes")]
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub block_number: primitive_types::U256,
+    #[serde_as(as = "Hex0xBytes")]
     pub block_hash: Vec<u8>,
 
     /// Null, if none was created.
-    #[serde_as(as = "Option<HexBytes>")]
+    #[serde_as(as = "Option<Hex0xBytes>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contract_address: Option<Vec<u8>>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub cumulative_gas_used: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub gas_used: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub cumulative_gas_used: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub gas_used: primitive_types::U256,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub transaction_index: BigInt,
-    #[serde_as(as = "HexBytes")]
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub transaction_index: primitive_types::U256,
+    #[serde_as(as = "Hex0xBytes")]
     pub transaction_hash: Vec<u8>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub status: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub status: primitive_types::U256,
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::eth::test_get_transaction_receipt --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_get_transaction_receipt --exact --show-output
 #[test]
 fn test_get_transaction_receipt() {
     let resp: GetTransactionReceiptResponse = serde_json::from_str(
@@ -241,7 +273,7 @@ fn test_get_transaction_receipt() {
             from: String::from("0x7eb4c9d6b763324eea4852f5d40985bbf0f29832"),
             to: String::from("0x3c42649799074b438889b80312ea9f62bc798aa8"),
 
-            block_number: big_num_manager::from_hex_to_big_int("0xb").unwrap(),
+            block_number: primitive_types::U256::from_str_radix("0xb", 16).unwrap(),
             block_hash: vec![
                 198, 239, 47, 197, 66, 109, 106, 214, 253, 158, 42, 38, 171, 234, 176, 170, 36, 17,
                 183, 171, 23, 243, 10, 153, 211, 203, 150, 174, 209, 209, 5, 91,
@@ -249,16 +281,16 @@ fn test_get_transaction_receipt() {
 
             contract_address: None,
 
-            cumulative_gas_used: big_num_manager::from_hex_to_big_int("0x33bc").unwrap(),
-            gas_used: big_num_manager::from_hex_to_big_int("0x4dc").unwrap(),
+            cumulative_gas_used: primitive_types::U256::from_str_radix("0x33bc", 16).unwrap(),
+            gas_used: primitive_types::U256::from_str_radix("0x4dc", 16).unwrap(),
 
-            transaction_index: big_num_manager::from_hex_to_big_int("0x1").unwrap(),
+            transaction_index: primitive_types::U256::from_str_radix("0x1", 16).unwrap(),
             transaction_hash: vec![
                 185, 3, 35, 159, 133, 67, 208, 75, 93, 193, 186, 101, 121, 19, 43, 20, 48, 135,
                 198, 141, 177, 178, 22, 135, 134, 64, 143, 203, 206, 86, 130, 56,
             ],
 
-            status: big_num_manager::from_hex_to_big_int("0x1").unwrap(),
+            status: primitive_types::U256::from_str_radix("0x1", 16).unwrap(),
         }),
     };
     assert_eq!(resp, expected);

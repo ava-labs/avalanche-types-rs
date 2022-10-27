@@ -3,7 +3,7 @@ name = "avalanche-types"
 
 # "avalanche-sdk" version must be consistent with this version
 # e.g., "0.0.x" in "avalanche-types" maps to "0.x.y" in "avalanche-sdk" 
-version = "0.0.96" # https://crates.io/crates/avalanche-types
+version = "0.0.101" # https://crates.io/crates/avalanche-types
 
 edition = "2021"
 rust-version = "1.64"
@@ -17,7 +17,6 @@ readme = "README.md"
 [dependencies]
 async-trait = "0.1.58" # for "key::secp256k1" sign trait
 bech32 = "0.9.1"
-big-num-manager = "0.0.2"
 bs58 = "0.4.0" # for "formatting", https://crates.io/crates/bs58
 bytes = "1.2.1"
 chrono = "0.4.22"
@@ -26,7 +25,6 @@ futures = "0.3.25"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 log = "0.4.17"
-num-bigint = "0.4.3"
 prefix-manager = "0.0.2"
 ring = "0.16.20"
 rust-embed = "6.4.2"
@@ -50,18 +48,19 @@ primitive-types = { version = "0.12.0", features = ["impl-rlp", "impl-serde"], o
 rand = { version = "0.8.5", optional = false }
 ripemd = { version = "0.1.3", optional = false }
 sha2 = { version = "0.10.6", optional = false }
-sha3 = { version = "0.10.5", optional = false }
+sha3 = { version = "0.10.6", optional = false }
 
 # for "secp256k1" and "address"
+# TODO: remove this once "evm" txs are working
 ethers-core = { version = "1.0.0", optional = true }
 
 # [OPTIONAL] for "libsecp256k1"
 secp256k1 = { version = "0.24.1", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "aws_kms"
-aws-manager = { version = "0.19.8", optional = true } # https://github.com/gyuho/aws-manager/tags
-aws-sdk-kms = { version = "0.19.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
-aws-smithy-types = { version = "0.49.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
+aws-manager = { version = "0.21.0", optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-sdk-kms = { version = "0.21.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
+aws-smithy-types = { version = "0.51.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
@@ -92,6 +91,9 @@ tonic-health = { version = "0.7.1", optional = true }
 tonic-reflection = { version = "0.5.0", optional = true }
 tower-service = "0.3.2"
 
+# [OPTIONAL] for "num_bigint"
+num-bigint = { version = "0.4.3", optional = true }
+
 [dev-dependencies]
 env_logger = "0.9.1"
 id-manager = "0.0.1"
@@ -115,18 +117,20 @@ default = [
     # "avalanchego",
     # "aws_kms",
     # "libsecp256k1",
+    # "num_bigint",
     # "subnet_evm",
 ]
 
 avalanchego = []
 aws_kms = ["aws-manager", "aws-sdk-kms", "aws-smithy-types"]
 cert = ["rcgen", "rsa", "rustls"]
-evm = ["rlp", "rlp-derive"]
 ethers_core = ["ethers-core"]
+evm = ["rlp", "rlp-derive"]
 jsonrpc = []
 libsecp256k1 = ["secp256k1"]
 message_compress_gzip = ["flate2"]
 mnemonic = ["bip32", "rand_core"]
+num_bigint = ["num-bigint"]
 rpcchainvm = ["avalanche-proto", "http", "jsonrpc-core", "num-derive", "num-traits", "prost", "semver", "tokio", "tokio-stream", "tonic", "tonic-health", "tonic-reflection"]
 subnet_evm = []
 

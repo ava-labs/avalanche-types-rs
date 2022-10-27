@@ -6,8 +6,6 @@ use std::{
 };
 
 use crate::key;
-use log::info;
-use num_bigint::{BigInt, ToBigInt};
 use serde::{Deserialize, Serialize};
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#Genesis
@@ -18,10 +16,10 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<ChainConfig>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub nonce: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub timestamp: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub nonce: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub timestamp: primitive_types::U256,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra_data: Option<String>,
@@ -30,10 +28,10 @@ pub struct Genesis {
     /// ref. https://github.com/ava-labs/subnet-evm/pull/63
     ///
     /// Use https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert.
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub gas_limit: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub difficulty: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub gas_limit: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub difficulty: primitive_types::U256,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mix_hash: Option<String>,
@@ -53,10 +51,10 @@ pub struct Genesis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub airdrop_amount: Option<String>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub number: BigInt,
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub gas_used: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub number: primitive_types::U256,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub gas_used: primitive_types::U256,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_hash: Option<String>,
     #[serde(rename = "baseFeePerGas", skip_serializing_if = "Option::is_none")]
@@ -88,17 +86,16 @@ impl Genesis {
         Self {
             config: Some(ChainConfig::default()),
 
-            nonce: BigInt::default(),
-            timestamp: BigInt::default(),
+            nonce: primitive_types::U256::default(),
+            timestamp: primitive_types::U256::default(),
             extra_data: Some(String::from("0x00")),
 
             // 8-million, same as C-chain
             // ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
             // ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-            gas_limit: big_num_manager::from_hex_to_big_int("0x7A1200")
-                .expect("failed from_hex_to_big_int"),
+            gas_limit: primitive_types::U256::from_str_radix("0x7A1200", 16).unwrap(),
 
-            difficulty: BigInt::default(),
+            difficulty: primitive_types::U256::default(),
             mix_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),
@@ -109,8 +106,8 @@ impl Genesis {
             airdrop_hash: None,
             airdrop_amount: None,
 
-            number: BigInt::default(),
-            gas_used: BigInt::default(),
+            number: primitive_types::U256::default(),
+            gas_used: primitive_types::U256::default(),
             parent_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),
@@ -132,7 +129,7 @@ impl Genesis {
         let alloc_per_key = alloc_per_key / 2;
 
         let mut default_alloc = AllocAccount::default();
-        default_alloc.balance = ToBigInt::to_bigint(&alloc_per_key).unwrap();
+        default_alloc.balance = primitive_types::U256::from(alloc_per_key);
 
         let mut allocs = BTreeMap::new();
         for k in seed_keys.iter() {
@@ -172,7 +169,7 @@ impl Genesis {
     /// Saves the current anchor node to disk
     /// and overwrites the file.
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
-        info!("syncing Genesis to '{}'", file_path);
+        log::info!("syncing Genesis to '{}'", file_path);
         let path = Path::new(file_path);
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
@@ -487,8 +484,8 @@ pub struct AllocAccount {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<BTreeMap<String, String>>,
 
-    #[serde(with = "crate::codec::serde::hex_0x_big_int")]
-    pub balance: BigInt,
+    #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
+    pub balance: primitive_types::U256,
 
     /// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisMultiCoinBalance
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -508,8 +505,7 @@ impl AllocAccount {
         Self {
             code: None,
             storage: None,
-            balance: big_num_manager::from_hex_to_big_int(DEFAULT_INITIAL_AMOUNT)
-                .expect("failed to parse initial amount"),
+            balance: primitive_types::U256::from_str_radix(DEFAULT_INITIAL_AMOUNT, 16).unwrap(),
             mcbalance: None,
             nonce: None,
         }
@@ -573,5 +569,5 @@ fn test_parse() {
 
     let d = Genesis::default();
     let d = d.encode_json().unwrap();
-    info!("{}", d);
+    log::info!("{}", d);
 }

@@ -18,9 +18,9 @@ where
     crate::txs::utxo::Utxo::from_hex(&s).map_err(serde::de::Error::custom)
 }
 
-pub struct HexUtxo(crate::txs::utxo::Utxo);
+pub struct Hex0xUtxo(crate::txs::utxo::Utxo);
 
-impl SerializeAs<crate::txs::utxo::Utxo> for HexUtxo {
+impl SerializeAs<crate::txs::utxo::Utxo> for Hex0xUtxo {
     fn serialize_as<S>(x: &crate::txs::utxo::Utxo, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -31,7 +31,7 @@ impl SerializeAs<crate::txs::utxo::Utxo> for HexUtxo {
     }
 }
 
-impl<'de> DeserializeAs<'de, crate::txs::utxo::Utxo> for HexUtxo {
+impl<'de> DeserializeAs<'de, crate::txs::utxo::Utxo> for Hex0xUtxo {
     fn deserialize_as<D>(deserializer: D) -> Result<crate::txs::utxo::Utxo, D::Error>
     where
         D: Deserializer<'de>,

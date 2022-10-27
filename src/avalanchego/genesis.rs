@@ -8,7 +8,6 @@ use std::{
 };
 
 use crate::{constants, coreth::genesis as coreth_genesis, key};
-use num_bigint::ToBigInt;
 use serde::{Deserialize, Serialize};
 
 /// Represents Avalanche network genesis configuration.
@@ -144,7 +143,7 @@ impl Genesis {
 
         // allocation for C-chain
         let mut default_c_alloc = coreth_genesis::AllocAccount::default();
-        default_c_alloc.balance = ToBigInt::to_bigint(&c_alloc_per_key).unwrap();
+        default_c_alloc.balance = primitive_types::U256::from(c_alloc_per_key);
 
         // "initial_staked_funds" addresses use all P-chain balance
         // so keep the remaining balance for other keys than "last" key
@@ -393,7 +392,6 @@ impl Staker {
 
 #[test]
 fn test_genesis() {
-    use num_bigint::BigInt;
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
@@ -417,8 +415,7 @@ fn test_genesis() {
         coreth_genesis::AllocAccount {
             code: None,
             storage: None,
-            balance: big_num_manager::from_hex_to_big_int("0x295BE96E64066972000000")
-                .expect("failed to parse initial amount"),
+            balance: primitive_types::U256::from_str_radix("0x295BE96E64066972000000", 16).unwrap(),
             mcbalance: None,
             nonce: None,
         },
@@ -541,20 +538,19 @@ fn test_genesis() {
                 apricot_phase4_block_timestamp: None,
                 apricot_phase5_block_timestamp: None,
             }),
-            nonce: BigInt::default(),
-            timestamp: BigInt::default(),
+            nonce: primitive_types::U256::zero(),
+            timestamp: primitive_types::U256::zero(),
             extra_data: Some(String::from("0x00")),
-            gas_limit: big_num_manager::from_hex_to_big_int("0x5f5e100")
-                .expect("failed to parse big_int"),
-            difficulty: BigInt::default(),
+            gas_limit: primitive_types::U256::from_str_radix("0x5f5e100", 16).unwrap(),
+            difficulty: primitive_types::U256::zero(),
             mix_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),
             coinbase: Some(String::from("0x0000000000000000000000000000000000000000")),
             alloc: Some(alloc),
 
-            number: BigInt::default(),
-            gas_used: BigInt::default(),
+            number: primitive_types::U256::zero(),
+            gas_used: primitive_types::U256::zero(),
             parent_hash: Some(String::from(
                 "0x0000000000000000000000000000000000000000000000000000000000000000",
             )),

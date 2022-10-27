@@ -1,6 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{choices, codec::serde::hex_0x_utxo::HexUtxo, ids, jsonrpc, txs};
+use crate::{choices, codec::serde::hex_0x_utxo::Hex0xUtxo, ids, jsonrpc, txs};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -287,7 +287,7 @@ pub struct GetUtxosResult {
     #[serde_as(as = "DisplayFromStr")]
     pub num_fetched: u32,
 
-    #[serde_as(as = "Option<Vec<HexUtxo>>")]
+    #[serde_as(as = "Option<Vec<Hex0xUtxo>>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub utxos: Option<Vec<txs::utxo::Utxo>>,
 
