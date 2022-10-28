@@ -6,6 +6,7 @@ pub mod errors;
 pub mod formatting;
 pub mod hash;
 pub mod ids;
+pub mod jsonrpc;
 pub mod key;
 pub mod message;
 pub mod node;
@@ -25,11 +26,11 @@ pub mod coreth;
 #[cfg(feature = "subnet_evm")]
 pub mod subnet_evm;
 
+#[cfg(feature = "client")]
+pub mod client;
+
 #[cfg(feature = "evm")]
 pub mod evm;
-
-#[cfg(feature = "jsonrpc")]
-pub mod jsonrpc;
 
 #[cfg(feature = "rpcchainvm")]
 pub mod rpcchainvm;

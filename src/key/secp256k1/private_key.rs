@@ -12,13 +12,11 @@ use crate::{
     },
 };
 use async_trait::async_trait;
+use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 use k256::ecdsa::signature::hazmat::PrehashSigner;
 use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, thread_rng};
 use ring::rand::{SecureRandom, SystemRandom};
-
-#[cfg(feature = "ethers_core")]
-use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 
 /// The size (in bytes) of a secret key.
 /// ref. "secp256k1::constants::SECRET_KEY_SIZE"
@@ -180,7 +178,6 @@ impl Key {
         Ok(sig.into())
     }
 
-    #[cfg(feature = "ethers_core")]
     pub fn to_ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
         let b = self.to_bytes();
         EthersSigningKey::from_bytes(&b).map_err(|e| {
@@ -227,7 +224,6 @@ impl key::secp256k1::SignOnly for Key {
         Ok(sig.to_bytes())
     }
 
-    #[cfg(feature = "ethers_core")]
     fn ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
         self.to_ethers_signing_key()
     }

@@ -56,7 +56,6 @@ pub trait SignOnly {
     async fn sign_digest(&self, digest: &[u8]) -> io::Result<[u8; 65]>;
 
     /// Returns the ethers signing key.
-    #[cfg(feature = "ethers_core")]
     fn ethers_signing_key(&self) -> io::Result<ethers_core::k256::ecdsa::SigningKey>;
 }
 

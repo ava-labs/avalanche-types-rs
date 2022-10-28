@@ -4,8 +4,6 @@ use crate::key;
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
-
-#[cfg(feature = "ethers_core")]
 use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
@@ -105,7 +103,6 @@ impl key::secp256k1::SignOnly for PrivateKey {
         Ok(sig.to_bytes())
     }
 
-    #[cfg(feature = "ethers_core")]
     fn ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
         Err(Error::new(ErrorKind::Other, "not implemented"))
     }

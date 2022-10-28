@@ -4,6 +4,12 @@ use crate::{hash, key};
 use primitive_types::{H160, U256};
 use rlp::RlpStream;
 
+/// NOT WORKING...
+/// TODO: fix signature...
+///
+/// NOTE: The default coreth and subnet-evm will fail this transaction with
+/// "only replay-protected (EIP-155) transactions allowed over RPC".
+///
 /// Represents a legacy Ethereum transaction.
 /// ref. https://ethereum.org/en/developers/docs/transactions
 /// ref. "ethers-core::types::transaction::TransactionRequest"
@@ -35,9 +41,10 @@ pub struct Tx {
     /// cost up to 5 * "gas_price".
     pub gas_limit: Option<U256>,
     /// Transfer fund receiver address.
-    pub to: H160,
+    /// None means contract creation.
+    pub to: Option<H160>,
     /// Transfer amount value.
-    pub value: U256,
+    pub value: Option<U256>,
     /// Binary data payload.
     /// This can be compiled code of a contract OR the hash of the invoked
     /// method signature and encoded parameters.
@@ -58,8 +65,8 @@ impl Tx {
             signer_nonce: None,
             gas_price: None,
             gas_limit: None,
-            to: H160::from(&[0_u8; 20]),
-            value: U256::zero(),
+            to: None,
+            value: None,
             data: None,
 
             chain_id: U256::zero(),
@@ -86,13 +93,13 @@ impl Tx {
 
     #[must_use]
     pub fn to<T: Into<H160>>(mut self, to: T) -> Self {
-        self.to = to.into();
+        self.to = Some(to.into());
         self
     }
 
     #[must_use]
     pub fn value<T: Into<U256>>(mut self, value: T) -> Self {
-        self.value = value.into();
+        self.value = Some(value.into());
         self
     }
 
@@ -109,19 +116,19 @@ impl Tx {
     }
 
     /// RLP-encodes the base fields.
+    /// ref. "ethers-core::types::transaction::TransactionRequest::rlp"
+    /// ref. https://github.com/onbjerg/ethers-flashbots/issues/11
     fn rlp_base(&self, rlp: &mut RlpStream) {
         super::rlp_opt(rlp, &self.signer_nonce); // #1
         super::rlp_opt(rlp, &self.gas_price); // #2
         super::rlp_opt(rlp, &self.gas_limit); // #3
-        rlp.append(&self.to); // #4
-        rlp.append(&self.value); // #5
+        super::rlp_opt(rlp, &self.to); // #4
+        super::rlp_opt(rlp, &self.value); // #5
         super::rlp_opt(rlp, &self.data); // #6
     }
 
-    pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
-        &self,
-        signer: T,
-    ) -> io::Result<Vec<u8>> {
+    /// ref. "ethers-core::types::transaction::TransactionRequest::rlp"
+    fn rlp_with_no_signature(&self) -> Vec<u8> {
         let mut rlp = RlpStream::new();
         rlp.begin_list(9);
         self.rlp_base(&mut rlp);
@@ -129,26 +136,21 @@ impl Tx {
         // #7 ~ #9
         // first encode transaction nine fields: ..., chain_id, 0, 0
         // ref. "ethers-core::types::transaction::TransactionRequest::rlp"
+        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
         rlp.append(&self.chain_id);
         rlp.append(&0u8);
         rlp.append(&0u8);
 
-        // produce an RLP-encoded serialized message and Keccak-256 hash it
-        // ref. "ethers-core::types::transaction::TransactionRequest::rlp_signed"
-        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
-        let tx_bytes_hash = hash::keccak256(rlp.out().freeze().as_ref());
+        rlp.out().freeze().into()
+    }
 
-        // compute the ECDSA signature with private key
-        // ref. "ethers-core::types::Signature::try_from(bytes: &'a [u8])"
-        let sig = key::secp256k1::signature::Sig::from_bytes(
-            &signer.sign_digest(tx_bytes_hash.as_ref()).await?,
-        )?;
-
-        // three components of an ECDSA signature of the originating key, append the signature
-        // ref. "ethers-middleware::signer::SignerMiddleware::sign_transaction"
-        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
-        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
-        // ref. "ethers-signers::wallet::Wallet::sign_hash"
+    /// appends three components of an ECDSA signature of the originating key
+    /// ref. "ethers-core::types::transaction::TransactionRequest::rlp_signed"
+    /// ref. "ethers-middleware::signer::SignerMiddleware::sign_transaction"
+    /// ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+    /// ref. "ethers-core::types::transaction::TransactionRequest::sighash"
+    /// ref. "ethers-signers::wallet::Wallet::sign_hash"
+    fn rlp_with_signature(&self, sig: key::secp256k1::signature::Sig) -> Vec<u8> {
         let mut rlp = RlpStream::new();
         rlp.begin_list(9);
         self.rlp_base(&mut rlp);
@@ -157,6 +159,23 @@ impl Tx {
         rlp.append(&sig.r());
         rlp.append(&sig.s());
 
-        Ok(rlp.out().freeze().into())
+        rlp.out().freeze().into()
+    }
+
+    pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
+        &self,
+        signer: T,
+    ) -> io::Result<Vec<u8>> {
+        // produce an RLP-encoded serialized message and Keccak-256 hash it
+        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
+        let tx_bytes_hash = hash::keccak256(&self.rlp_with_no_signature());
+
+        // compute the ECDSA signature with private key
+        // ref. "ethers-core::types::Signature::try_from(bytes: &'a [u8])"
+        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+        let sighash = signer.sign_digest(tx_bytes_hash.as_ref()).await?;
+        let sig = key::secp256k1::signature::Sig::from_bytes(&sighash)?;
+
+        Ok(self.rlp_with_signature(sig))
     }
 }

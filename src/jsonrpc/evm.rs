@@ -1,4 +1,4 @@
-use crate::codec::serde::hex_0x_bytes::Hex0xBytes;
+use crate::codec::serde::{hex_0x_bytes::Hex0xBytes, hex_0x_primitive_types_h256::Hex0xH256};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -300,12 +300,43 @@ fn test_get_transaction_receipt() {
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
 /// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct SendRawTransactionResponse {
     pub jsonrpc: String,
     pub id: u32,
 
     /// Transaction hash.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<String>,
+    #[serde_as(as = "Option<Hex0xH256>")]
+    pub result: Option<primitive_types::H256>,
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::evm::test_send_raw_transaction --exact --show-output
+#[test]
+fn test_send_raw_transaction() {
+    use std::str::FromStr;
+
+    let resp: SendRawTransactionResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": \"0xe16906ec1c7049438bd642023ab15f8633e032940994e6940fff4ec0a2819eb6\",
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+    let expected = SendRawTransactionResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(
+            primitive_types::H256::from_str(
+                "e16906ec1c7049438bd642023ab15f8633e032940994e6940fff4ec0a2819eb6",
+            )
+            .unwrap(),
+        ),
+    };
+    assert_eq!(resp, expected);
 }

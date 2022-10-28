@@ -6,10 +6,8 @@ use crate::{
     key::{self, secp256k1::address},
 };
 use async_trait::async_trait;
-use secp256k1 as libsecp256k1;
-
-#[cfg(feature = "ethers_core")]
 use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
+use secp256k1 as libsecp256k1;
 
 /// Represents "libsecp256k1::SecretKey" to implement key traits.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,7 +93,6 @@ impl PrivateKey {
         key::secp256k1::signature::Sig::from_bytes(&sig)
     }
 
-    #[cfg(feature = "ethers_core")]
     pub fn to_ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
         let b = self.0.secret_bytes().to_vec();
         EthersSigningKey::from_bytes(&b).map_err(|e| {
