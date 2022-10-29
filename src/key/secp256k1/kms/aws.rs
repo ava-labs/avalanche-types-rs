@@ -4,7 +4,6 @@ use crate::key;
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
-use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
 /// Note that the actual private key never leaves KMS.
@@ -21,7 +20,7 @@ pub struct PrivateKey {
     pub arn: String,
 
     /// Public key.
-    pub public_key: super::public_key::Key,
+    pub public_key: key::secp256k1::public_key::Key,
 }
 
 impl PrivateKey {
@@ -44,11 +43,8 @@ impl PrivateKey {
             })?;
 
         if let Some(blob) = pubkey.public_key() {
-            let public_key = super::public_key::Key::from_public_key_der(blob.as_ref())?;
-            log::info!(
-                "created key with ETH address {}",
-                public_key.to_eth_address()
-            );
+            let public_key = key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())?;
+            log::info!("created key with ETH address {}", public_key.eth_address());
 
             return Ok(Self {
                 kms_manager,
@@ -61,7 +57,7 @@ impl PrivateKey {
         return Err(Error::new(ErrorKind::Other, "public key blob not found"));
     }
 
-    pub async fn sign_digest(&self, digest: &[u8]) -> io::Result<super::signature::Sig> {
+    pub async fn sign_digest(&self, digest: &[u8]) -> io::Result<key::secp256k1::signature::Sig> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
 
@@ -84,7 +80,7 @@ impl PrivateKey {
             })?;
 
         // converts to recoverable signature of 65-byte
-        super::signature::Sig::from_der(&raw, digest, &self.public_key.into())
+        key::secp256k1::signature::Sig::from_der(&raw, digest, &self.public_key.into())
     }
 
     /// Schedules to delete the KMS CMK, with 7-day grace period.
@@ -98,12 +94,12 @@ impl PrivateKey {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for PrivateKey {
+    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+        Err(Error::new(ErrorKind::Other, "not implemented"))
+    }
+
     async fn sign_digest(&self, msg: &[u8]) -> io::Result<[u8; 65]> {
         let sig = self.sign_digest(msg).await?;
         Ok(sig.to_bytes())
-    }
-
-    fn ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
-        Err(Error::new(ErrorKind::Other, "not implemented"))
     }
 }

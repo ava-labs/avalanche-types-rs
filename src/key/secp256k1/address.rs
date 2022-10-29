@@ -79,9 +79,9 @@ fn test_avax_address_to_short_bytes() {
     let pubkey = pk.to_public_key();
     let short_addr = pubkey.to_short_bytes().unwrap();
 
-    let x_avax_addr = pubkey.to_avax_address(1, "X").unwrap();
-    let p_avax_addr = pubkey.to_avax_address(1, "P").unwrap();
-    let c_avax_addr = pubkey.to_avax_address(1, "C").unwrap();
+    let x_avax_addr = pubkey.hrp_address(1, "X").unwrap();
+    let p_avax_addr = pubkey.hrp_address(1, "P").unwrap();
+    let c_avax_addr = pubkey.hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
     log::info!("AVAX C address: {}", c_avax_addr);

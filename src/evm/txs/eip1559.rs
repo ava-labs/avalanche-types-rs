@@ -29,6 +29,7 @@ use rlp::RlpStream;
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Tx {
     pub chain_id: U256,
+
     /// Sequence number originated from this account to prevent message replay attack
     /// ref. https://eips.ethereum.org/EIPS/eip-155
     ///
@@ -166,48 +167,10 @@ impl Tx {
     /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp"
     fn rlp_with_no_signature(&self) -> Vec<u8> {
         let mut rlp = RlpStream::new();
-        rlp.begin_unbounded_list();
-
+        rlp.begin_list(9);
         self.rlp_base(&mut rlp);
 
-        rlp.finalize_unbounded_list();
-
-        let mut encoded = vec![];
-        encoded.extend_from_slice(&[0x0]); // EIP-1559 (0x02), coreth dynamic fee tx (0x00)
-        encoded.extend_from_slice(rlp.out().freeze().as_ref());
-        encoded
-    }
-
-    /// appends three components of an ECDSA signature of the originating key
-    /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp_signed"
-    /// ref. "ethers-middleware::signer::SignerMiddleware::sign_transaction"
-    /// ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
-    /// ref. "ethers-core::types::transaction::TransactionRequest::sighash"
-    /// ref. "ethers-signers::wallet::Wallet::sign_hash"
-    fn rlp_with_signature(&self, sig: key::secp256k1::signature::Sig) -> Vec<u8> {
-        let mut rlp = RlpStream::new();
-        rlp.begin_unbounded_list();
-
-        self.rlp_base(&mut rlp);
-
-        // ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp_signed"
-        let v = normalize_v(sig.v(), self.chain_id);
-        log::info!("normalize_v {}", v);
-
-        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
-        let v = to_eip155_v(v - 27, self.chain_id);
-        log::info!("to_eip155_v {}", v);
-
-        rlp.append(&v);
-        rlp.append(&sig.r());
-        rlp.append(&sig.s());
-
-        rlp.finalize_unbounded_list();
-
-        let mut encoded = vec![];
-        encoded.extend_from_slice(&[0x2]);
-        encoded.extend_from_slice(rlp.out().freeze().as_ref());
-        encoded
+        rlp.out().freeze().into()
     }
 
     pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
@@ -224,7 +187,42 @@ impl Tx {
         let sighash = signer.sign_digest(tx_bytes_hash.as_ref()).await?;
         let sig = key::secp256k1::signature::Sig::from_bytes(&sighash)?;
 
-        Ok(self.rlp_with_signature(sig))
+        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+        // ref. "ethers-signers::wallet::Wallet::sign_hash"
+        let v = sig.v() + 27;
+
+        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+        let v = to_eip155_v(v - 27, self.chain_id);
+
+        Ok(self.rlp_with_signature(sig, v))
+    }
+
+    /// appends three components of an ECDSA signature of the originating key
+    /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp_signed"
+    /// ref. "ethers-middleware::signer::SignerMiddleware::sign_transaction"
+    /// ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+    /// ref. "ethers-core::types::transaction::TransactionRequest::sighash"
+    /// ref. "ethers-signers::wallet::Wallet::sign_hash"
+    fn rlp_with_signature(&self, sig: key::secp256k1::signature::Sig, sig_v: u64) -> Vec<u8> {
+        let mut rlp = RlpStream::new();
+        rlp.begin_unbounded_list();
+        self.rlp_base(&mut rlp);
+
+        // ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp_signed"
+        let v = normalize_v(sig_v, self.chain_id);
+        rlp.append(&v);
+        rlp.append(&sig.r());
+        rlp.append(&sig.s());
+
+        rlp.finalize_unbounded_list();
+
+        // EIP-1559 (0x02), coreth dynamic fee tx (0x00)
+        // ref. "ethers-core::types::transaction::response::Transaction::rlp"
+        // ref. "ethers-core::types::transaction::eip2718::TypedTransaction::rlp_signed"
+        let mut encoded = vec![];
+        encoded.extend_from_slice(&[0x2]);
+        encoded.extend_from_slice(rlp.out().freeze().as_ref());
+        encoded
     }
 }
 

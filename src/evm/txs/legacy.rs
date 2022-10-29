@@ -144,6 +144,23 @@ impl Tx {
         rlp.out().freeze().into()
     }
 
+    pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
+        &self,
+        signer: T,
+    ) -> io::Result<Vec<u8>> {
+        // produce an RLP-encoded serialized message and Keccak-256 hash it
+        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
+        let tx_bytes_hash = hash::keccak256(&self.rlp_with_no_signature());
+
+        // compute the ECDSA signature with private key
+        // ref. "ethers-core::types::Signature::try_from(bytes: &'a [u8])"
+        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
+        let sighash = signer.sign_digest(tx_bytes_hash.as_ref()).await?;
+        let sig = key::secp256k1::signature::Sig::from_bytes(&sighash)?;
+
+        Ok(self.rlp_with_signature(sig))
+    }
+
     /// appends three components of an ECDSA signature of the originating key
     /// ref. "ethers-core::types::transaction::TransactionRequest::rlp_signed"
     /// ref. "ethers-middleware::signer::SignerMiddleware::sign_transaction"
@@ -160,22 +177,5 @@ impl Tx {
         rlp.append(&sig.s());
 
         rlp.out().freeze().into()
-    }
-
-    pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
-        &self,
-        signer: T,
-    ) -> io::Result<Vec<u8>> {
-        // produce an RLP-encoded serialized message and Keccak-256 hash it
-        // ref. "ethers-core::types::transaction::TransactionRequest::sighash"
-        let tx_bytes_hash = hash::keccak256(&self.rlp_with_no_signature());
-
-        // compute the ECDSA signature with private key
-        // ref. "ethers-core::types::Signature::try_from(bytes: &'a [u8])"
-        // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
-        let sighash = signer.sign_digest(tx_bytes_hash.as_ref()).await?;
-        let sig = key::secp256k1::signature::Sig::from_bytes(&sighash)?;
-
-        Ok(self.rlp_with_signature(sig))
     }
 }

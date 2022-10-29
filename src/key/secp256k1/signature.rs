@@ -12,7 +12,7 @@ pub const LEN: usize = 65;
 
 /// Represents Ethereum-style "recoverable signatures".
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Sig(k256::ecdsa::recoverable::Signature);
+pub struct Sig(pub k256::ecdsa::recoverable::Signature);
 
 impl Sig {
     /// Loads the recoverable signature from the bytes.
@@ -86,6 +86,7 @@ impl Sig {
         primitive_types::U256::from_big_endian(&b[32..64])
     }
 
+    /// Returns the recovery Id.
     pub fn v(&self) -> u64 {
         let v: u8 = self.0.recovery_id().into();
         v as u64
@@ -219,6 +220,6 @@ fn test_signature() {
     assert_eq!(sig.to_bytes().len(), crate::key::secp256k1::signature::LEN);
 
     let (recovered_pubkey, _) = sig.recover_public_key(&hashed).unwrap();
-    assert_eq!(pubkey.to_eth_address(), recovered_pubkey.to_eth_address());
+    assert_eq!(pubkey.eth_address(), recovered_pubkey.eth_address());
     assert_eq!(pubkey, recovered_pubkey);
 }

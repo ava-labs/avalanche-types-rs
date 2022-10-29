@@ -16,18 +16,18 @@ use crate::{formatting, hash, ids::short};
 #[cfg(feature = "cert")]
 use crate::key::cert;
 
-pub const ID_LEN: usize = 20;
-pub const ID_ENCODE_PREFIX: &str = "NodeID-";
+pub const LEN: usize = 20;
+pub const ENCODE_PREFIX: &str = "NodeID-";
 
 lazy_static! {
-    static ref EMPTY: Vec<u8> = vec![0; ID_LEN];
+    static ref EMPTY: Vec<u8> = vec![0; LEN];
 }
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ShortID
 /// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
 #[derive(Debug, Copy, Clone, Eq, AsBytes, FromBytes, Unaligned)]
 #[repr(transparent)]
-pub struct Id([u8; ID_LEN]);
+pub struct Id([u8; LEN]);
 
 impl Default for Id {
     fn default() -> Self {
@@ -37,11 +37,11 @@ impl Default for Id {
 
 impl Id {
     pub fn default() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn empty() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn is_empty(&self) -> bool {
@@ -53,8 +53,8 @@ impl Id {
     }
 
     pub fn from_slice(d: &[u8]) -> Self {
-        assert_eq!(d.len(), ID_LEN);
-        let d: [u8; ID_LEN] = d.try_into().unwrap();
+        assert_eq!(d.len(), LEN);
+        let d: [u8; LEN] = d.try_into().unwrap();
         Id(d)
     }
 
@@ -99,7 +99,7 @@ impl AsRef<[u8]> for Id {
 /// Use "Self.to_string()" to directly invoke this
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut node_id = String::from(ID_ENCODE_PREFIX);
+        let mut node_id = String::from(ENCODE_PREFIX);
         let short_id = formatting::encode_cb58_with_checksum_string(&self.0);
         node_id.push_str(&short_id);
         write!(f, "{}", node_id)
@@ -111,7 +111,7 @@ impl FromStr for Id {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // trim in case it's parsed from list
-        let processed = s.trim().trim_start_matches(ID_ENCODE_PREFIX);
+        let processed = s.trim().trim_start_matches(ENCODE_PREFIX);
         let decoded = formatting::decode_cb58_with_checksum(processed).map_err(|e| {
             Error::new(
                 ErrorKind::Other,

@@ -1,8 +1,10 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{client::evm as client_evm, evm, hash, key};
+use crate::{
+    client::{self, evm as client_evm},
+    evm, hash, key,
+};
 use ethers_providers::Middleware;
-use ethers_signers::Signer;
 use primitive_types::{H160, H256, U256};
 use tokio::time::{sleep, Duration, Instant};
 
@@ -14,15 +16,25 @@ pub const DEFAULT_GAS: u64 = 21000;
 /// NOTE: The default coreth and subnet-evm will fail this transaction with
 /// "only replay-protected (EIP-155) transactions allowed over RPC".
 #[derive(Clone, Debug)]
-pub struct Tx<T>
+pub struct Tx<'a, T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+    S: ethers_signers::Signer + Clone,
+    S::Error: 'static,
 {
-    pub inner: crate::client::wallet::evm::Evm<T>,
+    pub inner: client::wallet::evm::Evm<'a, T, S>,
 
+    /// Sequence number originated from this account to prevent message replay attack
+    /// ref. https://eips.ethereum.org/EIPS/eip-155
     pub signer_nonce: Option<U256>,
+
+    /// "gas_price" is what the originator is willing to pay for the gas.
+    /// "gas_price" is measured in wei per gas unit.
     pub gas_price: Option<U256>,
+    /// "gas_limit" is the maximum amount of gas that the originator is willing
+    /// to buy for this transaction (e.g., fuel tank capacity).
     pub gas_limit: Option<U256>,
+
     pub to: Option<H160>,
     pub value: Option<U256>,
     pub data: Option<Vec<u8>>,
@@ -41,11 +53,13 @@ where
     pub dry_mode: bool,
 }
 
-impl<T> Tx<T>
+impl<'a, T, S> Tx<'a, T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+    S: ethers_signers::Signer + Clone,
+    S::Error: 'static,
 {
-    pub fn new(ev: &crate::client::wallet::evm::Evm<T>) -> Self {
+    pub fn new(ev: &client::wallet::evm::Evm<'a, T, S>) -> Self {
         Self {
             inner: ev.clone(),
 
@@ -139,8 +153,109 @@ where
         self
     }
 
-    /// Issues the transfer transaction and returns the transaction Id.
-    pub async fn issue(&self) -> io::Result<H256> {
+    /// Issues the transaction with "ethers" and returns the transaction Id.
+    /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
+    pub async fn submit(&self) -> io::Result<H256> {
+        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        log::info!(
+            "issuing ethers transaction [chain Id {}, value {:?}, from {}, to {:?}, http rpc {}, chain RPC {}, gas_price {:?}, gas_limit {:?}]",
+            self.inner.chain_id,
+            self.value,
+            self.inner.inner.h160_address,
+            self.to,
+            picked_http_rpc.1,
+            self.inner.chain_rpc_url_path,
+            self.gas_price,
+            self.gas_limit,
+        );
+
+        let signer_nonce = if let Some(signer_nonce) = self.signer_nonce {
+            signer_nonce
+        } else {
+            self.inner.latest_nonce().await?
+        };
+        log::info!("latest signer nonce {}", signer_nonce);
+
+        let mut tx_request = ethers::prelude::TransactionRequest::new()
+            .from(ethers::prelude::H160::from(
+                self.inner.inner.h160_address.as_fixed_bytes(),
+            ))
+            .chain_id(ethers::prelude::U64::from(self.inner.chain_id.as_u64()))
+            .nonce(ethers::prelude::U256::from(signer_nonce.as_u128()));
+
+        if let Some(to) = &self.to {
+            tx_request = tx_request.to(ethers::prelude::H160::from(to.as_fixed_bytes()));
+        }
+        if let Some(value) = &self.value {
+            tx_request = tx_request.value(ethers::prelude::U256::from(value.as_u128()));
+        }
+        if let Some(gas_price) = &self.gas_price {
+            tx_request = tx_request.gas_price(ethers::prelude::U256::from(gas_price.as_u128()));
+        }
+        if let Some(gas_limit) = &self.gas_limit {
+            tx_request = tx_request.gas(ethers::prelude::U256::from(gas_limit.as_u128()));
+        }
+        if let Some(data) = &self.data {
+            tx_request = tx_request.data(data.clone());
+        }
+
+        // ref. "ethers-middleware::signer::SignerMiddleware"
+        // ref. "ethers-signers::LocalWallet"
+        // ref. "ethers-signers::wallet::Wallet"
+        let signer = ethers::prelude::SignerMiddleware::new(
+            self.inner.providers[picked_http_rpc.0].clone(),
+            self.inner
+                .eth_signer
+                .clone()
+                .with_chain_id(self.inner.chain_id.as_u64()),
+        );
+
+        let pending_tx = signer
+            .send_transaction(tx_request, None)
+            .await
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::Other,
+                    format!("failed to send_transaction '{}'", e),
+                )
+            })?;
+
+        let tx_receipt = pending_tx.await.map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed to wait for pending tx '{}'", e),
+            )
+        })?;
+        if tx_receipt.is_none() {
+            return Err(Error::new(ErrorKind::Other, "tx dropped from mempool"));
+        }
+        let tx_receipt = tx_receipt.unwrap();
+        let tx_hash = H256(tx_receipt.transaction_hash.0);
+
+        let tx = signer
+            .get_transaction(tx_receipt.transaction_hash)
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed get_transaction '{}'", e)))?;
+
+        // serde_json::to_string(&tx).unwrap()
+        if let Some(inner) = &tx {
+            assert_eq!(inner.hash(), tx_receipt.transaction_hash);
+            log::info!("{} successfully issued", inner.hash());
+        } else {
+            log::warn!("transaction not found in get_transaction");
+        }
+
+        if !self.check_acceptance {
+            log::debug!("skipping checking acceptance...");
+            return Ok(tx_hash);
+        }
+
+        Ok(tx_hash)
+    }
+
+    /// Issues the transaction and returns the transaction Id.
+    #[deprecated(note = "not working... TODO: fix")]
+    pub async fn submit0(&self) -> io::Result<H256> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
             "issuing transaction [chain Id {}, value {:?} AVAX, from {}, to {:?}, http rpc {}, chain RPC {}, gas price {:?}, gas limit {:?}]",
@@ -244,99 +359,6 @@ where
                 ErrorKind::Other,
                 "failed to check acceptance in time",
             ));
-        }
-
-        Ok(tx_hash)
-    }
-
-    pub async fn issue_with_ethers(&self) -> io::Result<H256> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
-        log::info!(
-            "issuing ethers transaction [chain Id {}, value {:?}, from {}, to {:?}, http rpc {}, chain RPC {}, gas_price {:?}, gas_limit {:?}]",
-            self.inner.chain_id,
-            self.value,
-            self.inner.inner.h160_address,
-            self.to,
-            picked_http_rpc.1,
-            self.inner.chain_rpc_url_path,
-            self.gas_price,
-            self.gas_limit,
-        );
-
-        let signer_nonce = if let Some(signer_nonce) = self.signer_nonce {
-            signer_nonce
-        } else {
-            self.inner.latest_nonce().await?
-        };
-        log::info!("latest signer nonce {}", signer_nonce);
-
-        let mut tx_req = ethers::prelude::TransactionRequest::new()
-            .from(ethers::prelude::H160::from(
-                self.inner.inner.h160_address.as_fixed_bytes(),
-            ))
-            .chain_id(ethers::prelude::U64::from(self.inner.chain_id.as_u64()))
-            .nonce(ethers::prelude::U256::from(signer_nonce.as_u128()));
-
-        if let Some(to) = &self.to {
-            tx_req = tx_req.to(ethers::prelude::H160::from(to.as_fixed_bytes()));
-        }
-        if let Some(value) = &self.value {
-            tx_req = tx_req.value(ethers::prelude::U256::from(value.as_u128()));
-        }
-        if let Some(gas_price) = &self.gas_price {
-            tx_req = tx_req.gas_price(ethers::prelude::U256::from(gas_price.as_u128()));
-        }
-        if let Some(gas_limit) = &self.gas_limit {
-            tx_req = tx_req.gas(ethers::prelude::U256::from(gas_limit.as_u128()));
-        }
-        if let Some(data) = &self.data {
-            tx_req = tx_req.data(data.clone());
-        }
-
-        let signer = ethers::prelude::SignerMiddleware::new(
-            self.inner.inner.c_providers[picked_http_rpc.0].clone(),
-            self.inner
-                .inner
-                .local_wallet
-                .clone()
-                .with_chain_id(self.inner.chain_id.as_u64()),
-        );
-
-        let pending_tx = signer.send_transaction(tx_req, None).await.map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to send_transaction '{}'", e),
-            )
-        })?;
-
-        let tx_receipt = pending_tx.await.map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to wait for pending tx '{}'", e),
-            )
-        })?;
-        if tx_receipt.is_none() {
-            return Err(Error::new(ErrorKind::Other, "tx dropped from mempool"));
-        }
-        let tx_receipt = tx_receipt.unwrap();
-        let tx_hash = H256(tx_receipt.transaction_hash.0);
-
-        let tx = signer
-            .get_transaction(tx_receipt.transaction_hash)
-            .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed get_transaction '{}'", e)))?;
-
-        // serde_json::to_string(&tx).unwrap()
-        if let Some(inner) = &tx {
-            assert_eq!(inner.hash(), tx_receipt.transaction_hash);
-            log::info!("{} successfully issued", inner.hash());
-        } else {
-            log::warn!("transaction not found in get_transaction");
-        }
-
-        if !self.check_acceptance {
-            log::debug!("skipping checking acceptance...");
-            return Ok(tx_hash);
         }
 
         Ok(tx_hash)

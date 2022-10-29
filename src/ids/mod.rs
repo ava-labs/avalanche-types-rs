@@ -26,17 +26,17 @@ use ring::digest::{digest, SHA256};
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
 
-pub const ID_LEN: usize = 32;
+pub const LEN: usize = 32;
 
 lazy_static! {
-    static ref EMPTY: Vec<u8> = vec![0; ID_LEN];
+    static ref EMPTY: Vec<u8> = vec![0; LEN];
 }
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ID
 /// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
 #[derive(Debug, Clone, Copy, Eq, AsBytes, FromBytes, Unaligned)]
 #[repr(transparent)]
-pub struct Id([u8; ID_LEN]);
+pub struct Id([u8; LEN]);
 
 impl Default for Id {
     fn default() -> Self {
@@ -46,11 +46,11 @@ impl Default for Id {
 
 impl Id {
     pub fn default() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn empty() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn is_empty(&self) -> bool {
@@ -72,12 +72,12 @@ impl Id {
     /// If the passed array is shorter than the ID_LEN,
     /// it fills in with zero.
     pub fn from_slice(d: &[u8]) -> Self {
-        assert!(d.len() <= ID_LEN);
+        assert!(d.len() <= LEN);
         let mut d: Vec<u8> = Vec::from(d);
-        if d.len() < ID_LEN {
-            d.resize(ID_LEN, 0);
+        if d.len() < LEN {
+            d.resize(LEN, 0);
         }
-        let d: [u8; ID_LEN] = d.try_into().unwrap();
+        let d: [u8; LEN] = d.try_into().unwrap();
         Id(d)
     }
 
@@ -517,10 +517,10 @@ fn test_sort() {
 /// Generates VM ID based on the name.
 pub fn encode_vm_name_to_id(name: &str) -> io::Result<Id> {
     let n = name.len();
-    if n > ID_LEN {
+    if n > LEN {
         return Err(Error::new(
             ErrorKind::Other,
-            format!("can't id {} bytes (>{})", n, ID_LEN),
+            format!("can't id {} bytes (>{})", n, LEN),
         ));
     }
 

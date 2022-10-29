@@ -3,7 +3,7 @@ use std::{thread, time};
 use avalanche_types::key;
 use aws_manager::{self, kms};
 
-/// cargo run --example key_secp256k1_aws_kms --features="aws_kms"
+/// cargo run --example key_secp256k1_kms_aws --features="kms_aws"
 fn main() {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
     env_logger::init_from_env(
@@ -23,7 +23,7 @@ fn main() {
     let mut key_name = id_manager::time::with_prefix("test");
     key_name.push_str("-cmk");
 
-    let pk = ab!(key::secp256k1::aws_kms::PrivateKey::create(
+    let pk = ab!(key::secp256k1::kms::aws::PrivateKey::create(
         kms_manager,
         &key_name
     ))

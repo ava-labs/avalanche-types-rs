@@ -12,7 +12,6 @@ use crate::{
     },
 };
 use async_trait::async_trait;
-use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 use k256::ecdsa::signature::hazmat::PrehashSigner;
 use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, thread_rng};
@@ -47,15 +46,6 @@ impl Key {
         Self::from_bytes(&b)
     }
 
-    /// Converts the private key to raw scalar bytes.
-    pub fn to_bytes(&self) -> [u8; LEN] {
-        let b = self.0.to_be_bytes();
-
-        let mut bb = [0u8; LEN];
-        bb.copy_from_slice(&b);
-        bb
-    }
-
     /// Loads the private key from the raw scalar bytes.
     pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
         assert_eq!(raw.len(), LEN);
@@ -66,6 +56,19 @@ impl Key {
             )
         })?;
         Ok(Self(sk))
+    }
+
+    pub fn signing_key(&self) -> k256::ecdsa::SigningKey {
+        k256::ecdsa::SigningKey::from(self.0.clone())
+    }
+
+    /// Converts the private key to raw scalar bytes.
+    pub fn to_bytes(&self) -> [u8; LEN] {
+        let b = self.0.to_be_bytes();
+
+        let mut bb = [0u8; LEN];
+        bb.copy_from_slice(&b);
+        bb
     }
 
     /// Hex-encodes the raw private key to string with "0x" prefix (e.g., Ethereum).
@@ -127,12 +130,12 @@ impl Key {
 
         let pubkey = self.to_public_key();
         let short_addr = pubkey.to_short_id()?;
-        let eth_addr = pubkey.to_eth_address();
+        let eth_addr = pubkey.eth_address();
 
         let mut addresses = HashMap::new();
-        let x_address = pubkey.to_avax_address(network_id, "X")?;
-        let p_address = pubkey.to_avax_address(network_id, "P")?;
-        let c_address = pubkey.to_avax_address(network_id, "C")?;
+        let x_address = pubkey.hrp_address(network_id, "X")?;
+        let p_address = pubkey.hrp_address(network_id, "P")?;
+        let c_address = pubkey.hrp_address(network_id, "C")?;
         addresses.insert(
             network_id,
             secp256k1::ChainAddresses {
@@ -163,29 +166,18 @@ impl Key {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
 
-        let signing_key = k256::ecdsa::SigningKey::from(self.0.clone());
-
         // NOTE
         // "k256::ecdsa::SigningKey::sign" with "k256::ecdsa::signature::Signer"
         // signs the message, not a message digest, so the message is first hashed
         // with Keccak256 in such case. Use "sign_prehash" since avalanche signs
         // the already hashed SHA256 output.
         // ref. https://github.com/RustCrypto/elliptic-curves/issues/671
-        let sig: k256::ecdsa::recoverable::Signature = signing_key
+        let sig: k256::ecdsa::recoverable::Signature = self
+            .signing_key()
             .sign_prehash(digest)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed sign_prehash '{}'", e)))?;
 
         Ok(sig.into())
-    }
-
-    pub fn to_ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
-        let b = self.to_bytes();
-        EthersSigningKey::from_bytes(&b).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to create SigningKey '{}'", e),
-            )
-        })
     }
 
     /// Derives the private key that uses libsecp256k1.
@@ -219,36 +211,35 @@ impl std::fmt::Display for Key {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for Key {
+    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+        Ok(self.signing_key())
+    }
+
     async fn sign_digest(&self, msg: &[u8]) -> io::Result<[u8; 65]> {
         let sig = self.sign_digest(msg)?;
         Ok(sig.to_bytes())
-    }
-
-    fn ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
-        self.to_ethers_signing_key()
     }
 }
 
 /// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
 impl key::secp256k1::ReadOnly for Key {
-    fn get_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.to_public_key()
-            .to_avax_address(network_id, chain_id_alias)
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+        self.to_public_key().hrp_address(network_id, chain_id_alias)
     }
 
-    fn get_short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> io::Result<short::Id> {
         self.to_public_key().to_short_id()
     }
 
-    fn get_short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
         self.to_public_key().to_short_bytes()
     }
 
-    fn get_eth_address(&self) -> String {
-        self.to_public_key().to_eth_address()
+    fn eth_address(&self) -> String {
+        self.to_public_key().eth_address()
     }
 
-    fn get_h160_address(&self) -> primitive_types::H160 {
+    fn h160_address(&self) -> primitive_types::H160 {
         self.to_public_key().to_h160()
     }
 }

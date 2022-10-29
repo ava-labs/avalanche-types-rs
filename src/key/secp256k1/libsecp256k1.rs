@@ -6,7 +6,6 @@ use crate::{
     key::{self, secp256k1::address},
 };
 use async_trait::async_trait;
-use ethers_core::k256::ecdsa::SigningKey as EthersSigningKey;
 use secp256k1 as libsecp256k1;
 
 /// Represents "libsecp256k1::SecretKey" to implement key traits.
@@ -14,15 +13,6 @@ use secp256k1 as libsecp256k1;
 pub struct PrivateKey(libsecp256k1::SecretKey);
 
 impl PrivateKey {
-    /// Converts the private key to raw bytes.
-    pub fn to_bytes(&self) -> [u8; key::secp256k1::private_key::LEN] {
-        let b = self.0.secret_bytes();
-
-        let mut bb = [0u8; key::secp256k1::private_key::LEN];
-        bb.copy_from_slice(&b);
-        bb
-    }
-
     /// Loads the private key from the raw bytes.
     pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
         assert_eq!(raw.len(), key::secp256k1::private_key::LEN);
@@ -33,6 +23,24 @@ impl PrivateKey {
             )
         })?;
         Ok(Self(sk))
+    }
+
+    pub fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+        k256::ecdsa::SigningKey::from_bytes(&self.to_bytes()).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed k256::ecdsa::SigningKey::from_bytes '{}'", e),
+            )
+        })
+    }
+
+    /// Converts the private key to raw bytes.
+    pub fn to_bytes(&self) -> [u8; key::secp256k1::private_key::LEN] {
+        let b = self.0.secret_bytes();
+
+        let mut bb = [0u8; key::secp256k1::private_key::LEN];
+        bb.copy_from_slice(&b);
+        bb
     }
 
     /// Hex-encodes the raw private key to string with "0x" prefix (e.g., Ethereum).
@@ -92,16 +100,6 @@ impl PrivateKey {
 
         key::secp256k1::signature::Sig::from_bytes(&sig)
     }
-
-    pub fn to_ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
-        let b = self.0.secret_bytes().to_vec();
-        EthersSigningKey::from_bytes(&b).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to create SigningKey '{}'", e),
-            )
-        })
-    }
 }
 
 impl From<libsecp256k1::SecretKey> for PrivateKey {
@@ -118,13 +116,13 @@ impl From<PrivateKey> for libsecp256k1::SecretKey {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for PrivateKey {
+    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+        self.signing_key()
+    }
+
     async fn sign_digest(&self, msg: &[u8]) -> io::Result<[u8; 65]> {
         let sig = self.sign_digest(msg)?;
         Ok(sig.to_bytes())
-    }
-
-    fn ethers_signing_key(&self) -> io::Result<EthersSigningKey> {
-        self.to_ethers_signing_key()
     }
 }
 
@@ -233,23 +231,23 @@ impl std::fmt::Display for PublicKey {
 
 /// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
 impl key::secp256k1::ReadOnly for PublicKey {
-    fn get_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         self.to_avax_address(network_id, chain_id_alias)
     }
 
-    fn get_short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> io::Result<short::Id> {
         self.to_short_id()
     }
 
-    fn get_short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
         self.to_short_bytes()
     }
 
-    fn get_eth_address(&self) -> String {
+    fn eth_address(&self) -> String {
         self.to_eth_address()
     }
 
-    fn get_h160_address(&self) -> primitive_types::H160 {
+    fn h160_address(&self) -> primitive_types::H160 {
         self.to_h160()
     }
 }

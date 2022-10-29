@@ -51,7 +51,7 @@ impl Packer {
     pub fn unpack_vertex(&self) -> io::Result<Vertex> {
         let codec_version = self.unpack_u16()?;
 
-        let chain_id = self.unpack_bytes(ids::ID_LEN)?;
+        let chain_id = self.unpack_bytes(ids::LEN)?;
         let chain_id = ids::Id::from_slice(chain_id.as_ref());
 
         let height = self.unpack_u64()?;
@@ -60,7 +60,7 @@ impl Packer {
         let parent_ids_size = self.unpack_u32()?;
         let mut parent_ids: Vec<ids::Id> = Vec::new();
         for _ in 0..parent_ids_size {
-            let parent_id = self.unpack_bytes(ids::ID_LEN)?;
+            let parent_id = self.unpack_bytes(ids::LEN)?;
             let parent_id = ids::Id::from_slice(parent_id.as_ref());
             parent_ids.push(parent_id);
         }

@@ -3,24 +3,34 @@ pub mod legacy;
 
 use std::io;
 
-use crate::{client::evm as client_evm, key};
+use crate::{
+    client::{self, evm as client_evm},
+    key,
+};
 
 #[derive(Clone, Debug)]
-pub struct Evm<T>
+pub struct Evm<'a, T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+    S: ethers_signers::Signer + Clone,
+    S::Error: 'static,
 {
-    pub inner: crate::client::wallet::Wallet<T>,
+    pub inner: client::wallet::Wallet<T>,
+    pub eth_signer: &'a S,
+    pub providers: Vec<ethers_providers::Provider<ethers_providers::Http>>,
+
+    pub chain_id: primitive_types::U256,
 
     /// Either "C" or subnet_evm chain Id.
     pub chain_id_alias: String,
     pub chain_rpc_url_path: String,
-    pub chain_id: primitive_types::U256,
 }
 
-impl<T> Evm<T>
+impl<'a, T, S> Evm<'a, T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+    S: ethers_signers::Signer + Clone,
+    S::Error: 'static,
 {
     /// Fetches the current balance of the wallet owner from the specified HTTP endpoint.
     pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<primitive_types::U256> {
@@ -59,12 +69,12 @@ where
     }
 
     #[must_use]
-    pub fn legacy(&self) -> legacy::Tx<T> {
+    pub fn legacy(&self) -> legacy::Tx<'a, T, S> {
         legacy::Tx::new(self)
     }
 
     #[must_use]
-    pub fn eip1559(&self) -> eip1559::Tx<T> {
+    pub fn eip1559(&self) -> eip1559::Tx<'a, T, S> {
         eip1559::Tx::new(self)
     }
 }

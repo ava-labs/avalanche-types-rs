@@ -19,7 +19,7 @@ where
     pub fn new(keys: Vec<T>) -> Self {
         let mut short_addr_to_key_index = HashMap::new();
         for (pos, k) in keys.iter().enumerate() {
-            short_addr_to_key_index.insert(k.get_short_address().unwrap(), pos as u32);
+            short_addr_to_key_index.insert(k.short_address().unwrap(), pos as u32);
         }
         Self {
             keys,

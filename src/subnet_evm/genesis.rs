@@ -133,7 +133,7 @@ impl Genesis {
 
         let mut allocs = BTreeMap::new();
         for k in seed_keys.iter() {
-            let eth_addr = k.get_eth_address();
+            let eth_addr = k.eth_address();
             allocs.insert(
                 eth_addr.trim_start_matches("0x").to_string(),
                 default_alloc.clone(),

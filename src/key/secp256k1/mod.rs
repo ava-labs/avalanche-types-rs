@@ -1,12 +1,10 @@
 pub mod address;
 pub mod keychain;
+pub mod kms;
 pub mod private_key;
 pub mod public_key;
 pub mod signature;
 pub mod txs;
-
-#[cfg(feature = "aws_kms")]
-pub mod aws_kms;
 
 #[cfg(feature = "libsecp256k1")]
 pub mod libsecp256k1;
@@ -28,35 +26,33 @@ use lazy_static::lazy_static;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 
-/// Key interface that "only" allows "read" operations.
-pub trait ReadOnly {
-    /// Implements "crypto.PublicKeySECP256K1R.Address()" and "formatting.FormatAddress".
-    /// "human readable part" (hrp) must be valid output from "constants.GetHRP(networkID)".
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
-    fn get_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String>;
-    fn get_short_address(&self) -> io::Result<short::Id>;
-    fn get_short_address_bytes(&self) -> io::Result<Vec<u8>>;
-    fn get_eth_address(&self) -> String;
-    fn get_h160_address(&self) -> primitive_types::H160;
-}
-
 /// Key interface that "only" allows "sign" operations.
 /// Trait is used here to limit access to the underlying private/secret key.
 /// or to enable secure remote key management service integration (e.g., KMS ECC_SECG_P256K1).
 #[async_trait]
 pub trait SignOnly {
+    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey>;
+
     /// Signs the 32-byte SHA256 output message with the ECDSA private key and the recoverable code.
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
-    /// TODO: Use "async" to support AWS KMS and ledger.
     /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
     /// ref. https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs
     /// ref. https://docs.rs/secp256k1/latest/secp256k1/struct.SecretKey.html#method.sign_ecdsa
     /// ref. https://docs.rs/secp256k1/latest/secp256k1/struct.Message.html
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
     async fn sign_digest(&self, digest: &[u8]) -> io::Result<[u8; 65]>;
+}
 
-    /// Returns the ethers signing key.
-    fn ethers_signing_key(&self) -> io::Result<ethers_core::k256::ecdsa::SigningKey>;
+/// Key interface that "only" allows "read" operations.
+pub trait ReadOnly {
+    /// Implements "crypto.PublicKeySECP256K1R.Address()" and "formatting.FormatAddress".
+    /// "human readable part" (hrp) must be valid output from "constants.GetHRP(networkID)".
+    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String>;
+    fn short_address(&self) -> io::Result<short::Id>;
+    fn short_address_bytes(&self) -> io::Result<Vec<u8>>;
+    fn eth_address(&self) -> String;
+    fn h160_address(&self) -> primitive_types::H160;
 }
 
 lazy_static! {
@@ -142,7 +138,7 @@ fn test_keys() {
     for k in TEST_KEYS.iter() {
         log::info!(
             "[KEY] test key eth address {:?}",
-            k.to_public_key().to_eth_address()
+            k.to_public_key().eth_address()
         );
     }
     for ki in TEST_INFOS.iter() {
@@ -277,33 +273,33 @@ fn test_keys_address() {
             let pubkey = sk.to_public_key();
 
             assert_eq!(
-                pubkey.to_avax_address(1, "X").unwrap(),
+                pubkey.hrp_address(1, "X").unwrap(),
                 ki.addresses.get(&1).unwrap().x_address
             );
             assert_eq!(
-                pubkey.to_avax_address(1, "P").unwrap(),
+                pubkey.hrp_address(1, "P").unwrap(),
                 ki.addresses.get(&1).unwrap().p_address
             );
             assert_eq!(
-                pubkey.to_avax_address(1, "C").unwrap(),
+                pubkey.hrp_address(1, "C").unwrap(),
                 ki.addresses.get(&1).unwrap().c_address
             );
 
             assert_eq!(
-                pubkey.to_avax_address(9999, "X").unwrap(),
+                pubkey.hrp_address(9999, "X").unwrap(),
                 ki.addresses.get(&9999).unwrap().x_address
             );
             assert_eq!(
-                pubkey.to_avax_address(9999, "P").unwrap(),
+                pubkey.hrp_address(9999, "P").unwrap(),
                 ki.addresses.get(&9999).unwrap().p_address
             );
             assert_eq!(
-                pubkey.to_avax_address(9999, "C").unwrap(),
+                pubkey.hrp_address(9999, "C").unwrap(),
                 ki.addresses.get(&9999).unwrap().c_address
             );
 
             assert_eq!(pubkey.to_short_id().unwrap(), ki.short_address);
-            assert_eq!(pubkey.to_eth_address(), ki.eth_address);
+            assert_eq!(pubkey.eth_address(), ki.eth_address);
         }
     }
 }

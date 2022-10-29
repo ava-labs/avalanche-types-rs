@@ -248,12 +248,12 @@ impl Utxo {
         let _codec_version = packer.unpack_u16()?;
 
         // must unpack in the order of struct
-        let tx_id_bytes = packer.unpack_bytes(ids::ID_LEN)?;
+        let tx_id_bytes = packer.unpack_bytes(ids::LEN)?;
         let tx_id = ids::Id::from_slice(&tx_id_bytes);
 
         let output_index = packer.unpack_u32()?;
 
-        let asset_id_bytes = packer.unpack_bytes(ids::ID_LEN)?;
+        let asset_id_bytes = packer.unpack_bytes(ids::LEN)?;
         let asset_id = ids::Id::from_slice(&asset_id_bytes);
 
         // "Out verify.State" is an interface
@@ -301,7 +301,7 @@ impl Utxo {
         let addr_len = packer.unpack_u32()?;
         let mut addresses: Vec<short::Id> = Vec::new();
         for _ in 0..addr_len {
-            let b = packer.unpack_bytes(short::ID_LEN)?;
+            let b = packer.unpack_bytes(short::LEN)?;
             addresses.push(short::Id::from_slice(&b));
         }
         let output_owners = key::secp256k1::txs::OutputOwners {

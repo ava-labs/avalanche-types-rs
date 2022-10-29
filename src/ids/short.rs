@@ -11,17 +11,17 @@ use lazy_static::lazy_static;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
 
-pub const ID_LEN: usize = 20;
+pub const LEN: usize = 20;
 
 lazy_static! {
-    static ref EMPTY: Vec<u8> = vec![0; ID_LEN];
+    static ref EMPTY: Vec<u8> = vec![0; LEN];
 }
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ShortID
 /// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
 #[derive(Debug, Clone, Eq, AsBytes, FromBytes, Unaligned)]
 #[repr(transparent)]
-pub struct Id([u8; ID_LEN]);
+pub struct Id([u8; LEN]);
 
 impl Default for Id {
     fn default() -> Self {
@@ -31,11 +31,11 @@ impl Default for Id {
 
 impl Id {
     pub fn default() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn empty() -> Self {
-        Id([0; ID_LEN])
+        Id([0; LEN])
     }
 
     pub fn is_empty(&self) -> bool {
@@ -43,12 +43,12 @@ impl Id {
     }
 
     pub fn from_slice(d: &[u8]) -> Self {
-        assert!(d.len() <= ID_LEN);
+        assert!(d.len() <= LEN);
         let mut d: Vec<u8> = Vec::from(d);
-        if d.len() < ID_LEN {
-            d.resize(ID_LEN, 0);
+        if d.len() < LEN {
+            d.resize(LEN, 0);
         }
-        let d: [u8; ID_LEN] = d.try_into().unwrap();
+        let d: [u8; LEN] = d.try_into().unwrap();
         Id(d)
     }
 
@@ -248,7 +248,7 @@ fn test_serialize() {
     let pk = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let pubkey = pk.to_public_key();
     let short_addr = pubkey.to_short_id().unwrap();
-    let p_addr = pubkey.to_avax_address(1, "P").unwrap();
+    let p_addr = pubkey.hrp_address(1, "P").unwrap();
 
     let d1: Data = serde_json::from_str(
         format!(

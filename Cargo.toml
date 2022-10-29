@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.107" # https://crates.io/crates/avalanche-types
+version = "0.0.109" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.64"
 publish = true
@@ -49,7 +49,7 @@ sha3 = { version = "0.10.6", optional = false }
 # [OPTIONAL] for "libsecp256k1"
 secp256k1 = { version = "0.24.1", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
-# [OPTIONAL] for "aws_kms"
+# [OPTIONAL] for "kms_aws"
 aws-manager = { version = "0.21.0", optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.21.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.51.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
@@ -69,15 +69,15 @@ rand_core = { version = "0.6.4", features = ["std"], optional = true }
 # [OPTIONAL] for "client"
 # for "secp256k1" and "address"
 # TODO: remove this once "evm" txs are working
-http-manager = { version = "0.0.3", optional = true }
 ethers = { version = "1.0.0", optional = true }
 ethers-core = { version = "1.0.0", optional = true }
 ethers-providers = { version = "1.0.0", optional = true }
 ethers-signers = { version = "1.0.0", optional = true }
+http-manager = { version = "0.0.3", optional = true }
 tokio = { version = "1.21.2", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "rpcchainvm"
-avalanche-proto = { version = "0.16.1", features = ["aliasreader", "keystore", "sharedmemory", "subnetlookup", "rpcdb", "google_protobuf"], optional = true }
+avalanche-proto = { version = "0.17.0", features = ["aliasreader", "keystore", "sharedmemory", "subnetlookup", "rpcdb", "google_protobuf"], optional = true }
 http = {version = "0.2.8", optional = true}
 hyper = "0.14.20"
 jsonrpc-core = {version = "18.0.0", optional = true }
@@ -114,17 +114,17 @@ default = [
 
     # optional features
     # "avalanchego",
-    # "aws_kms",
+    # "kms_aws",
     # "libsecp256k1",
     # "num_bigint",
     # "subnet_evm",
 ]
 
 avalanchego = []
-aws_kms = ["aws-manager", "aws-sdk-kms", "aws-smithy-types"]
 cert = ["rcgen", "rsa", "rustls"]
 client = ["http-manager", "ethers", "ethers-core", "ethers-providers", "ethers-signers", "tokio"]
 evm = ["rlp", "rlp-derive"]
+kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types"]
 libsecp256k1 = ["secp256k1"]
 message_compress_gzip = ["flate2"]
 mnemonic = ["bip32", "rand_core"]
@@ -137,8 +137,8 @@ name = "key_cert"
 required-features = ["cert"]
 
 [[example]]
-name = "key_secp256k1_aws_kms"
-required-features = ["aws_kms"]
+name = "key_secp256k1_kms_aws"
+required-features = ["kms_aws"]
 
 [[example]]
 name = "key_secp256k1_mnemonic_derive_load"

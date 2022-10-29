@@ -148,7 +148,7 @@ impl Genesis {
         // "initial_staked_funds" addresses use all P-chain balance
         // so keep the remaining balance for other keys than "last" key
         let initial_staked_funds = vec![seed_keys[seed_keys.len() - 1]
-            .get_address(network_id, "X")
+            .hrp_address(network_id, "X")
             .unwrap()];
 
         let mut xp_allocs: Vec<Allocation> = Vec::new();
@@ -157,8 +157,8 @@ impl Genesis {
         for k in seed_keys.iter() {
             // allocation for X/P-chain
             let mut xp_alloc = Allocation::default();
-            xp_alloc.eth_addr = Some(k.get_eth_address());
-            xp_alloc.avax_addr = Some(k.get_address(network_id, "X").unwrap());
+            xp_alloc.eth_addr = Some(k.eth_address());
+            xp_alloc.avax_addr = Some(k.hrp_address(network_id, "X").unwrap());
             xp_alloc.initial_amount = Some(xp_alloc_per_key);
             xp_alloc.unlock_schedule = Some(vec![LockedAmount {
                 amount: Some(xp_alloc_per_key),
@@ -167,7 +167,7 @@ impl Genesis {
             xp_allocs.push(xp_alloc);
 
             c_allocs.insert(
-                k.get_eth_address().trim_start_matches("0x").to_string(),
+                k.eth_address().trim_start_matches("0x").to_string(),
                 default_c_alloc.clone(),
             );
         }

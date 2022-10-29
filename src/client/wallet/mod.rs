@@ -5,26 +5,23 @@ pub mod x;
 pub mod evm;
 
 use std::{
-    fmt, io,
+    fmt,
+    io::{self, Error, ErrorKind},
     sync::{Arc, Mutex},
 };
 
-use std::io::{Error, ErrorKind};
-
-use super::{evm as api_evm, info as api_info, x as api_x};
 use crate::{
+    client::{evm as api_evm, info as api_info, x as api_x},
     ids::{self, short},
     key, units,
 };
-use ethers::prelude::*;
-use ethers_providers::Provider;
 
 #[derive(Debug, Clone)]
 pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone> {
     pub keychain: key::secp256k1::keychain::Keychain<T>,
 
     pub http_rpcs: Vec<String>,
-    pub http_rpc_idx: Arc<Mutex<usize>>,
+    pub http_rpc_cursor: Arc<Mutex<usize>>, // to roundrobin
 
     pub network_id: u32,
     pub network_name: String,
@@ -52,14 +49,6 @@ pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone
     pub create_subnet_tx_fee: u64,
     /// Transaction fee to create a new blockchain.
     pub create_blockchain_tx_fee: u64,
-
-    ///
-    ///
-    ///
-    /// TODO: deprecate these...
-    pub ethers_signing_key: ethers_core::k256::ecdsa::SigningKey,
-    pub local_wallet: LocalWallet,
-    pub c_providers: Vec<Provider<Http>>,
 }
 
 /// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
@@ -111,7 +100,7 @@ where
     /// Picks one endpoint in roundrobin, and updates the cursor for next calls.
     /// Returns the pair of an index and its corresponding endpoint.
     pub fn pick_http_rpc(&self) -> (usize, String) {
-        let mut idx = self.http_rpc_idx.lock().unwrap();
+        let mut idx = self.http_rpc_cursor.lock().unwrap();
 
         let picked = *idx;
         let http_rpc = self.http_rpcs[picked].clone();
@@ -138,14 +127,38 @@ where
     /// Set "chain_id_alias" to either "C" or subnet_evm chain Id.
     /// e.g., "/ext/bc/C/rpc"
     #[must_use]
-    pub fn evm(&self, chain_id_alias: String, chain_id: primitive_types::U256) -> evm::Evm<T> {
+    pub fn evm<'a, S>(
+        &self,
+        eth_signer: &'a S,
+        chain_id_alias: String,
+        chain_id: primitive_types::U256,
+    ) -> io::Result<evm::Evm<'a, T, S>>
+    where
+        S: ethers_signers::Signer + Clone,
+        S::Error: 'static,
+    {
         let chain_rpc_url_path = format!("/ext/bc/{}/rpc", chain_id_alias).to_string();
-        evm::Evm {
+        let mut providers = Vec::new();
+        for http_rpc in self.http_rpcs.iter() {
+            let provider = ethers_providers::Provider::<ethers_providers::Http>::try_from(
+                format!("{http_rpc}{chain_rpc_url_path}").as_str(),
+            )
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::Other,
+                    format!("failed to create provider '{}'", e),
+                )
+            })?;
+            providers.push(provider);
+        }
+        Ok(evm::Evm::<'a, T, S> {
             inner: self.clone(),
+            eth_signer,
+            providers,
+            chain_id,
             chain_id_alias,
             chain_rpc_url_path,
-            chain_id,
-        }
+        })
     }
 }
 
@@ -188,7 +201,7 @@ where
         log::info!("building wallet with {} endpoints", self.http_rpcs.len());
 
         let keychain = key::secp256k1::keychain::Keychain::new(vec![self.key.clone()]);
-        let h160_address = keychain.keys[0].get_h160_address();
+        let h160_address = keychain.keys[0].h160_address();
 
         let resp = api_info::get_network_id(&self.http_rpcs[0]).await?;
         let network_id = resp.result.unwrap().network_id;
@@ -232,35 +245,21 @@ where
             (100 * units::MILLI_AVAX, 100 * units::MILLI_AVAX)
         };
 
-        let ethers_signing_key = keychain.keys[0].ethers_signing_key()?;
-        let local_wallet: LocalWallet = ethers_signing_key.clone().into();
-        let mut c_providers = Vec::new();
-        for ep in self.http_rpcs.iter() {
-            let c_provider =
-                Provider::<Http>::try_from(ep.clone() + "/ext/bc/C/rpc").map_err(|e| {
-                    Error::new(
-                        ErrorKind::Other,
-                        format!("failed to create provider '{}'", e),
-                    )
-                })?;
-            c_providers.push(c_provider);
-        }
-
         let w = Wallet {
             keychain,
 
             http_rpcs: self.http_rpcs.clone(),
-            http_rpc_idx: Arc::new(Mutex::new(0)),
+            http_rpc_cursor: Arc::new(Mutex::new(0)),
 
             network_id,
             network_name,
 
             h160_address,
-            x_address: self.key.get_address(network_id, "X").unwrap(),
-            p_address: self.key.get_address(network_id, "P").unwrap(),
-            c_address: self.key.get_address(network_id, "C").unwrap(),
-            short_address: self.key.get_short_address().unwrap(),
-            eth_address: self.key.get_eth_address(),
+            x_address: self.key.hrp_address(network_id, "X").unwrap(),
+            p_address: self.key.hrp_address(network_id, "P").unwrap(),
+            c_address: self.key.hrp_address(network_id, "C").unwrap(),
+            short_address: self.key.short_address().unwrap(),
+            eth_address: self.key.eth_address(),
 
             blockchain_id_x,
             blockchain_id_p,
@@ -274,10 +273,6 @@ where
             add_primary_network_validator_fee: ADD_PRIMARY_NETWORK_VALIDATOR_FEE,
             create_subnet_tx_fee,
             create_blockchain_tx_fee,
-
-            ethers_signing_key,
-            local_wallet,
-            c_providers,
         };
         log::info!("initiated the wallet:\n{}", w);
 

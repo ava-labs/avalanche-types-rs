@@ -93,19 +93,19 @@ impl Key {
         b
     }
 
-    /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
-    pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
-        let compressed = self.to_compressed_bytes();
-        hash::sha256_ripemd160(&compressed)
-    }
-
     /// "hashing.PubkeyBytesToAddress"
     /// ref. "pk.PublicKey().Address().Bytes()"
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
     pub fn to_short_id(&self) -> io::Result<crate::ids::short::Id> {
         let compressed = self.to_compressed_bytes();
         short::Id::from_public_key_bytes(&compressed)
+    }
+
+    /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
+    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
+        let compressed = self.to_compressed_bytes();
+        hash::sha256_ripemd160(&compressed)
     }
 
     pub fn to_h160(&self) -> primitive_types::H160 {
@@ -118,14 +118,7 @@ impl Key {
         primitive_types::H160::from_slice(digest_h256)
     }
 
-    /// Encodes the public key in ETH address format.
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
-    pub fn to_eth_address(&self) -> String {
-        address::h160_to_eth_address(self.to_h160())
-    }
-
-    pub fn to_avax_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    pub fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         let hrp = match constants::NETWORK_ID_TO_HRP.get(&network_id) {
             Some(v) => v,
             None => constants::FALLBACK_HRP,
@@ -136,6 +129,13 @@ impl Key {
 
         // ref. "formatting.FormatAddress(chainIDAlias, hrp, pubBytes)"
         formatting::address(chain_id_alias, hrp, &short_address_bytes)
+    }
+
+    /// Encodes the public key in ETH address format.
+    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
+    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
+    pub fn eth_address(&self) -> String {
+        address::h160_to_eth_address(self.to_h160())
     }
 }
 
@@ -174,23 +174,23 @@ impl std::fmt::Display for Key {
 
 /// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
 impl key::secp256k1::ReadOnly for Key {
-    fn get_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.to_avax_address(network_id, chain_id_alias)
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+        self.hrp_address(network_id, chain_id_alias)
     }
 
-    fn get_short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> io::Result<short::Id> {
         self.to_short_id()
     }
 
-    fn get_short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
         self.to_short_bytes()
     }
 
-    fn get_eth_address(&self) -> String {
-        self.to_eth_address()
+    fn eth_address(&self) -> String {
+        self.eth_address()
     }
 
-    fn get_h160_address(&self) -> primitive_types::H160 {
+    fn h160_address(&self) -> primitive_types::H160 {
         self.to_h160()
     }
 }
@@ -234,11 +234,11 @@ fn test_public_key() {
     log::info!("public key: {}", pubkey1);
     log::info!("to_short_id: {}", pubkey1.to_short_id().unwrap());
     log::info!("to_h160: {}", pubkey1.to_h160());
-    log::info!("to_eth_address: {}", pubkey1.to_eth_address());
+    log::info!("eth_address: {}", pubkey1.eth_address());
 
-    let x_avax_addr = pubkey1.to_avax_address(1, "X").unwrap();
-    let p_avax_addr = pubkey1.to_avax_address(1, "P").unwrap();
-    let c_avax_addr = pubkey1.to_avax_address(1, "C").unwrap();
+    let x_avax_addr = pubkey1.hrp_address(1, "X").unwrap();
+    let p_avax_addr = pubkey1.hrp_address(1, "P").unwrap();
+    let c_avax_addr = pubkey1.hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
     log::info!("AVAX C address: {}", c_avax_addr);
