@@ -1,3 +1,5 @@
+pub mod eth_signer;
+
 use std::io::{self, Error, ErrorKind};
 
 use crate::key;
@@ -10,7 +12,7 @@ use aws_sdk_kms::model::{KeySpec, KeyUsageType};
 /// Private key signing operation must be done via AWS KMS API.
 /// ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html
 #[derive(Debug, Clone)]
-pub struct PrivateKey {
+pub struct Signer {
     /// AWS KMS API wrapper.
     pub kms_manager: kms::Manager,
 
@@ -23,7 +25,7 @@ pub struct PrivateKey {
     pub public_key: key::secp256k1::public_key::Key,
 }
 
-impl PrivateKey {
+impl Signer {
     /// Generates a private key from random bytes.
     pub async fn create(kms_manager: kms::Manager, name: &str) -> io::Result<Self> {
         let cmk = kms_manager
@@ -57,7 +59,22 @@ impl PrivateKey {
         return Err(Error::new(ErrorKind::Other, "public key blob not found"));
     }
 
-    pub async fn sign_digest(&self, digest: &[u8]) -> io::Result<key::secp256k1::signature::Sig> {
+    /// Schedules to delete the KMS CMK, with 7-day grace period.
+    pub async fn delete(&self) -> io::Result<()> {
+        self.kms_manager
+            .schedule_to_delete(&self.id)
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed schedule_to_delete {}", e)))
+    }
+
+    pub fn public_key(&self) -> key::secp256k1::public_key::Key {
+        self.public_key
+    }
+
+    pub async fn sign_digest(
+        &self,
+        digest: &[u8],
+    ) -> Result<key::secp256k1::signature::Sig, aws_manager::errors::Error> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
 
@@ -67,38 +84,27 @@ impl PrivateKey {
         let raw = self
             .kms_manager
             .secp256k1_sign_digest(&self.id, digest)
-            .await
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!(
-                        "failed secp256k1_sign_digest '{}' (retriable {})",
-                        e.message(),
-                        e.is_retryable()
-                    ),
-                )
-            })?;
+            .await?;
 
         // converts to recoverable signature of 65-byte
-        key::secp256k1::signature::Sig::from_der(&raw, digest, &self.public_key.into())
-    }
-
-    /// Schedules to delete the KMS CMK, with 7-day grace period.
-    pub async fn delete(&self) -> io::Result<()> {
-        self.kms_manager
-            .schedule_to_delete(&self.id)
-            .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed schedule_to_delete {}", e)))
+        key::secp256k1::signature::Sig::from_der(&raw, digest, &self.public_key.into()).map_err(
+            |e| aws_manager::errors::Error::Other {
+                message: format!("key::secp256k1::signature::Sig::from_der {}", e),
+                is_retryable: false,
+            },
+        )
     }
 }
 
 #[async_trait]
-impl key::secp256k1::SignOnly for PrivateKey {
+impl key::secp256k1::SignOnly for Signer {
+    type Error = aws_manager::errors::Error;
+
     fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
         Err(Error::new(ErrorKind::Other, "not implemented"))
     }
 
-    async fn sign_digest(&self, msg: &[u8]) -> io::Result<[u8; 65]> {
+    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], aws_manager::errors::Error> {
         let sig = self.sign_digest(msg).await?;
         Ok(sig.to_bytes())
     }

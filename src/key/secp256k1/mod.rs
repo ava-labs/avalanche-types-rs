@@ -31,6 +31,8 @@ use serde::{Deserialize, Serialize};
 /// or to enable secure remote key management service integration (e.g., KMS ECC_SECG_P256K1).
 #[async_trait]
 pub trait SignOnly {
+    type Error: std::error::Error;
+
     fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey>;
 
     /// Signs the 32-byte SHA256 output message with the ECDSA private key and the recoverable code.
@@ -40,7 +42,7 @@ pub trait SignOnly {
     /// ref. https://docs.rs/secp256k1/latest/secp256k1/struct.SecretKey.html#method.sign_ecdsa
     /// ref. https://docs.rs/secp256k1/latest/secp256k1/struct.Message.html
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
-    async fn sign_digest(&self, digest: &[u8]) -> io::Result<[u8; 65]>;
+    async fn sign_digest(&self, digest: &[u8]) -> Result<[u8; 65], Self::Error>;
 }
 
 /// Key interface that "only" allows "read" operations.
@@ -196,10 +198,10 @@ impl Info {
         }
 
         let f = File::open(&file_path).map_err(|e| {
-            return Error::new(
+            Error::new(
                 ErrorKind::Other,
                 format!("failed to open {} ({})", file_path, e),
-            );
+            )
         })?;
         serde_yaml::from_reader(f).map_err(|e| {
             return Error::new(ErrorKind::InvalidInput, format!("invalid YAML: {}", e));

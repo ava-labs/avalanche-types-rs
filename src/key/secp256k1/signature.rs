@@ -50,11 +50,7 @@ impl Sig {
         })?;
         let normalized_sig = sig.normalize_s().unwrap_or(sig);
 
-        let rsig = find_recoverable_signature_from_normalized_sig_and_digest_bytes(
-            &normalized_sig,
-            digest,
-            vkey,
-        )?;
+        let rsig = rsig_from_normalized_sig_and_digest_bytes(&normalized_sig, digest, vkey)?;
         return Ok(Self::from(rsig));
     }
 
@@ -136,8 +132,8 @@ fn check_recoverable_signature(
     }
 }
 
-/// ref. "gakonst/ethers-rs/ethers-signers/aws"
-fn find_recoverable_signature_from_normalized_sig_and_digest_bytes(
+/// ref. "ethers-signers::aws::util::rsig_from_digest_bytes_trial_recovery"
+pub fn rsig_from_normalized_sig_and_digest_bytes(
     normalized_sig: &k256::ecdsa::Signature,
     digest: &[u8],
     vkey: &k256::ecdsa::VerifyingKey,

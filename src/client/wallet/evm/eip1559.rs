@@ -271,7 +271,14 @@ where
 
         Ok(tx_hash)
     }
+}
 
+impl<'a, T, S> Tx<'a, T, S>
+where
+    T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+    S: ethers_signers::Signer + Clone,
+    S::Error: 'static,
+{
     /// Issues the transaction and returns the transaction Id.
     /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
     #[deprecated(note = "not working... TODO: fix")]

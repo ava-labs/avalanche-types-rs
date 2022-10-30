@@ -23,7 +23,7 @@ fn main() {
     let mut key_name = id_manager::time::with_prefix("test");
     key_name.push_str("-cmk");
 
-    let pk = ab!(key::secp256k1::kms::aws::PrivateKey::create(
+    let pk = ab!(key::secp256k1::kms::aws::Signer::create(
         kms_manager,
         &key_name
     ))

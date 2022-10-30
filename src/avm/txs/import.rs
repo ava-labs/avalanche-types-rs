@@ -215,7 +215,9 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&tx_bytes_hash).await?;
+                let sig = k.sign_digest(&tx_bytes_hash).await.map_err(|e| {
+                    Error::new(ErrorKind::Other, format!("failed sign_digest {}", e))
+                })?;
                 sigs.push(Vec::from(sig));
             }
 

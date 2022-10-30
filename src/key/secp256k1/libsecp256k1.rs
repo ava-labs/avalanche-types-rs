@@ -116,11 +116,13 @@ impl From<PrivateKey> for libsecp256k1::SecretKey {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for PrivateKey {
+    type Error = io::Error;
+
     fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
         self.signing_key()
     }
 
-    async fn sign_digest(&self, msg: &[u8]) -> io::Result<[u8; 65]> {
+    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], io::Error> {
         let sig = self.sign_digest(msg)?;
         Ok(sig.to_bytes())
     }

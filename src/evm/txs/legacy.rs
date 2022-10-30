@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Error, ErrorKind};
 
 use crate::{hash, key};
 use primitive_types::{H160, U256};
@@ -155,7 +155,11 @@ impl Tx {
         // compute the ECDSA signature with private key
         // ref. "ethers-core::types::Signature::try_from(bytes: &'a [u8])"
         // ref. "ethers-signers::wallet::Wallet::sign_transaction_sync"
-        let sighash = signer.sign_digest(tx_bytes_hash.as_ref()).await?;
+        let sighash = signer
+            .sign_digest(tx_bytes_hash.as_ref())
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed sign_digest {}", e)))?;
+
         let sig = key::secp256k1::signature::Sig::from_bytes(&sighash)?;
 
         Ok(self.rlp_with_signature(sig))

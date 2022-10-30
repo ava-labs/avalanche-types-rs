@@ -41,6 +41,17 @@ fn checksum_eip55(addr: &str, addr_hash: &str) -> String {
     chksum
 }
 
+/// ref. https://eips.ethereum.org/EIPS/eip-55
+/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
+/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
+pub fn h160_to_eth_address(h160_addr: primitive_types::H160) -> String {
+    let addr_hex = hex::encode(h160_addr);
+
+    // make EIP-55 compliant
+    let addr_eip55 = eth_checksum(&addr_hex);
+    prefix_manager::prepend_0x(&addr_eip55)
+}
+
 /// Converts "bech32::encode"d AVAX address to the short address bytes (20-byte) and HRP for network name.
 pub fn avax_address_to_short_bytes(chain_alias: &str, addr: &str) -> io::Result<(String, Vec<u8>)> {
     let trimmed = if chain_alias.is_empty() {
@@ -97,14 +108,4 @@ fn test_avax_address_to_short_bytes() {
     let (hrp, parsed_short_addr) = avax_address_to_short_bytes("C", &c_avax_addr).unwrap();
     assert_eq!(hrp, "avax");
     assert_eq!(parsed_short_addr, short_addr);
-}
-
-/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
-/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
-pub fn h160_to_eth_address(h160_addr: primitive_types::H160) -> String {
-    let addr_hex = hex::encode(h160_addr);
-
-    // make EIP-55 compliant
-    let addr_eip55 = eth_checksum(&addr_hex);
-    prefix_manager::prepend_0x(&addr_eip55)
 }
