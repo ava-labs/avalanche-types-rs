@@ -69,7 +69,7 @@ impl Id {
         id
     }
 
-    /// If the passed array is shorter than the ID_LEN,
+    /// If the passed array is shorter than the LEN,
     /// it fills in with zero.
     pub fn from_slice(d: &[u8]) -> Self {
         assert!(d.len() <= LEN);

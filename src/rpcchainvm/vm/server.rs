@@ -519,38 +519,77 @@ impl avalanche_proto::vm::vm_server::Vm for Server {
 
     async fn app_request(
         &self,
-        _req: Request<vm::AppRequestMsg>,
+        req: Request<vm::AppRequestMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("app_request called");
 
-        Err(tonic::Status::unimplemented("app_request"))
+        let req = req.into_inner();
+        let node_id = ids::node::Id::from_slice(&req.node_id);
+        let inner_vm = self.vm.read().await;
+
+        let ts = req.deadline.as_ref().expect("timestamp");
+        let deadline = Utc.timestamp(ts.seconds, ts.nanos as u32);
+
+        inner_vm
+            .app_request(&node_id, req.request_id, deadline, &req.request)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn app_request_failed(
         &self,
-        _req: Request<vm::AppRequestFailedMsg>,
+        req: Request<vm::AppRequestFailedMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("app_request_failed called");
 
-        Err(tonic::Status::unimplemented("app_request_failed"))
+        let req = req.into_inner();
+        let node_id = ids::node::Id::from_slice(&req.node_id);
+        let inner_vm = self.vm.read().await;
+
+        inner_vm
+            .app_request_failed(&node_id, req.request_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn app_response(
         &self,
-        _req: Request<vm::AppResponseMsg>,
+        req: Request<vm::AppResponseMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("app_response called");
 
-        Err(tonic::Status::unimplemented("app_response"))
+        let req = req.into_inner();
+        let node_id = ids::node::Id::from_slice(&req.node_id);
+        let inner_vm = self.vm.read().await;
+
+        inner_vm
+            .app_response(&node_id, req.request_id, &req.response)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn app_gossip(
         &self,
-        _req: Request<vm::AppGossipMsg>,
+        req: Request<vm::AppGossipMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("app_gossip called");
 
-        Err(tonic::Status::unimplemented("app_gossip"))
+        let req = req.into_inner();
+        let node_id = ids::node::Id::from_slice(&req.node_id);
+        let inner_vm = self.vm.read().await;
+
+        inner_vm
+            .app_gossip(&node_id, &req.msg)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn block_verify(
