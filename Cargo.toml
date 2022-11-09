@@ -243,5 +243,5 @@ required-features = ["subnet"]
 
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
-development = ["id-manager", "tokio-test", "tonic-reflection"]
-normal = ["rsa"]
+development = ["id-manager", "tokio-test", "tonic-reflection", "tempfile"]
+normal = ["rsa", "hyper", "rustls-pemfile"]
