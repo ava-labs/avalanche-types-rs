@@ -1,13 +1,13 @@
 [package]
 name = "avalanche-types"
-version = "0.0.115" # https://crates.io/crates/avalanche-types
+version = "0.0.135" # https://crates.io/crates/avalanche-types
 edition = "2021"
-rust-version = "1.64"
+rust-version = "1.65"
 publish = true
-description = "Avalanche types"
+description = "Avalanche primitive types in Rust"
 license = "BSD-3-Clause"
 homepage = "https://avax.network"
-repository = "https://github.com/ava-labs/avalanche-rust/tree/main/crates/avalanche-types"
+repository = "https://github.com/ava-labs/avalanche-types-rs"
 readme = "README.md"
 
 [dependencies]
@@ -17,7 +17,6 @@ bs58 = "0.4.0" # for "formatting", https://crates.io/crates/bs58
 bytes = "1.2.1"
 chrono = "0.4.22"
 cmp-manager = "0.0.1"
-futures = "0.3.25"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 log = "0.4.17"
@@ -74,27 +73,32 @@ ethers-signers = { version = "1.0.0", optional = true }
 http-manager = { version = "0.0.3", optional = true }
 tokio = { version = "1.21.2", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
-# [OPTIONAL] for "rpcchainvm"
-avalanche-proto = { version = "0.17.0", features = ["aliasreader", "keystore", "sharedmemory", "subnetlookup", "rpcdb", "google_protobuf"], optional = true }
+# [OPTIONAL] for "subnet"
+futures = { version = "0.3.25", optional = true }
 http = {version = "0.2.8", optional = true}
-hyper = "0.14.22"
+hyper = "0.14.23"
 jsonrpc-core = {version = "18.0.0", optional = true }
 jsonrpc-http-server = {version = "18.0.0", optional = true }
 num-derive = { version = "0.3.3", optional = true }
 num-traits = { version = "0.2.15", optional = true }
-prost = { version = "0.11.0", optional = true } # prost-build requires "cmake", https://github.com/tokio-rs/prost/releases
+prost = { version = "0.11.2", optional = true } # prost-build requires "cmake", https://github.com/tokio-rs/prost/releases
 semver = { version = "1.0.14", optional = true }
 tokio-stream = { version = "0.1.11", features = ["net"], optional = true }
 tonic = { version = "0.8.2", features = ["gzip"], optional = true } # https://github.com/hyperium/tonic/tags
 tonic-health = { version = "0.7.1", optional = true }
 tonic-reflection = { version = "0.5.0", optional = true }
-tower-service = "0.3.2"
+tower-service = { version = "0.3.2", optional = true }
 
-# [OPTIONAL] for "num_bigint"
+# [OPTIONAL] for "codec"
+base64 = { version = "0.13.1", optional = true }
 num-bigint = { version = "0.4.3", optional = true }
 
+[build-dependencies]
+protoc-gen-prost = "0.2.0"
+protoc-gen-tonic = "0.2.0"
+
 [dev-dependencies]
-env_logger = "0.9.1"
+env_logger = "0.9.3"
 id-manager = "0.0.1"
 random-manager = "0.0.1"
 tempfile = "3.3.0"
@@ -103,32 +107,114 @@ tokio-test = "0.4.2"
 
 [features]
 default = [
-    "cert",
-    "client",
-    "evm",
     "message_compress_gzip",
-    "mnemonic",
-    "rpcchainvm",
 
     # optional features
     # "avalanchego",
+    # "cert",
+    # "client",
+    # "codec_base64",
+    # "codec_big_int",
+    # "evm",
     # "kms_aws",
     # "libsecp256k1",
-    # "num_bigint",
+    # "mnemonic",
+    # "proto",
+    # "subnet",
     # "subnet_evm",
 ]
 
 avalanchego = []
 cert = ["rcgen", "rsa", "rustls"]
 client = ["http-manager", "ethers", "ethers-core", "ethers-providers", "ethers-signers", "tokio"]
+codec_base64 = ["base64"]
+codec_big_int = ["num-bigint"]
 evm = ["rlp", "rlp-derive"]
 kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types"]
 libsecp256k1 = ["secp256k1"]
 message_compress_gzip = ["flate2"]
 mnemonic = ["bip32", "rand_core"]
-num_bigint = ["num-bigint"]
-rpcchainvm = ["avalanche-proto", "http", "jsonrpc-core", "num-derive", "num-traits", "prost", "semver", "tokio", "tokio-stream", "tonic", "tonic-health", "tonic-reflection"]
 subnet_evm = []
+
+proto = [
+    "prost",
+    "tonic",
+
+    # TODO: remove all proto specific features
+    "aliasreader",
+    "appsender",
+    "google_protobuf",
+    "helloworld",
+    "http_proto", # TODO: remove feature for buf
+    "http_responsewriter",
+    "io_prometheus_client",
+    "io_reader",
+    "io_writer",
+    "keystore",
+    "messenger",
+    "net_conn",
+    "p2p",
+    "plugin",
+    "rpcdb",
+    "sharedmemory",
+    "subnetlookup",
+    "validatorstate",
+    "vm",
+]
+subnet = [
+    "futures",
+    "http",
+    "jsonrpc-core",
+    "num-derive",
+    "num-traits",
+    "prost",
+    "semver",
+    "tokio",
+    "tokio-stream",
+    "tonic",
+    "tonic-health",
+    "tonic-reflection",
+    "tower-service",
+
+    "proto",
+]
+
+# TODO: remove all proto specific features
+aliasreader = []
+appsender = ["google_protobuf"]
+google_protobuf = []
+helloworld = []
+http_proto = []
+http_responsewriter = ["google_protobuf"]
+io_prometheus_client = []
+io_reader = []
+io_writer = []
+keystore = []
+messenger = []
+net_conn = ["google_protobuf"]
+p2p = []
+plugin = ["google_protobuf"]
+rpcdb = ["google_protobuf"]
+sharedmemory = []
+subnetlookup = []
+validatorstate = ["google_protobuf"]
+vm = ["io_prometheus_client", "google_protobuf"]
+
+[[example]]
+name = "client_c"
+required-features = ["client", "evm"]
+
+[[example]]
+name = "client_info"
+required-features = ["client"]
+
+[[example]]
+name = "client_p"
+required-features = ["client"]
+
+[[example]]
+name = "client_x"
+required-features = ["client"]
 
 [[example]]
 name = "key_cert"
@@ -142,11 +228,20 @@ required-features = ["kms_aws"]
 name = "key_secp256k1_mnemonic_derive_load"
 required-features = ["mnemonic"]
 
+[[example]]
+name = "proto_client"
+required-features = ["proto", "subnet"]
+
+[[example]]
+name = "proto_server"
+required-features = ["proto", "subnet"]
+
 [[test]]
 name = "integration"
 path = "tests/integration_tests.rs"
-required-features = ["rpcchainvm"]
+required-features = ["subnet"]
 
 [package.metadata.cargo-udeps.ignore]
+build = ["protoc-gen-prost", "protoc-gen-tonic"]
+development = ["id-manager", "tokio-test", "tonic-reflection"]
 normal = ["rsa"]
-development = ["id-manager", "tokio-test"]

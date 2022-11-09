@@ -154,7 +154,7 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::Ge
 
 /// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIPrimaryValidator
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
 pub async fn get_primary_network_validators(
     http_rpc: &str,
 ) -> io::Result<platformvm::GetCurrentValidatorsResponse> {
@@ -180,7 +180,7 @@ pub async fn get_primary_network_validators(
 
 /// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIPrimaryValidator
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
 pub async fn get_subnet_validators(
     http_rpc: &str,
     subnet_id: &str,

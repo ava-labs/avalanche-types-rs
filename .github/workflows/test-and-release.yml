@@ -1,0 +1,96 @@
+name: Test and release
+
+# ref. https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  static_analysis:
+    name: Static analysis (lint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          components: rustfmt, clippy
+          override: true
+      - name: Check Rust version
+        run: rustc --version
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+      - name: Run static analysis tests
+        shell: bash
+        run: scripts/tests.lint.sh
+
+  check_cargo_unused:
+    name: Check Cargo unused
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          components: rustfmt, clippy
+          override: true
+      - name: Check Rust version
+        run: rustc --version
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+
+      # or use "abelfodil/protoc-action@v1"
+      # ref. https://github.com/hyperium/tonic/issues/1047#issuecomment-1222508191
+      - name: Install protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check unused Cargo dependencies
+        shell: bash
+        run: scripts/tests.unused.sh
+
+  unit_tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      # or use "abelfodil/protoc-action@v1"
+      # ref. https://github.com/hyperium/tonic/issues/1047#issuecomment-1222508191
+      - name: Install protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Rust version
+        run: rustc --version
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+      - name: Run unit tests
+        run: scripts/tests.unit.sh

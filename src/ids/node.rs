@@ -276,6 +276,7 @@ pub fn new_set(size: usize) -> Set {
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- ids::node::test_from_cert_file --exact --show-output
+#[cfg(feature = "cert")]
 #[test]
 fn test_from_cert_file() {
     let _ = env_logger::builder()

@@ -1,0 +1,26 @@
+version: v1
+plugins:
+  - name: prost
+    out: pb
+    opt:
+      - bytes=.
+      # https://docs.rs/prost-build/latest/prost_build/struct.Config.html#method.compile_well_known_types
+      - compile_well_known_types
+      # https://github.com/neoeinstein/protoc-gen-prost/blob/main/protoc-gen-prost/README.md#protoc-gen-prost
+      - file_descriptor_set
+
+  - name: tonic
+    out: pb
+    opt:
+      # https://docs.rs/prost-build/latest/prost_build/struct.Config.html#method.compile_well_known_types
+      - compile_well_known_types
+
+  - name: prost-crate
+    out: pb
+    strategy: all
+    opt:
+      - include_file=pb/mod.rs
+      - gen_crate
+      # defines the seperator used in the feature name `foo-bar` vs `foo_bar`
+      # https://docs.rs/protoc-gen-prost-crate/0.3.0/protoc_gen_prost_crate/#options
+      - package_separator=_

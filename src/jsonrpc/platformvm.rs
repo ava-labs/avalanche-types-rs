@@ -728,7 +728,7 @@ impl GetCurrentValidatorsResponse {
 }
 
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIPrimaryValidator
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct GetCurrentValidatorsResult {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -747,8 +747,8 @@ impl GetCurrentValidatorsResult {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIPrimaryValidator
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIStaker
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ApiPrimaryValidator {
@@ -851,8 +851,8 @@ impl ApiOwner {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIPrimaryValidator
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIStaker
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
+/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ApiPrimaryDelegator {

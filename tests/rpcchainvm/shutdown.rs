@@ -1,12 +1,14 @@
 use std::time::Duration;
 
-use avalanche_proto::rpcdb::database_server::DatabaseServer;
-use avalanche_types::rpcchainvm::{
-    database::{
-        memdb::Database as MemDb,
-        rpcdb::{client::DatabaseClient, server::Server as RpcDb},
+use avalanche_types::{
+    proto::pb::rpcdb::database_server::DatabaseServer,
+    subnet::rpc::{
+        database::{
+            memdb::Database as MemDb,
+            rpcdb::{client::DatabaseClient, server::Server as RpcDb},
+        },
+        utils,
     },
-    utils,
 };
 use tokio::sync::broadcast::{Receiver, Sender};
 use tonic::transport::Channel;

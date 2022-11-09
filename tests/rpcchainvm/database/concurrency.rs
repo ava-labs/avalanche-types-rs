@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use avalanche_types::rpcchainvm::database::{
+use crate::rpcchainvm::common::*;
+use avalanche_types::subnet::rpc::database::{
     memdb::Database as MemDb,
     rpcdb::{client::DatabaseClient, server::Server as RpcDb},
 };
@@ -8,7 +9,6 @@ use futures::{stream::FuturesUnordered, StreamExt};
 use tokio::net::TcpListener;
 use tonic::transport::Channel;
 
-use crate::rpcchainvm::common::*;
 #[tokio::test(flavor = "multi_thread")]
 async fn rpcdb_mutation_test() {
     let db = MemDb::new();

@@ -1,10 +1,13 @@
 #[cfg(any(test, feature = "proto"))]
 use std::io::{self, Error, ErrorKind};
 
-use avalanche_proto::{
+use avalanche_types::proto::{
     grpcutil::default_server,
-    http::http_server::{Http, HttpServer},
-    rpcdb::database_server::{Database, DatabaseServer},
+    pb::{
+        self,
+        http::http_server::{Http, HttpServer},
+        rpcdb::database_server::{Database, DatabaseServer},
+    },
 };
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
@@ -34,9 +37,9 @@ pub async fn serve_test_http_server<H: Http + 'static>(
     listener: TcpListener,
 ) -> std::io::Result<()>
 where
-    H: avalanche_proto::http::http_server::Http,
+    H: pb::http::http_server::Http,
 {
-    avalanche_proto::grpcutil::default_server()
+    default_server()
         .add_service(HttpServer::new(http))
         .serve_with_incoming(TcpListenerStream::new(listener))
         .await

@@ -2,7 +2,8 @@ mod concurrency;
 
 use std::{io::ErrorKind, time::Duration};
 
-use avalanche_types::rpcchainvm::database::{
+use crate::rpcchainvm::common::*;
+use avalanche_types::subnet::rpc::database::{
     corruptabledb::Database as CorruptableDb,
     manager::{versioned_database::VersionedDatabase, DatabaseManager},
     memdb::Database as MemDb,
@@ -11,8 +12,6 @@ use avalanche_types::rpcchainvm::database::{
 use semver::Version;
 use tokio::net::TcpListener;
 use tonic::transport::Channel;
-
-use crate::rpcchainvm::common::*;
 
 #[tokio::test]
 async fn rpcdb_mutation_test() {

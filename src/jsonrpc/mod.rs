@@ -97,6 +97,47 @@ impl RequestWithParamsArray {
     }
 }
 
+/// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct RequestWithParamsHashMapArray {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<Vec<HashMap<String, String>>>,
+}
+
+impl Default for RequestWithParamsHashMapArray {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl RequestWithParamsHashMapArray {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: String::from(DEFAULT_VERSION),
+            id: DEFAULT_ID,
+            method: String::new(),
+            params: None,
+        }
+    }
+
+    pub fn encode_json(&self) -> io::Result<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("failed to serialize to JSON {}", e),
+                ));
+            }
+        }
+    }
+}
+
 /// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
 /// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]

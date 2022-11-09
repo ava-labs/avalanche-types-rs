@@ -32,5 +32,8 @@ pub mod client;
 #[cfg(feature = "evm")]
 pub mod evm;
 
-#[cfg(feature = "rpcchainvm")]
-pub mod rpcchainvm;
+#[cfg(feature = "proto")]
+pub mod proto;
+
+#[cfg(feature = "subnet")]
+pub mod subnet;

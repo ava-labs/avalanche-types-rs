@@ -2,14 +2,13 @@ mod common;
 mod database;
 mod shutdown;
 
-use avalanche_types::rpcchainvm::http::{
+use crate::rpcchainvm::common::*;
+use avalanche_types::subnet::rpc::http::{
     client::Client as HttpClient, server::Server as HttpServer,
 };
 use jsonrpc_core::Response as JsonResp;
 use tokio::net::TcpListener;
 use tonic::transport::Endpoint;
-
-use crate::rpcchainvm::common::*;
 
 #[tokio::test]
 async fn test_http_service() {

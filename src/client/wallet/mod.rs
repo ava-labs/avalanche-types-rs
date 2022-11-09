@@ -126,6 +126,7 @@ where
 
     /// Set "chain_id_alias" to either "C" or subnet_evm chain Id.
     /// e.g., "/ext/bc/C/rpc"
+    #[cfg(feature = "evm")]
     #[must_use]
     pub fn evm<'a, S>(
         &self,

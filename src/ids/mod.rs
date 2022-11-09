@@ -61,10 +61,10 @@ impl Id {
         self.0.to_vec()
     }
 
-    /// Attempts to convert a byte slice into an id
+    /// SHA256-hashes the given byte slice into an Id.
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ToID
-    pub fn from_slice_with_sha256(bytes: &[u8]) -> Self {
-        let id: Vec<u8> = digest(&SHA256, bytes).as_ref().into();
+    pub fn sha256(d: impl AsRef<[u8]>) -> Self {
+        let id: Vec<u8> = digest(&SHA256, d.as_ref()).as_ref().into();
         let id = Id::from_slice(&id);
         id
     }
@@ -150,6 +150,12 @@ impl FromStr for Id {
     }
 }
 
+impl From<std::borrow::Cow<'static, str>> for Id {
+    fn from(v: std::borrow::Cow<'static, str>) -> Self {
+        Id::from_str(v.as_ref()).unwrap()
+    }
+}
+
 /// Custom serializer.
 /// ref. https://serde.rs/impl-serialize.html
 impl Serialize for Id {
@@ -171,6 +177,41 @@ impl<'de> Deserialize<'de> for Id {
         let s: &str = Deserialize::deserialize(deserializer)?;
         Id::from_str(&s).map_err(serde::de::Error::custom)
     }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- ids::test_custom_de_serializer --exact --show-output
+#[test]
+fn test_custom_de_serializer() {
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+    struct Data {
+        id: Id,
+    }
+
+    let d = Data {
+        id: Id::from_str("g25v3qDyAaHfR7kBev8tLUHouSgN5BJuZjy1BYS1oiHd2vres").unwrap(),
+    };
+
+    let yaml_encoded = serde_yaml::to_string(&d).unwrap();
+    println!("yaml_encoded:\n{}", yaml_encoded);
+    let yaml_decoded = serde_yaml::from_str(&yaml_encoded).unwrap();
+    assert_eq!(d, yaml_decoded);
+
+    let json_encoded = serde_json::to_string(&d).unwrap();
+    println!("json_encoded:\n{}", json_encoded);
+    let json_decoded = serde_json::from_str(&json_encoded).unwrap();
+    assert_eq!(d, json_decoded);
+
+    let json_decoded_2: Data = serde_json::from_str(
+        "
+
+{
+    \"id\":\"g25v3qDyAaHfR7kBev8tLUHouSgN5BJuZjy1BYS1oiHd2vres\"
+}
+
+",
+    )
+    .unwrap();
+    assert_eq!(d, json_decoded_2);
 }
 
 fn fmt_id<'de, D>(deserializer: D) -> Result<Id, D::Error>
