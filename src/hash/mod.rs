@@ -1,8 +1,29 @@
 use std::io::{self, Error, ErrorKind};
 
-use ring::digest::{digest, SHA256};
 use ripemd::{Digest, Ripemd160};
 use sha3::Keccak256;
+
+#[cfg(all(not(windows)))]
+use ring::digest::{digest, SHA256};
+
+#[cfg(all(not(windows)))]
+pub const SHA256_OUTPUT_LEN: usize = ring::digest::SHA256_OUTPUT_LEN;
+
+#[cfg(all(windows))]
+pub const SHA256_OUTPUT_LEN: usize = 32;
+
+/// Returns SHA256 digest of the given data.
+#[cfg(all(not(windows)))]
+pub fn sha256(d: impl AsRef<[u8]>) -> Vec<u8> {
+    digest(&SHA256, d.as_ref()).as_ref().into()
+}
+
+/// Returns SHA256 digest of the given data.
+/// TODO: implement this
+#[cfg(all(windows))]
+pub fn sha256(b: impl AsRef<[u8]>) -> Vec<u8> {
+    panic!("unimplemented")
+}
 
 /// Converts bytes to the short address bytes (20-byte).
 /// e.g., "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
@@ -11,7 +32,7 @@ pub fn sha256_ripemd160<B>(b: B) -> io::Result<Vec<u8>>
 where
     B: AsRef<[u8]>,
 {
-    let digest_sha256 = digest(&SHA256, b.as_ref());
+    let digest_sha256 = sha256(b);
 
     // "hashing.PubkeyBytesToAddress"
     // acquire hash digest in the form of GenericArray,

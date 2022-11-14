@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.135" # https://crates.io/crates/avalanche-types
+version = "0.0.137" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.65"
 publish = true
@@ -13,7 +13,7 @@ readme = "README.md"
 [dependencies]
 async-trait = "0.1.58" # for "key::secp256k1" sign trait
 bech32 = "0.9.1"
-bs58 = "0.4.0" # for "formatting", https://crates.io/crates/bs58
+bs58 = "0.4.0"
 bytes = "1.2.1"
 chrono = "0.4.22"
 cmp-manager = "0.0.1"
@@ -49,7 +49,7 @@ sha3 = { version = "0.10.6", optional = false }
 secp256k1 = { version = "0.24.1", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.21.0", optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.21.3", optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.21.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.51.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
@@ -58,7 +58,7 @@ rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
 rsa = { version = "0.6.1", features = ["pem"], optional = true } # https://crates.io/crates/rsa
 rustls = { version = "0.20.7", optional = true } # https://github.com/rustls/rustls/tags
 
-# [OPTIONAL] for "message_compress_gzip"
+# [OPTIONAL] for "message"
 flate2 = { version = "1.0.24", optional = true }
 
 # [OPTIONAL] for "mnemonic"
@@ -107,9 +107,6 @@ tokio-test = "0.4.2"
 
 [features]
 default = [
-    "message_compress_gzip",
-
-    # optional features
     # "avalanchego",
     # "cert",
     # "client",
@@ -118,6 +115,7 @@ default = [
     # "evm",
     # "kms_aws",
     # "libsecp256k1",
+    # "message",
     # "mnemonic",
     # "proto",
     # "subnet",
@@ -132,7 +130,6 @@ codec_big_int = ["num-bigint"]
 evm = ["rlp", "rlp-derive"]
 kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types"]
 libsecp256k1 = ["secp256k1"]
-message_compress_gzip = ["flate2"]
 mnemonic = ["bip32", "rand_core"]
 subnet_evm = []
 
@@ -160,6 +157,10 @@ proto = [
     "subnetlookup",
     "validatorstate",
     "vm",
+]
+message = [
+    "flate2",
+    "proto",
 ]
 subnet = [
     "futures",
@@ -241,7 +242,10 @@ name = "integration"
 path = "tests/integration_tests.rs"
 required-features = ["subnet"]
 
+[lib]
+doctest = false
+
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
-development = ["id-manager", "tokio-test", "tonic-reflection", "tempfile"]
-normal = ["rsa", "hyper", "rustls-pemfile"]
+development = ["id-manager", "tokio-test", "tonic-reflection"]
+normal = ["rsa"]

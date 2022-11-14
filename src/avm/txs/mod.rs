@@ -5,8 +5,7 @@ pub mod vertex;
 
 use std::io::{self, Error, ErrorKind};
 
-use crate::{codec, ids, key, txs};
-use ring::digest::{digest, SHA256};
+use crate::{codec, hash, ids, key, txs};
 use serde::{Deserialize, Serialize};
 
 /// Base transaction.
@@ -95,7 +94,7 @@ impl Tx {
         // IMPORTANT: take the hash only for the type "avm.Tx" unsigned tx
         // not other fields -- only hash "avm.Tx.UnsignedTx" but not "avm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx
-        let tx_bytes_hash: Vec<u8> = digest(&SHA256, &tx_bytes_with_no_signature).as_ref().into();
+        let tx_bytes_hash = hash::sha256(&tx_bytes_with_no_signature);
 
         // number of of credentials
         let fx_creds_len = signers.len() as u32;
@@ -136,7 +135,7 @@ impl Tx {
             }
         }
         let tx_bytes_with_signatures = packer.take_bytes();
-        let tx_id: Vec<u8> = digest(&SHA256, &tx_bytes_with_signatures).as_ref().into();
+        let tx_id = hash::sha256(&tx_bytes_with_signatures);
 
         // update "BaseTx.Metadata" with id/unsigned bytes/bytes
         // ref. "avalanchego/vms/avm.Tx.SignSECP256K1Fx"

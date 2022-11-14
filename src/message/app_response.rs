@@ -1,84 +1,157 @@
-use std::io::{Error, ErrorKind, Result};
+use std::io::{self, Error, ErrorKind};
 
-use crate::ids;
-use crate::message::{self, Compressor, Outbound};
+use crate::{ids, message, proto::pb::p2p};
+use prost::Message as ProstMessage;
 
-/// Message sent from the VM, in response to "app_request".
-#[derive(
-    std::clone::Clone,
-    std::cmp::Eq,
-    std::cmp::Ord,
-    std::cmp::PartialEq,
-    std::cmp::PartialOrd,
-    std::fmt::Debug,
-    std::hash::Hash,
-)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Message {
-    pub chain_id: ids::Id,
-    pub request_id: u32,
-    pub app_bytes: Vec<u8>,
+    pub msg: p2p::AppResponse,
+    pub gzip_compress: bool,
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        Self::default()
+    }
 }
 
 impl Message {
-    pub fn create(
-        chain_id: ids::Id,
-        request_id: u32,
-        app_bytes: Vec<u8>,
-    ) -> impl Outbound + Compressor {
-        Self {
-            chain_id,
-            request_id,
-            app_bytes,
+    pub fn default() -> Self {
+        Message {
+            msg: p2p::AppResponse {
+                chain_id: prost::bytes::Bytes::new(),
+                request_id: 0,
+                app_bytes: prost::bytes::Bytes::new(),
+            },
+            gzip_compress: false,
         }
     }
-}
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
-/// Use "Self.to_string()" to directly invoke this
-impl std::fmt::Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "msg app_response")
+    #[must_use]
+    pub fn chain_id(mut self, chain_id: ids::Id) -> Self {
+        self.msg.chain_id = prost::bytes::Bytes::from(chain_id.to_vec());
+        self
     }
-}
 
-impl Outbound for Message {
-    fn serialize_with_header(&self) -> Result<bytes::Bytes> {
-        let type_id = message::TYPES
-            .get("app_response")
-            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "unknown type name"))?;
+    #[must_use]
+    pub fn request_id(mut self, request_id: u32) -> Self {
+        self.msg.request_id = request_id;
+        self
+    }
 
-        let packer = message::default_packer_with_header();
-        packer.pack_byte(*type_id)?;
-        packer.pack_bool(false)?; // compressible
-        packer.pack_bytes(self.chain_id.as_ref())?;
-        packer.pack_u32(self.request_id)?;
-        packer.pack_bytes_with_header(self.app_bytes.as_ref())?;
+    #[must_use]
+    pub fn app_bytes(mut self, app_bytes: Vec<u8>) -> Self {
+        self.msg.app_bytes = prost::bytes::Bytes::from(app_bytes);
+        self
+    }
 
-        Ok(packer.take_bytes())
+    #[must_use]
+    pub fn gzip_compress(mut self, gzip_compress: bool) -> Self {
+        self.gzip_compress = gzip_compress;
+        self
+    }
+
+    pub fn serialize(&self) -> io::Result<Vec<u8>> {
+        let msg = p2p::Message {
+            message: Some(p2p::message::Message::AppResponse(self.msg.clone())),
+        };
+        let encoded = ProstMessage::encode_to_vec(&msg);
+        if !self.gzip_compress {
+            return Ok(encoded);
+        }
+
+        let uncompressed_len = encoded.len();
+        let compressed = message::compress::pack_gzip(&encoded)?;
+        let msg = p2p::Message {
+            message: Some(p2p::message::Message::CompressedGzip(
+                prost::bytes::Bytes::from(compressed),
+            )),
+        };
+
+        let compressed_len = msg.encoded_len();
+        if uncompressed_len > compressed_len {
+            log::debug!(
+                "app_response compression saved {} bytes",
+                uncompressed_len - compressed_len
+            );
+        } else {
+            log::debug!(
+                "app_response compression added {} byte(s)",
+                compressed_len - uncompressed_len
+            );
+        }
+
+        Ok(ProstMessage::encode_to_vec(&msg))
+    }
+
+    pub fn deserialize(d: impl AsRef<[u8]>) -> io::Result<Self> {
+        let buf = bytes::Bytes::from(d.as_ref().to_vec());
+        let p2p_msg: p2p::Message = ProstMessage::decode(buf).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidData,
+                format!("failed prost::Message::decode '{}'", e),
+            )
+        })?;
+
+        match p2p_msg.message.unwrap() {
+            // was not compressed
+            p2p::message::Message::AppResponse(msg) => Ok(Message {
+                msg,
+                gzip_compress: false,
+            }),
+
+            // was compressed, so need decompress first
+            p2p::message::Message::CompressedGzip(msg) => {
+                let decompressed = message::compress::unpack_gzip(msg.as_ref())?;
+                let decompressed_msg: p2p::Message =
+                    ProstMessage::decode(prost::bytes::Bytes::from(decompressed)).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidData,
+                            format!("failed prost::Message::decode '{}'", e),
+                        )
+                    })?;
+                match decompressed_msg.message.unwrap() {
+                    p2p::message::Message::AppResponse(msg) => Ok(Message {
+                        msg,
+                        gzip_compress: false,
+                    }),
+                    _ => Err(Error::new(
+                        ErrorKind::InvalidInput,
+                        "unknown message type after decompress",
+                    )),
+                }
+            }
+
+            // unknown message enum
+            _ => Err(Error::new(ErrorKind::InvalidInput, "unknown message type")),
+        }
     }
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- message::app_response::test_message --exact --show-output
 #[test]
 fn test_message() {
-    let msg = Message::create(ids::Id::empty(), 7, vec![0x01, 0x02, 0x03, 0x04]);
-    let data_with_header = msg.serialize_with_header().unwrap();
-    // for c in &data_with_header {
-    //     print!("{:#02x},", *c);
-    // }
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Debug)
+        .is_test(true)
+        .try_init();
 
-    let expected_data: &[u8] = &[
-        0x00, 0x00, 0x00, 0x2e, // message length
-        0x15, // type_id
-        0x00, // compressible
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, // chain_id
-        0x00, 0x00, 0x00, 0x07, // request_id
-        0x00, 0x00, 0x00, 0x04, // length of app_bytes
-        0x01, 0x02, 0x03, 0x04, // app_bytes
-    ];
-    assert!(cmp_manager::eq_vectors(&expected_data, &data_with_header));
+    let msg1_with_no_compression = Message::default()
+        .chain_id(ids::Id::from_slice(&random_manager::bytes(32).unwrap()))
+        .request_id(random_manager::u32())
+        .app_bytes(vec![0u8; 100]);
+
+    let data1 = msg1_with_no_compression.serialize().unwrap();
+    let msg1_with_no_compression_deserialized = Message::deserialize(&data1).unwrap();
+    assert_eq!(
+        msg1_with_no_compression,
+        msg1_with_no_compression_deserialized
+    );
+
+    let msg2_with_compression = msg1_with_no_compression.clone().gzip_compress(true);
+    assert_ne!(msg1_with_no_compression, msg2_with_compression);
+
+    let data2 = msg2_with_compression.serialize().unwrap();
+    let msg2_with_compression_deserialized = Message::deserialize(&data2).unwrap();
+    assert_eq!(msg1_with_no_compression, msg2_with_compression_deserialized);
 }

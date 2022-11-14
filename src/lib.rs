@@ -8,7 +8,6 @@ pub mod hash;
 pub mod ids;
 pub mod jsonrpc;
 pub mod key;
-pub mod message;
 pub mod node;
 pub mod packer;
 pub mod platformvm;
@@ -25,6 +24,9 @@ pub mod coreth;
 
 #[cfg(feature = "subnet_evm")]
 pub mod subnet_evm;
+
+#[cfg(feature = "message")]
+pub mod message;
 
 #[cfg(feature = "client")]
 pub mod client;

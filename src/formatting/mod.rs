@@ -1,7 +1,7 @@
 use std::io::{self, Error, ErrorKind};
 
+use crate::hash;
 use bech32::{ToBase32, Variant};
-use ring::digest::{digest, SHA256};
 
 const CHECKSUM_LENGTH: usize = 4;
 
@@ -11,7 +11,7 @@ const CHECKSUM_LENGTH: usize = 4;
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
 pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
     // "hashing.Checksum" of "sha256.Sum256"
-    let checksum: Vec<u8> = digest(&SHA256, d).as_ref().into();
+    let checksum = hash::sha256(d);
     let checksum_length = checksum.len();
     let checksum = &checksum[checksum_length - CHECKSUM_LENGTH..];
 
@@ -30,7 +30,7 @@ pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
 pub fn encode_cb58_with_checksum_vec(d: &[u8]) -> Vec<u8> {
     // "hashing.Checksum" of "sha256.Sum256"
-    let checksum: Vec<u8> = digest(&SHA256, d).as_ref().into();
+    let checksum = hash::sha256(d);
     let checksum_length = checksum.len();
     let checksum = &checksum[checksum_length - CHECKSUM_LENGTH..];
 
@@ -62,7 +62,7 @@ pub fn decode_cb58_with_checksum(d: &str) -> io::Result<Vec<u8>> {
     let orig = &decoded[..decoded_length - CHECKSUM_LENGTH];
 
     // "hashing.Checksum" of "sha256.Sum256"
-    let orig_checksum: Vec<u8> = digest(&SHA256, orig).as_ref().into();
+    let orig_checksum = hash::sha256(orig);
     let orig_checksum_length = orig_checksum.len();
     let orig_checksum = &orig_checksum[orig_checksum_length - CHECKSUM_LENGTH..];
     if !cmp_manager::eq_vectors(checksum, orig_checksum) {
@@ -113,7 +113,7 @@ fn test_encode_c58_with_checksum() {
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
 pub fn encode_hex_with_checksum(d: &[u8]) -> String {
     // "hashing.Checksum" of "sha256.Sum256"
-    let checksum: Vec<u8> = digest(&SHA256, d).as_ref().into();
+    let checksum = hash::sha256(d);
     let checksum_length = checksum.len();
     let checksum = &checksum[checksum_length - CHECKSUM_LENGTH..];
 
@@ -143,7 +143,7 @@ pub fn decode_hex_with_checksum(d: &[u8]) -> io::Result<Vec<u8>> {
     let orig = &decoded[..decoded_length - CHECKSUM_LENGTH];
 
     // "hashing.Checksum" of "sha256.Sum256"
-    let orig_checksum: Vec<u8> = digest(&SHA256, orig).as_ref().into();
+    let orig_checksum = hash::sha256(orig);
     let orig_checksum_length = orig_checksum.len();
     let orig_checksum = &orig_checksum[orig_checksum_length - CHECKSUM_LENGTH..];
     if !cmp_manager::eq_vectors(checksum, orig_checksum) {

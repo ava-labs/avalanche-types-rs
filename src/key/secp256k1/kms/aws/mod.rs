@@ -2,7 +2,7 @@ pub mod eth_signer;
 
 use std::io::{self, Error, ErrorKind};
 
-use crate::key;
+use crate::{hash, key};
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
@@ -76,7 +76,7 @@ impl Signer {
         digest: &[u8],
     ) -> Result<key::secp256k1::signature::Sig, aws_manager::errors::Error> {
         // ref. "crypto/sha256.Size"
-        assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
+        assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
         // DER-encoded >65-byte signature, need convert to 65-byte recoverable signature
         // ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html

@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use ring::digest::{digest, SHA256};
+use crate::hash;
 use serde::{self, Deserialize, Serialize};
 
 /// Represents raw transaction bytes.
@@ -37,8 +37,8 @@ impl AsRef<[u8]> for Data {
 
 impl Ord for Data {
     fn cmp(&self, other: &Data) -> Ordering {
-        let h1: Vec<u8> = digest(&SHA256, &self.0).as_ref().into();
-        let h2: Vec<u8> = digest(&SHA256, &other.0).as_ref().into();
+        let h1 = hash::sha256(&self.0);
+        let h2 = hash::sha256(&other.0);
         h1.cmp(&(h2))
     }
 }

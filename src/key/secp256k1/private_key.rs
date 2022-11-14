@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    formatting,
+    formatting, hash,
     ids::short,
     key::{
         self,
@@ -15,6 +15,8 @@ use async_trait::async_trait;
 use k256::ecdsa::signature::hazmat::PrehashSigner;
 use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, thread_rng};
+
+#[cfg(all(not(windows)))]
 use ring::rand::{SecureRandom, SystemRandom};
 
 /// The size (in bytes) of a secret key.
@@ -28,6 +30,7 @@ pub const CB58_ENCODE_PREFIX: &str = "PrivateKey-";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Key(k256::SecretKey);
 
+#[cfg(all(not(windows)))]
 fn secure_random() -> &'static dyn SecureRandom {
     use std::ops::Deref;
     lazy_static! {
@@ -38,12 +41,18 @@ fn secure_random() -> &'static dyn SecureRandom {
 
 impl Key {
     /// Generates a private key from random bytes.
+    #[cfg(all(not(windows)))]
     pub fn generate() -> io::Result<Self> {
         let mut b = [0u8; LEN];
         secure_random()
             .fill(&mut b)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed secure_random {}", e)))?;
         Self::from_bytes(&b)
+    }
+
+    #[cfg(all(windows))]
+    pub fn generate() -> io::Result<Self> {
+        Err(Error::new(ErrorKind::Unsupported, "not implemented"))
     }
 
     /// Loads the private key from the raw scalar bytes.
@@ -164,7 +173,7 @@ impl Key {
     /// ref. https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs
     pub fn sign_digest(&self, digest: &[u8]) -> io::Result<Sig> {
         // ref. "crypto/sha256.Size"
-        assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
+        assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
         // NOTE
         // "k256::ecdsa::SigningKey::sign" with "k256::ecdsa::signature::Signer"
@@ -249,15 +258,13 @@ impl key::secp256k1::ReadOnly for Key {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::private_key::test_private_key --exact --show-output
 #[test]
 fn test_private_key() {
-    use ring::digest::{digest, SHA256};
-
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
         .try_init();
 
     let msg: Vec<u8> = random_manager::bytes(100).unwrap();
-    let hashed: Vec<u8> = digest(&SHA256, &msg).as_ref().into();
+    let hashed = hash::sha256(&msg);
 
     let pk1 = Key::generate().unwrap();
 

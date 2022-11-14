@@ -1,120 +1,213 @@
-use std::{
-    io::{Error, ErrorKind, Result},
-    net::IpAddr,
-};
+use std::io::{self, Error, ErrorKind};
 
-use crate::ids;
-use crate::message::{self, Outbound};
+use crate::{ids, message, proto::pb::p2p};
+use prost::Message as ProstMessage;
 
-/// The first outbound message that the local node sends to its remote peer
-/// when the connection is established. In order for the local node to be
-/// tracked as a valid peer by the remote peer, the fields must be valid.
-/// For instance, the network ID must be matched and timestamp should be in-sync.
-/// Otherwise, the remote peer closes the connection.
-/// ref. "avalanchego/network/peer#handleVersion"
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/network#Network "Dispatch"
-#[derive(
-    std::clone::Clone,
-    std::cmp::Eq,
-    std::cmp::Ord,
-    std::cmp::PartialEq,
-    std::cmp::PartialOrd,
-    std::fmt::Debug,
-    std::hash::Hash,
-)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Message {
-    pub network_id: u32,
-    /// Local time in unix second.
-    pub my_time: u64,
-    pub ip_addr: IpAddr,
-    pub ip_port: u16,
-    pub my_version: String,
-    pub my_version_time: u64,
-    pub sig: Vec<u8>,
-    pub tracked_subnets: Vec<ids::Id>,
+    pub msg: p2p::Version,
+    pub gzip_compress: bool,
 }
 
-pub fn create_outbound(msg: Message) -> impl Outbound {
-    msg
-}
-
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
-/// Use "Self.to_string()" to directly invoke this
-impl std::fmt::Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "msg version (network ID {})", self.network_id)
+impl Default for Message {
+    fn default() -> Self {
+        Self::default()
     }
 }
 
-impl Outbound for Message {
-    fn serialize_with_header(&self) -> Result<bytes::Bytes> {
-        let type_id = message::TYPES
-            .get("version")
-            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "unknown type name"))?;
+impl Message {
+    pub fn default() -> Self {
+        Message {
+            msg: p2p::Version {
+                network_id: 0,
+                my_time: 0,
+                ip_addr: prost::bytes::Bytes::new(),
+                ip_port: 0,
+                my_version: String::new(),
+                my_version_time: 0,
+                sig: prost::bytes::Bytes::new(),
+                tracked_subnets: Vec::new(),
+            },
+            gzip_compress: false,
+        }
+    }
 
-        let packer = message::default_packer_with_header();
-        packer.pack_byte(*type_id)?;
-        packer.pack_u32(self.network_id)?;
-        packer.pack_u32(0)?; // "node_id" is deprecated, so just encode 0
-        packer.pack_u64(self.my_time)?;
-        packer.pack_ip(self.ip_addr, self.ip_port)?;
-        packer.pack_str(&self.my_version)?;
-        packer.pack_u64(self.my_version_time)?;
-        packer.pack_bytes_with_header(self.sig.as_ref())?;
-        packer.pack_u32(self.tracked_subnets.len() as u32)?;
-        for id in self.tracked_subnets.iter() {
-            packer.pack_bytes(id.as_ref())?;
+    #[must_use]
+    pub fn network_id(mut self, network_id: u32) -> Self {
+        self.msg.network_id = network_id;
+        self
+    }
+
+    #[must_use]
+    pub fn my_time(mut self, my_time: u64) -> Self {
+        self.msg.my_time = my_time; // local time in unix second.
+        self
+    }
+
+    #[must_use]
+    pub fn ip_addr(mut self, ip_addr: std::net::IpAddr) -> Self {
+        self.msg.ip_addr = prost::bytes::Bytes::from(super::ip_addr_to_bytes(ip_addr));
+        self
+    }
+
+    #[must_use]
+    pub fn ip_port(mut self, ip_port: u32) -> Self {
+        self.msg.ip_port = ip_port;
+        self
+    }
+
+    #[must_use]
+    pub fn my_version(mut self, my_version: String) -> Self {
+        self.msg.my_version = my_version;
+        self
+    }
+
+    #[must_use]
+    pub fn my_version_time(mut self, my_version_time: u64) -> Self {
+        self.msg.my_version_time = my_version_time;
+        self
+    }
+
+    #[must_use]
+    pub fn sig(mut self, sig: Vec<u8>) -> Self {
+        self.msg.sig = prost::bytes::Bytes::from(sig);
+        self
+    }
+
+    #[must_use]
+    pub fn tracked_subnets(mut self, tracked_subnets: Vec<ids::Id>) -> Self {
+        let mut tracked_subnet_bytes: Vec<prost::bytes::Bytes> =
+            Vec::with_capacity(tracked_subnets.len());
+        for id in tracked_subnets.iter() {
+            tracked_subnet_bytes.push(prost::bytes::Bytes::from(id.to_vec()));
+        }
+        self.msg.tracked_subnets = tracked_subnet_bytes;
+        self
+    }
+
+    #[must_use]
+    pub fn gzip_compress(mut self, gzip_compress: bool) -> Self {
+        self.gzip_compress = gzip_compress;
+        self
+    }
+
+    pub fn serialize(&self) -> io::Result<Vec<u8>> {
+        let msg = p2p::Message {
+            message: Some(p2p::message::Message::Version(self.msg.clone())),
+        };
+        let encoded = ProstMessage::encode_to_vec(&msg);
+        if !self.gzip_compress {
+            return Ok(encoded);
         }
 
-        Ok(packer.take_bytes())
+        let uncompressed_len = encoded.len();
+        let compressed = message::compress::pack_gzip(&encoded)?;
+        let msg = p2p::Message {
+            message: Some(p2p::message::Message::CompressedGzip(
+                prost::bytes::Bytes::from(compressed),
+            )),
+        };
+
+        let compressed_len = msg.encoded_len();
+        if uncompressed_len > compressed_len {
+            log::debug!(
+                "version compression saved {} bytes",
+                uncompressed_len - compressed_len
+            );
+        } else {
+            log::debug!(
+                "version compression added {} byte(s)",
+                compressed_len - uncompressed_len
+            );
+        }
+
+        Ok(ProstMessage::encode_to_vec(&msg))
+    }
+
+    pub fn deserialize(d: impl AsRef<[u8]>) -> io::Result<Self> {
+        let buf = bytes::Bytes::from(d.as_ref().to_vec());
+        let p2p_msg: p2p::Message = ProstMessage::decode(buf).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidData,
+                format!("failed prost::Message::decode '{}'", e),
+            )
+        })?;
+
+        match p2p_msg.message.unwrap() {
+            // was not compressed
+            p2p::message::Message::Version(msg) => Ok(Message {
+                msg,
+                gzip_compress: false,
+            }),
+
+            // was compressed, so need decompress first
+            p2p::message::Message::CompressedGzip(msg) => {
+                let decompressed = message::compress::unpack_gzip(msg.as_ref())?;
+                let decompressed_msg: p2p::Message =
+                    ProstMessage::decode(prost::bytes::Bytes::from(decompressed)).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidData,
+                            format!("failed prost::Message::decode '{}'", e),
+                        )
+                    })?;
+                match decompressed_msg.message.unwrap() {
+                    p2p::message::Message::Version(msg) => Ok(Message {
+                        msg,
+                        gzip_compress: false,
+                    }),
+                    _ => Err(Error::new(
+                        ErrorKind::InvalidInput,
+                        "unknown message type after decompress",
+                    )),
+                }
+            }
+
+            // unknown message enum
+            _ => Err(Error::new(ErrorKind::InvalidInput, "unknown message type")),
+        }
     }
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- message::version::test_message --exact --show-output
 #[test]
 fn test_message() {
-    use std::net::Ipv4Addr;
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Debug)
+        .is_test(true)
+        .try_init();
 
-    let msg = create_outbound(Message {
-        network_id: 100000,
-        my_time: 77777777,
-        ip_addr: IpAddr::V4(Ipv4Addr::LOCALHOST),
-        ip_port: 8080,
-        my_version: String::from("v1.2.3"),
-        my_version_time: 1234567,
-        sig: vec![0x01, 0x02, 0x03],
-        tracked_subnets: vec![crate::ids::Id::from_slice(&[
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-            0x01, 0x01, //
-        ])],
-    });
-    let data_with_header = msg.serialize_with_header().unwrap();
-    // for c in &data_with_header {
-    //     print!("{:#02x},", *c);
-    // }
+    let msg1_with_no_compression = Message::default()
+        .network_id(100000)
+        .my_time(77777777)
+        .ip_addr(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST))
+        .ip_port(8080)
+        .my_version(String::from("v1.2.3"))
+        .my_version_time(1234567)
+        .sig(random_manager::bytes(65).unwrap())
+        .tracked_subnets(vec![
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::empty(),
+            ids::Id::from_slice(&random_manager::bytes(32).unwrap()),
+            ids::Id::from_slice(&random_manager::bytes(32).unwrap()),
+        ]);
 
-    let expected_data: &[u8] = &[
-        0x00, 0x00, 0x00, 0x5e, // message length
-        0x13, // type_id
-        0x00, 0x01, 0x86, 0xa0, // network_id
-        0x00, 0x00, 0x00, 0x00, // node_id
-        0x00, 0x00, 0x00, 0x00, 0x04, 0xa2, 0xcb, 0x71, // my_time
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7f, 0x00, 0x00,
-        0x01, // ip_addr
-        0x1f, 0x90, // ip_port
-        0x00, 0x06, // length of my_version
-        0x76, 0x31, 0x2e, 0x32, 0x2e, 0x33, // my_version
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xd6, 0x87, // my version time
-        0x00, 0x00, 0x00, 0x03, // length of signature
-        0x01, 0x02, 0x03, // signature
-        0x00, 0x00, 0x00, 0x01, // length of tracked_subnets
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x01, 0x01, // tracked_subnet
-    ];
-    assert!(cmp_manager::eq_vectors(&expected_data, &data_with_header));
+    let data1 = msg1_with_no_compression.serialize().unwrap();
+    let msg1_with_no_compression_deserialized = Message::deserialize(&data1).unwrap();
+    assert_eq!(
+        msg1_with_no_compression,
+        msg1_with_no_compression_deserialized
+    );
+
+    let msg2_with_compression = msg1_with_no_compression.clone().gzip_compress(true);
+    assert_ne!(msg1_with_no_compression, msg2_with_compression);
+
+    let data2 = msg2_with_compression.serialize().unwrap();
+    let msg2_with_compression_deserialized = Message::deserialize(&data2).unwrap();
+    assert_eq!(msg1_with_no_compression, msg2_with_compression_deserialized);
 }

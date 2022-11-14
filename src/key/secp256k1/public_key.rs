@@ -198,8 +198,6 @@ impl key::secp256k1::ReadOnly for Key {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::public_key::test_public_key --exact --show-output
 #[test]
 fn test_public_key() {
-    use ring::digest::{digest, SHA256};
-
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
@@ -218,7 +216,7 @@ fn test_public_key() {
     assert_eq!(pubkey2, pubkey3);
 
     let msg: Vec<u8> = random_manager::bytes(100).unwrap();
-    let hashed: Vec<u8> = digest(&SHA256, &msg).as_ref().into();
+    let hashed = hash::sha256(&msg);
 
     let sig1 = pk1.sign_digest(&hashed).unwrap();
     assert_eq!(sig1.to_bytes().len(), crate::key::secp256k1::signature::LEN);

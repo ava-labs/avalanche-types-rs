@@ -19,6 +19,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -26,11 +27,14 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
           override: true
+
       - name: Check Rust version
         run: rustc --version
+
       - uses: Swatinem/rust-cache@v1
         with:
           cache-on-failure: true
+
       - name: Run static analysis tests
         shell: bash
         run: scripts/tests.lint.sh
@@ -41,6 +45,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -48,8 +53,10 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
           override: true
+
       - name: Check Rust version
         run: rustc --version
+
       - uses: Swatinem/rust-cache@v1
         with:
           cache-on-failure: true
@@ -72,6 +79,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -89,8 +97,10 @@ jobs:
 
       - name: Check Rust version
         run: rustc --version
+
       - uses: Swatinem/rust-cache@v1
         with:
           cache-on-failure: true
+
       - name: Run unit tests
         run: scripts/tests.unit.sh

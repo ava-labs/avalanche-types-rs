@@ -199,8 +199,6 @@ impl From<Sig> for [u8; LEN] {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::signature::test_signature --exact --show-output
 #[test]
 fn test_signature() {
-    use ring::digest::{digest, SHA256};
-
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
@@ -210,7 +208,7 @@ fn test_signature() {
     let pubkey = pk.to_public_key();
 
     let msg: Vec<u8> = random_manager::bytes(100).unwrap();
-    let hashed: Vec<u8> = digest(&SHA256, &msg).as_ref().into();
+    let hashed = crate::hash::sha256(&msg);
 
     let sig = pk.sign_digest(&hashed).unwrap();
     assert_eq!(sig.to_bytes().len(), crate::key::secp256k1::signature::LEN);

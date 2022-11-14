@@ -1,7 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{avm::txs::fx, codec, ids, key, platformvm, txs};
-use ring::digest::{digest, SHA256};
+use crate::{avm::txs::fx, codec, hash, ids, key, platformvm, txs};
 use serde::{Deserialize, Serialize};
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx
@@ -206,7 +205,7 @@ impl Tx {
         // IMPORTANT: take the hash only for the type "avm.ExportTx" unsigned tx
         // not other fields -- only hash "avm.ExportTx.*" but not "avm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#ExportTx
-        let tx_bytes_hash: Vec<u8> = digest(&SHA256, &tx_bytes_with_no_signature).as_ref().into();
+        let tx_bytes_hash = hash::sha256(&tx_bytes_with_no_signature);
 
         // number of of credentials
         let fx_creds_len = signers.len() as u32;
@@ -247,7 +246,7 @@ impl Tx {
             }
         }
         let tx_bytes_with_signatures = packer.take_bytes();
-        let tx_id: Vec<u8> = digest(&SHA256, &tx_bytes_with_signatures).as_ref().into();
+        let tx_id = hash::sha256(&tx_bytes_with_signatures);
 
         // update "BaseTx.Metadata" with id/unsigned bytes/bytes
         // ref. "avalanchego/vms/avm.Tx.SignSECP256K1Fx"

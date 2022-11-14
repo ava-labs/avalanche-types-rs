@@ -77,7 +77,7 @@ impl PrivateKey {
     /// ref. https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs
     pub fn sign_digest(&self, digest: &[u8]) -> io::Result<key::secp256k1::signature::Sig> {
         // ref. "crypto/sha256.Size"
-        assert_eq!(digest.len(), ring::digest::SHA256_OUTPUT_LEN);
+        assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
         let secp = libsecp256k1::Secp256k1::new();
         let m = libsecp256k1::Message::from_slice(digest).map_err(|e| {
@@ -257,15 +257,13 @@ impl key::secp256k1::ReadOnly for PublicKey {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::libsecp256k1::test_key --exact --show-output
 #[test]
 fn test_key() {
-    use ring::digest::{digest, SHA256};
-
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
         .try_init();
 
     let msg: Vec<u8> = random_manager::bytes(100).unwrap();
-    let hashed: Vec<u8> = digest(&SHA256, &msg).as_ref().into();
+    let hashed = hash::sha256(&msg);
 
     let pk1 = key::secp256k1::private_key::Key::generate().unwrap();
     let pk1 = pk1.to_libsecp256k1().unwrap();

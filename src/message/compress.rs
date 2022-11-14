@@ -1,13 +1,12 @@
 use std::io::{self, Cursor, Read};
 
-#[cfg(feature = "message_compress_gzip")]
 use flate2::{
     bufread::{GzDecoder, GzEncoder},
     Compression,
 };
 
 /// Compress the input bytes.
-#[cfg(feature = "message_compress_gzip")]
+
 pub fn pack_gzip<S>(d: S) -> io::Result<Vec<u8>>
 where
     S: AsRef<[u8]>,
@@ -21,7 +20,7 @@ where
 }
 
 /// Decompress the input bytes.
-#[cfg(feature = "message_compress_gzip")]
+
 pub fn unpack_gzip<S>(d: S) -> io::Result<Vec<u8>>
 where
     S: AsRef<[u8]>,

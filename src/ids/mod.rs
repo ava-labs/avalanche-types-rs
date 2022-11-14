@@ -20,9 +20,8 @@ use std::{
     str::FromStr,
 };
 
-use crate::{formatting, packer};
+use crate::{formatting, hash, packer};
 use lazy_static::lazy_static;
-use ring::digest::{digest, SHA256};
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
 
@@ -64,9 +63,7 @@ impl Id {
     /// SHA256-hashes the given byte slice into an Id.
     /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ToID
     pub fn sha256(d: impl AsRef<[u8]>) -> Self {
-        let id: Vec<u8> = digest(&SHA256, d.as_ref()).as_ref().into();
-        let id = Id::from_slice(&id);
-        id
+        Id::from_slice(&hash::sha256(d))
     }
 
     /// If the passed array is shorter than the LEN,
@@ -91,7 +88,7 @@ impl Id {
         packer.pack_bytes(&self.0)?;
 
         let b = packer.take_bytes();
-        let d: Vec<u8> = digest(&SHA256, &b).as_ref().into();
+        let d = hash::sha256(&b);
         Ok(Self::from_slice(&d))
     }
 

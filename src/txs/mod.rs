@@ -6,9 +6,8 @@ use std::io::{self, Error, ErrorKind};
 
 use super::{
     codec::{self, serde::hex_0x_bytes::Hex0xBytes},
-    formatting, ids, key, packer, platformvm,
+    formatting, hash, ids, key, packer, platformvm,
 };
-use ring::digest::{digest, SHA256};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -504,7 +503,7 @@ impl Metadata {
     }
 
     pub fn new(tx_bytes_with_no_signature: &[u8], tx_bytes_with_signatures: &[u8]) -> Self {
-        let id: Vec<u8> = digest(&SHA256, tx_bytes_with_signatures).as_ref().into();
+        let id = hash::sha256(tx_bytes_with_signatures);
         let id = ids::Id::from_slice(&id);
         Self {
             id,

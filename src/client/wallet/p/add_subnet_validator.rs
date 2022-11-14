@@ -54,14 +54,14 @@ where
             .as_secs();
 
         let start_time = now_unix + 60;
-        let native_dt = NaiveDateTime::from_timestamp(start_time as i64, 0);
+        let native_dt = NaiveDateTime::from_timestamp_opt(start_time as i64, 0).unwrap();
         let start_time = DateTime::<Utc>::from_utc(native_dt, Utc);
 
         // 95-day
         // must be smaller than the primary network default
         // otherwise "staking period must be a subset of the primary network"
         let end_time = now_unix + 95 * 24 * 60 * 60;
-        let native_dt = NaiveDateTime::from_timestamp(end_time as i64, 0);
+        let native_dt = NaiveDateTime::from_timestamp_opt(end_time as i64, 0).unwrap();
         let end_time = DateTime::<Utc>::from_utc(native_dt, Utc);
 
         Self {
