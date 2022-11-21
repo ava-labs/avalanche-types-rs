@@ -66,7 +66,7 @@ impl Key {
 
         let (recovered_pubkey, verifying_key) = sig.recover_public_key(digest)?;
         let rsig = k256::ecdsa::recoverable::Signature::from(sig);
-        if !verifying_key.verify_prehash(digest, &rsig).is_ok() {
+        if verifying_key.verify_prehash(digest, &rsig).is_err() {
             return Ok(false);
         }
 

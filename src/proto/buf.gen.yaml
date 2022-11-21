@@ -19,8 +19,6 @@ plugins:
     out: pb
     strategy: all
     opt:
-      - include_file=pb/mod.rs
-      - gen_crate
-      # defines the seperator used in the feature name `foo-bar` vs `foo_bar`
-      # https://docs.rs/protoc-gen-prost-crate/0.3.0/protoc_gen_prost_crate/#options
-      - package_separator=_
+      # https://docs.rs/protoc-gen-prost-crate/latest/protoc_gen_prost_crate/#options
+      - include_file=mod.rs
+      - no_features=true

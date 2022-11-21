@@ -86,10 +86,10 @@ impl Tx {
         // codec version
         // ref. "avalanchego/codec.manager.Marshal"
         packer.pack_u16(codec_version).map_err(|e| {
-            return Error::new(
+            Error::new(
                 ErrorKind::InvalidInput,
                 format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
-            );
+            )
         })?;
         packer.pack_u32(type_id)?;
 

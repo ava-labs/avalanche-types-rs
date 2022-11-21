@@ -141,7 +141,7 @@ impl Bag {
             return false;
         }
 
-        let matched = {
+        {
             for (vote, count) in self.counts.borrow().iter() {
                 let cnt = *count;
 
@@ -157,9 +157,7 @@ impl Bag {
                 }
             }
             true
-        };
-
-        matched
+        }
     }
 
     /// While retaining the same count values, only selects the IDs
@@ -397,6 +395,12 @@ impl Unique {
 
     pub fn clear(&self) {
         self.0.borrow_mut().clear()
+    }
+}
+
+impl Default for Unique {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

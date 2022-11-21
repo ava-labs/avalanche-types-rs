@@ -198,10 +198,10 @@ impl Utxo {
         // codec version
         // ref. "avalanchego/codec.manager.Marshal"
         packer.pack_u16(codec_version).map_err(|e| {
-            return Error::new(
+            Error::new(
                 ErrorKind::InvalidInput,
                 format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
-            );
+            )
         })?;
 
         packer.pack_bytes(self.utxo_id.tx_id.as_ref())?;

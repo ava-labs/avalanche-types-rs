@@ -51,7 +51,7 @@ impl Sig {
         let normalized_sig = sig.normalize_s().unwrap_or(sig);
 
         let rsig = rsig_from_normalized_sig_and_digest_bytes(&normalized_sig, digest, vkey)?;
-        return Ok(Self::from(rsig));
+        Ok(Self::from(rsig))
     }
 
     /// Converts the signature to bytes.
@@ -172,10 +172,10 @@ pub fn rsig_from_normalized_sig_and_digest_bytes(
         return Ok(rsig1);
     }
 
-    return Err(Error::new(
+    Err(Error::new(
         ErrorKind::Other,
         "failed to recover recoverable signature",
-    ));
+    ))
 }
 
 impl From<k256::ecdsa::recoverable::Signature> for Sig {

@@ -61,6 +61,12 @@ impl Errors {
     }
 }
 
+impl Default for Errors {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
 /// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
 /// Use "Self.to_string()" to directly invoke this

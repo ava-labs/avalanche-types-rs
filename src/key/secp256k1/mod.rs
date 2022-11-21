@@ -203,9 +203,8 @@ impl Info {
                 format!("failed to open {} ({})", file_path, e),
             )
         })?;
-        serde_yaml::from_reader(f).map_err(|e| {
-            return Error::new(ErrorKind::InvalidInput, format!("invalid YAML: {}", e));
-        })
+        serde_yaml::from_reader(f)
+            .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("invalid YAML: {}", e)))
     }
 
     pub fn sync(&self, file_path: String) -> io::Result<()> {

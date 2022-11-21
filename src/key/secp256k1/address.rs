@@ -58,7 +58,7 @@ pub fn avax_address_to_short_bytes(chain_alias: &str, addr: &str) -> io::Result<
         addr.trim().to_string()
     } else {
         // e.g., "P-custom12szthht8tnl455u4mz3ns3nvvkel8ezvw2n8cx".trim_start_matches("P-")
-        let pfx = if chain_alias.ends_with("-") {
+        let pfx = if chain_alias.ends_with('-') {
             chain_alias.to_string()
         } else {
             format!("{}-", chain_alias)

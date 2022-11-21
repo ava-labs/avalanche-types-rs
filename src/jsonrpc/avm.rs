@@ -35,12 +35,10 @@ impl IssueTxRequest {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -247,12 +245,10 @@ impl GetUtxosRequest {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -600,12 +596,10 @@ impl IssueStopVertexRequest {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }

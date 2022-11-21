@@ -34,7 +34,7 @@ pub enum Status {
 
 impl Default for Status {
     fn default() -> Self {
-        return Status::Unknown("default".to_owned());
+        Status::Unknown("default".to_owned())
     }
 }
 
@@ -110,13 +110,12 @@ impl Status {
 
     /// Returns the u32 primitive representation of this status.
     pub fn to_u32(&self) -> u32 {
-        let iota = match self {
+        match self {
             Status::Processing => 1,
             Status::Rejected => 2,
             Status::Accepted => 3,
             Status::Unknown(_) => 0,
-        };
-        iota
+        }
     }
 
     /// Returns native endian value from a slice if u8s.

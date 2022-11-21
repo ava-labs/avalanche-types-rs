@@ -46,12 +46,10 @@ impl Request {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -87,12 +85,10 @@ impl RequestWithParamsArray {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -128,12 +124,10 @@ impl RequestWithParamsHashMapArray {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }

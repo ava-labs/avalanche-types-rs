@@ -407,6 +407,17 @@ impl Set64 {
         // ref. bits.OnesCount64
         u64::count_ones(self.0)
     }
+
+    /// Returns true if the set is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+impl Default for Set64 {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// ref. https://doc.rust-lang.org/std/string/trait.ToString.html

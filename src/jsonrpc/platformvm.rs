@@ -39,12 +39,10 @@ impl IssueTxRequest {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -433,12 +431,10 @@ impl GetUtxosRequest {
     pub fn encode_json(&self) -> io::Result<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
+            Err(e) => Err(Error::new(
+                ErrorKind::Other,
+                format!("failed to serialize to JSON {}", e),
+            )),
         }
     }
 }
@@ -854,7 +850,7 @@ impl ApiOwner {
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker
 #[serde_as]
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct ApiPrimaryDelegator {
     #[serde(rename = "txID")]
     pub tx_id: ids::Id,
