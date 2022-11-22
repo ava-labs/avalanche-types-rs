@@ -23,6 +23,7 @@ log = "0.4.17"
 prefix-manager = "0.0.2"
 ring = "0.16.20"
 rust-embed = "6.4.2"
+rustls-pemfile = "1.0.1"
 serde = { version = "1.0.147", features = ["derive"] } # https://github.com/serde-rs/serde/releases
 serde_json = "1.0.87" # https://github.com/serde-rs/json/releases
 serde_with = { version = "2.0.1", features = ["hex"] }
@@ -206,4 +207,4 @@ doctest = false
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
 development = ["id-manager", "tokio-test", "tonic-reflection", "tempfile"]
-normal = ["rsa"]
+normal = ["rsa", "rustls-pemfile"]
