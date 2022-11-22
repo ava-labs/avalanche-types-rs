@@ -3,7 +3,12 @@
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-avalanche_types-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/avalanche-types)
 ![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
-`avalanche-types` crate implements Avalanche primitive types in Rust:
+The `avalanche-types` crate implements Avalanche primitive types in Rust. `avalanche-types` is the canonical representation of Avalanche types in Rust. Avalanche types are separated by modules and are all under the `src` directory.
+
+This crate also provides an SDK library for developing subnets in Rust. For the SDK functionality, see `src/subnet` which contains everything required to build a subnet VM in Rust.
+The following VMs were built with the SDK:
+* Simple Rust VM: [TimestampVM](https://github.com/ava-labs/timestampvm-rs)
+* Complex Rust VM: [SpacesVM](https://github.com/ava-labs/spacesvm-rs)
 
 ## Getting Started
 
@@ -40,4 +45,4 @@ The basic types available in this crate are used in other Avalanche Rust project
 
 ## License
 
-This project is licensed under the [BSD 3](LICENSE).
+This project is licensed under the [BSD 3](../../LICENSE).
