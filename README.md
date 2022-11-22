@@ -4,6 +4,29 @@
 ![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
 `avalanche-types` crate implements Avalanche primitive types in Rust:
+
+## Getting Started
+
+Examples can be found in [`examples`] and is a good first step to getting an understanding of general usage.
+
+### Tutorials
+
+- [How to Build a Simple Rust VM](https://docs.avax.network/subnets/create-a-simple-rust-vm) tutorial provides
+a basic example of using the Rust SDK.
+
+### Rust Version
+
+`avalanche-types` currently works on Rust `1.65` and above as it requires support for the 2021 edition.
+
+## Getting Help
+
+First please try find the answer to your question in the code documentation.
+If more clarification is required, try opening an [issue] with the question.
+
+[issue]: https://github.com/ava-labs/avalanche-types-rs/issues/new
+
+### Features
+
 - Ids (e.g., [`src/ids`](./src/ids))
 - Transaction types/serialization (e.g., [`src/platformvm/txs`](./src/platformvm/txs))
 - Certificates (e.g., [`src/key/cert`](./src/key/cert))
@@ -11,5 +34,10 @@
 - Peer-to-peer messages (e.g., [`src/message`](./src/message))
 - RPC chain VM (e.g., [`src/subnet/rpc`](./src/subnet/rpc))
 - Genesis generate helper (e.g., [`src/subnet_evm`](./src/subnet_evm))
+- Protobuf generated stubs and helpers (e.g., [`src/proto`](./src/proto))
 
 The basic types available in this crate are used in other Avalanche Rust projects (e.g., distributed load tester [`blizzard`](https://talks.gyuho.dev/distributed-load-generator-avalanche-2022.html), [`avalanche-ops`](https://github.com/ava-labs/avalanche-ops)).
+
+## License
+
+This project is licensed under the [BSD 3](LICENSE).

@@ -172,7 +172,8 @@ impl pb::vm::vm_server::Vm for Server {
             bytes: Bytes::from(last_accepted_block.bytes().await.to_vec()),
             height: last_accepted_block.height().await,
             timestamp: Some(timestamp_from_time(
-                &Utc.timestamp(last_accepted_block.timestamp().await as i64, 0),
+                &Utc.timestamp_opt(last_accepted_block.timestamp().await as i64, 0)
+                    .unwrap(),
             )),
         }))
     }
@@ -322,7 +323,8 @@ impl pb::vm::vm_server::Vm for Server {
             bytes: Bytes::from(block.bytes().await.to_vec()),
             height: block.height().await,
             timestamp: Some(timestamp_from_time(
-                &Utc.timestamp(block.timestamp().await as i64, 0),
+                &Utc.timestamp_opt(block.timestamp().await as i64, 0)
+                    .unwrap(),
             )),
         }))
     }
@@ -346,7 +348,8 @@ impl pb::vm::vm_server::Vm for Server {
             status: block.status().await.to_u32(),
             height: block.height().await,
             timestamp: Some(timestamp_from_time(
-                &Utc.timestamp(block.timestamp().await as i64, 0),
+                &Utc.timestamp_opt(block.timestamp().await as i64, 0)
+                    .unwrap(),
             )),
         }))
     }
@@ -379,7 +382,8 @@ impl pb::vm::vm_server::Vm for Server {
                 status: block.status().await.to_u32(),
                 height: block.height().await,
                 timestamp: Some(timestamp_from_time(
-                    &Utc.timestamp(block.timestamp().await as i64, 0),
+                    &Utc.timestamp_opt(block.timestamp().await as i64, 0)
+                        .unwrap(),
                 )),
                 err: 0, // return 0 indicating no error
             })),
@@ -392,7 +396,7 @@ impl pb::vm::vm_server::Vm for Server {
                     bytes: Bytes::new(),
                     status: 0,
                     height: 0,
-                    timestamp: Some(timestamp_from_time(&Utc.timestamp(0, 0))),
+                    timestamp: Some(timestamp_from_time(&Utc.timestamp_opt(0, 0).unwrap())),
                     err: error_to_error_code(&e.to_string()).unwrap(),
                 }))
             }
@@ -431,7 +435,8 @@ impl pb::vm::vm_server::Vm for Server {
             height: block.height().await,
             bytes: Bytes::from(block.bytes().await.to_vec()),
             timestamp: Some(timestamp_from_time(
-                &Utc.timestamp(block.timestamp().await as i64, 0),
+                &Utc.timestamp_opt(block.timestamp().await as i64, 0)
+                    .unwrap(),
             )),
         }))
     }
@@ -530,7 +535,7 @@ impl pb::vm::vm_server::Vm for Server {
         let inner_vm = self.vm.read().await;
 
         let ts = req.deadline.as_ref().expect("timestamp");
-        let deadline = Utc.timestamp(ts.seconds, ts.nanos as u32);
+        let deadline = Utc.timestamp_opt(ts.seconds, ts.nanos as u32).unwrap();
 
         inner_vm
             .app_request(&node_id, req.request_id, deadline, &req.request)
@@ -615,7 +620,8 @@ impl pb::vm::vm_server::Vm for Server {
 
         Ok(Response::new(vm::BlockVerifyResponse {
             timestamp: Some(timestamp_from_time(
-                &Utc.timestamp(block.timestamp().await as i64, 0),
+                &Utc.timestamp_opt(block.timestamp().await as i64, 0)
+                    .unwrap(),
             )),
         }))
     }
