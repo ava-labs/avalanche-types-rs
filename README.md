@@ -1,7 +1,7 @@
 
 [<img alt="crates.io" src="https://img.shields.io/crates/v/avalanche-types.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/avalanche-types)
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-avalanche_types-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/avalanche-types)
-![Github Actions](https://github.com/ava-labs/avalanche-rust/actions/workflows/test-and-release.yml/badge.svg)
+![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
 `avalanche-types` crate implements Avalanche primitive types in Rust:
 - Ids (e.g., [`src/ids`](./src/ids))
