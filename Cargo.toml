@@ -100,6 +100,7 @@ protoc-gen-tonic = "0.2.0"
 env_logger = "0.9.3"
 id-manager = "0.0.1"
 random-manager = "0.0.1"
+tempfile = "3.3.0"
 tokio-stream = { version = "0.1.11", features = ["net"]}
 tokio-test = "0.4.2"
 
@@ -204,5 +205,5 @@ doctest = false
 
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
-development = ["id-manager", "tokio-test", "tonic-reflection"]
+development = ["id-manager", "tokio-test", "tonic-reflection", "tempfile"]
 normal = ["rsa"]
