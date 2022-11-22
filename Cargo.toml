@@ -23,7 +23,6 @@ log = "0.4.17"
 prefix-manager = "0.0.2"
 ring = "0.16.20"
 rust-embed = "6.4.2"
-rustls-pemfile = "1.0.1"
 serde = { version = "1.0.147", features = ["derive"] } # https://github.com/serde-rs/serde/releases
 serde_json = "1.0.87" # https://github.com/serde-rs/json/releases
 serde_with = { version = "2.0.1", features = ["hex"] }
@@ -101,7 +100,6 @@ protoc-gen-tonic = "0.2.0"
 env_logger = "0.9.3"
 id-manager = "0.0.1"
 random-manager = "0.0.1"
-tempfile = "3.3.0"
 tokio-stream = { version = "0.1.11", features = ["net"]}
 tokio-test = "0.4.2"
 

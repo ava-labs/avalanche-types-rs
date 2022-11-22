@@ -16,7 +16,6 @@ RUST_LOG=debug cargo test --workspace \
 --features avalanche-types/evm \
 --features avalanche-types/kms_aws \
 --features avalanche-types/libsecp256k1 \
---features avalanche-types/message_compress_gzip \
 --features avalanche-types/mnemonic \
 --features avalanche-types/subnet_evm \
 -- --show-output
