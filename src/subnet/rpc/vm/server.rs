@@ -15,17 +15,14 @@ use crate::{
             vm,
         },
     },
-    subnet::{
-        self,
-        rpc::{
-            common::{appsender, message::Message},
-            context::Context,
-            database::manager::{versioned_database, DatabaseManager},
-            database::rpcdb::{client::DatabaseClient, error_to_error_code},
-            http::server::Server as HttpServer,
-            snow::State,
-            utils,
-        },
+    subnet::rpc::{
+        common::{appsender, message::Message},
+        context::Context,
+        database::manager::{versioned_database, DatabaseManager},
+        database::rpcdb::{client::DatabaseClient, error_to_error_code},
+        http::server::Server as HttpServer,
+        snow::State,
+        utils,
     },
 };
 use chrono::{TimeZone, Utc};
@@ -34,20 +31,17 @@ use semver::Version;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tonic::{transport::Endpoint, Request, Response};
 
-pub struct Server {
+pub struct Server<V: super::Vm> {
     /// Underlying Vm implementation.
-    pub vm: Arc<RwLock<Box<dyn subnet::rpc::vm::Vm + Send + Sync>>>,
+    pub vm: Arc<RwLock<V>>,
 
     /// Stop channel broadcast producer.
     pub stop_ch: broadcast::Sender<()>,
 }
 
-impl Server {
-    pub fn new(
-        vm: Box<dyn subnet::rpc::vm::Vm + Send + Sync>,
-        stop_ch: broadcast::Sender<()>,
-    ) -> impl pb::vm::vm_server::Vm {
-        Server {
+impl<V: super::Vm> Server<V> {
+    pub fn new(vm: V, stop_ch: broadcast::Sender<()>) -> Self {
+        Self {
             vm: Arc::new(RwLock::new(vm)),
             stop_ch,
         }
@@ -55,7 +49,10 @@ impl Server {
 }
 
 #[tonic::async_trait]
-impl pb::vm::vm_server::Vm for Server {
+impl<V> pb::vm::vm_server::Vm for Server<V>
+where
+    V: super::Vm + Send + Sync + 'static,
+{
     async fn initialize(
         &self,
         req: Request<vm::InitializeRequest>,

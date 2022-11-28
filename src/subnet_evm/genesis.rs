@@ -90,10 +90,9 @@ impl Genesis {
             timestamp: primitive_types::U256::default(),
             extra_data: Some(String::from("0x00")),
 
-            // 8-million, same as C-chain
             // ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
             // ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-            gas_limit: primitive_types::U256::from_str_radix("0x7A1200", 16).unwrap(),
+            gas_limit: primitive_types::U256::from_str_radix("0x1C9C380", 16).unwrap(),
 
             difficulty: primitive_types::U256::default(),
             mix_hash: Some(String::from(
@@ -318,10 +317,11 @@ impl Default for FeeConfig {
     }
 }
 
-/// 8-million, same as C-chain
+/// C-chain is 8-million
 /// ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
 /// ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-pub const DEFAULT_GAS_LIMIT: u64 = 8000000;
+/// ref. https://github.com/ava-labs/public-chain-assets/blob/main/chains/53935/genesis.json
+pub const DEFAULT_GAS_LIMIT: u64 = 30000000;
 
 pub const DEFAULT_TARGET_BLOCK_RATE: u64 = 2;
 
@@ -331,13 +331,13 @@ impl FeeConfig {
             gas_limit: Some(DEFAULT_GAS_LIMIT),
             target_block_rate: Some(DEFAULT_TARGET_BLOCK_RATE),
 
-            min_base_fee: Some(25000000000),
-            target_gas: Some(15000000),
-            base_fee_change_denominator: Some(36),
+            min_base_fee: Some(40000000),
+            target_gas: Some(75000000),
+            base_fee_change_denominator: Some(48),
 
             min_block_gas_cost: Some(0),
-            max_block_gas_cost: Some(1000000),
-            block_gas_cost_step: Some(200000),
+            max_block_gas_cost: Some(2000000000000000000),
+            block_gas_cost_step: Some(1000000000000000000),
         }
     }
 }
@@ -534,14 +534,14 @@ fn test_parse() {
             "muirGlacierBlock": 0,
             "subnetEVMTimestamp": 0,
             "feeConfig": {
-                "gasLimit": 8000000,
-                "minBaseFee": 25000000000,
-                "targetGas": 15000000,
-                "baseFeeChangeDenominator": 36,
+                "gasLimit": 30000000,
+                "minBaseFee": 40000000,
+                "targetGas": 75000000,
+                "baseFeeChangeDenominator": 48,
                 "minBlockGasCost": 0,
-                "maxBlockGasCost": 1000000,
+                "maxBlockGasCost": 2000000000000000000,
                 "targetBlockRate": 2,
-                "blockGasCostStep": 200000
+                "blockGasCostStep": 1000000000000000000
             }
         },
         "alloc": {
@@ -552,7 +552,7 @@ fn test_parse() {
         "nonce": "0x0",
         "timestamp": "0x0",
         "extraData": "0x00",
-        "gasLimit": "0x7A1200",
+        "gasLimit": "0x1C9C380",
         "difficulty": "0x0",
         "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "coinbase": "0x0000000000000000000000000000000000000000",

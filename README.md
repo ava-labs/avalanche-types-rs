@@ -21,7 +21,7 @@ a basic example of using the Rust SDK.
 
 ### Rust Version
 
-`avalanche-types` currently works on Rust `1.65` and above as it requires support for the 2021 edition.
+`avalanche-types` currently works on Rust `1.65` and above as it requires support for the 2021 edition. This project uses the stable toolchain.
 
 ## Getting Help
 
@@ -45,4 +45,4 @@ The basic types available in this crate are used in other Avalanche Rust project
 
 ## License
 
-This project is licensed under the [BSD 3](../../LICENSE).
+This project is licensed under the [BSD 3](LICENSE).
