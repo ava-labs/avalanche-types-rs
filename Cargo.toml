@@ -70,7 +70,7 @@ ethers = { version = "1.0.2", optional = true }
 ethers-core = { version = "1.0.2", optional = true }
 ethers-providers = { version = "1.0.2", optional = true }
 ethers-signers = { version = "1.0.2", optional = true }
-http-manager = { version = "0.0.4", optional = true }
+http-manager = { version = "0.0.6", optional = true }
 tokio = { version = "1.22.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "subnet"
