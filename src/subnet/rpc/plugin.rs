@@ -19,7 +19,7 @@ use tokio::sync::broadcast::Receiver;
 use tonic::transport::server::NamedService;
 use tonic_health::server::health_reporter;
 
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.2/version/constants.go#L15-L17
+/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.4/version/constants.go#L15-L17
 struct HandshakeConfig {
     protocol_version: &'static str,
 }
@@ -82,7 +82,7 @@ where
 
     log::info!("plugin listening on address {:?}", addr);
 
-    // handshake message msut be printed to stdout
+    // handshake message must be printed to stdout
     // ref. https://github.com/hashicorp/go-plugin/blob/master/docs/guide-plugin-write-non-go.md#4-output-handshake-information
     // TODO: remove this once go-plugin is deprecated in avalanchego
     let handshake_config = HandshakeConfig::new();

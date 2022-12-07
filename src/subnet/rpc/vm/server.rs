@@ -8,6 +8,7 @@ use crate::{
             self,
             aliasreader::alias_reader_client::AliasReaderClient,
             google::protobuf::Empty,
+            io::prometheus::client::MetricFamily,
             keystore::keystore_client::KeystoreClient,
             messenger::{messenger_client::MessengerClient, NotifyRequest},
             sharedmemory::shared_memory_client::SharedMemoryClient,
@@ -16,12 +17,14 @@ use crate::{
         },
     },
     subnet::rpc::{
-        common::{appsender, message::Message},
         context::Context,
         database::manager::{versioned_database, DatabaseManager},
         database::rpcdb::{client::DatabaseClient, error_to_error_code},
         http::server::Server as HttpServer,
-        snow::State,
+        snow::{
+            engine::common::{appsender, message::Message},
+            State,
+        },
         utils,
     },
 };
@@ -35,6 +38,10 @@ pub struct Server<V: super::Vm> {
     /// Underlying Vm implementation.
     pub vm: Arc<RwLock<V>>,
 
+    #[cfg(feature = "subnet_metrics")]
+    /// Subnet Prometheus process metrics.
+    pub process_metrics: Arc<RwLock<prometheus::Registry>>,
+
     /// Stop channel broadcast producer.
     pub stop_ch: broadcast::Sender<()>,
 }
@@ -43,6 +50,8 @@ impl<V: super::Vm> Server<V> {
     pub fn new(vm: V, stop_ch: broadcast::Sender<()>) -> Self {
         Self {
             vm: Arc::new(RwLock::new(vm)),
+            #[cfg(feature = "subnet_metrics")]
+            process_metrics: Arc::new(RwLock::new(prometheus::default_registry().to_owned())),
             stop_ch,
         }
     }
@@ -60,8 +69,14 @@ where
         log::info!("initialize called");
 
         let req = req.into_inner();
-        let client_conn = Endpoint::from_shared(format!("http://{}", req.server_addr))
-            .unwrap()
+        let server_addr = &format!("http://{}", req.server_addr);
+        let client_conn = Endpoint::from_shared(server_addr.to_owned())
+            .map_err(|e| {
+                tonic::Status::unknown(format!(
+                    "failed to create client conn from {}: {}",
+                    server_addr, e
+                ))
+            })?
             .connect()
             .await
             .map_err(|e| tonic::Status::unknown(e.to_string()))?;
@@ -81,11 +96,13 @@ where
             chain_id: ids::Id::from_slice(&req.chain_id),
             node_id: ids::node::Id::from_slice(&req.node_id),
             x_chain_id: ids::Id::from_slice(&req.x_chain_id),
+            c_chain_id: ids::Id::from_slice(&req.c_chain_id),
             avax_asset_id: ids::Id::from_slice(&req.avax_asset_id),
             keystore,
             shared_memory,
             bc_lookup,
             sn_lookup,
+            chain_data_dir: req.chain_data_dir,
         });
 
         let mut versioned_dbs: Vec<versioned_database::VersionedDatabase> =
@@ -304,7 +321,7 @@ where
 
     async fn build_block(
         &self,
-        _req: Request<Empty>,
+        _req: Request<vm::BuildBlockRequest>,
     ) -> std::result::Result<Response<vm::BuildBlockResponse>, tonic::Status> {
         log::debug!("build_block called");
 
@@ -323,6 +340,7 @@ where
                 &Utc.timestamp_opt(block.timestamp().await as i64, 0)
                     .unwrap(),
             )),
+            verify_with_context: false,
         }))
     }
 
@@ -348,6 +366,7 @@ where
                 &Utc.timestamp_opt(block.timestamp().await as i64, 0)
                     .unwrap(),
             )),
+            verify_with_context: false,
         }))
     }
 
@@ -383,6 +402,7 @@ where
                         .unwrap(),
                 )),
                 err: 0, // return 0 indicating no error
+                verify_with_context: false,
             })),
             // if an error was found, generate empty response with ErrNotFound code
             // ref: https://github.com/ava-labs/avalanchego/blob/master/vms/
@@ -395,6 +415,7 @@ where
                     height: 0,
                     timestamp: Some(timestamp_from_time(&Utc.timestamp_opt(0, 0).unwrap())),
                     err: error_to_error_code(&e.to_string()).unwrap(),
+                    verify_with_context: false,
                 }))
             }
         }
@@ -692,36 +713,69 @@ where
     ) -> std::result::Result<Response<vm::GatherResponse>, tonic::Status> {
         log::debug!("gather called");
 
-        Err(tonic::Status::unimplemented("gather"))
+        let metric_families = vec![MetricFamily::default()];
+        #[cfg(feature = "subnet_metrics")]
+        // ref. https://prometheus.io/docs/instrumenting/writing_clientlibs/#process-metrics
+        let metric_families = crate::subnet::rpc::metrics::MetricsFamilies::from(
+            &self.process_metrics.read().await.gather(),
+        )
+        .mfs;
+
+        Ok(Response::new(vm::GatherResponse { metric_families }))
     }
 
     async fn cross_chain_app_request(
         &self,
-        _req: Request<vm::CrossChainAppRequestMsg>,
+        req: Request<vm::CrossChainAppRequestMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("cross_chain_app_request called");
+        let msg = req.into_inner();
+        let chain_id = &ids::Id::from_slice(&msg.chain_id);
 
-        Err(tonic::Status::unimplemented("cross_chain_app_request"))
+        let ts = msg.deadline.as_ref().expect("timestamp");
+        let deadline = Utc.timestamp_opt(ts.seconds, ts.nanos as u32).unwrap();
+
+        let inner_vm = self.vm.read().await;
+        inner_vm
+            .cross_chain_app_request(chain_id, msg.request_id, deadline, &msg.request)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn cross_chain_app_request_failed(
         &self,
-        _req: Request<vm::CrossChainAppRequestFailedMsg>,
+        req: Request<vm::CrossChainAppRequestFailedMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("cross_chain_app_request_failed called");
+        let msg = req.into_inner();
+        let chain_id = &ids::Id::from_slice(&msg.chain_id);
 
-        Err(tonic::Status::unimplemented(
-            "send_cross_chain_app_request_failed",
-        ))
+        let inner_vm = self.vm.read().await;
+        inner_vm
+            .cross_chain_app_request_failed(chain_id, msg.request_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn cross_chain_app_response(
         &self,
-        _req: Request<vm::CrossChainAppResponseMsg>,
+        req: Request<vm::CrossChainAppResponseMsg>,
     ) -> std::result::Result<Response<Empty>, tonic::Status> {
         log::debug!("cross_chain_app_response called");
+        let msg = req.into_inner();
+        let chain_id = &ids::Id::from_slice(&msg.chain_id);
 
-        Err(tonic::Status::unimplemented("cross_chain_app_response"))
+        let inner_vm = self.vm.read().await;
+        inner_vm
+            .cross_chain_app_response(chain_id, msg.request_id, &msg.response)
+            .await
+            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn state_sync_enabled(

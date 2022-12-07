@@ -8,11 +8,23 @@ use ethers_providers::Middleware;
 use primitive_types::{H160, H256, U256};
 use tokio::time::{sleep, Duration, Instant};
 
-/// Represents an Ethereum transaction.
-/// ref. https://ethereum.org/en/developers/docs/transactions/
+/// Represents an EIP-1559 Ethereum transaction (dynamic fee transaction in coreth/subnet-evm).
+/// ref. https://ethereum.org/en/developers/docs/transactions
+/// ref. https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md
+/// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest"
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
+/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx
 ///
-/// NOTE: The default subnet-evm will fail this transaction with
-/// "only replay-protected (EIP-155) transactions allowed over RPC".
+/// The transaction cost is "value" + "gas" * "gas_price" in coreth (ref. "types.Transaction.Cost").
+/// Which is, "value" + "gas_limit" * "max_fee_per_gas".
+/// The transaction cost must be smaller than the originator's balance.
+/// Otherwise, fails with "insufficient funds for gas * price + value: address ... have (0) want (x)".
+///
+/// "max_fee_per_gas" cannot be lower than the pool's minimum fee.
+/// And the pool's minimum fee is set
+/// Otherwise, fails with "transaction underpriced: address ... have gas fee cap (0) < pool minimum fee cap (25000000000)".
 #[derive(Clone, Debug)]
 pub struct Tx<'a, T, S>
 where
@@ -24,21 +36,38 @@ where
 
     /// Sequence number originated from this account to prevent message replay attack
     /// ref. https://eips.ethereum.org/EIPS/eip-155
+    ///
+    /// Must keep track of nonces when creating transactions programmatically.
+    /// If two transactions were transmitted with the same nonce,
+    /// only one will be confirmed and the other will be rejected.
+    ///
+    /// None for next available nonce.
     pub signer_nonce: Option<U256>,
 
     /// Maximum transaction fee as a premium.
     /// Maps to subnet-evm DynamicFeeTx "GasTipCap".
     pub max_priority_fee_per_gas: Option<U256>,
+
     /// Maximum amount that the originator is willing to pay for this transaction.
     /// Maps to subnet-evm DynamicFeeTx "GasFeeCap".
     pub max_fee_per_gas: Option<U256>,
 
     /// "gas_limit" is the maximum amount of gas that the originator is willing
     /// to buy for this transaction (e.g., fuel tank capacity).
+    /// For instance, if a transaction requires 5 gas units, the transaction can
+    /// cost up to 5 * "gas_price".
     pub gas_limit: Option<U256>,
 
+    /// Transfer fund receiver address.
+    /// None means contract creation.
     pub to: Option<H160>,
+
+    /// Transfer amount value.
     pub value: Option<U256>,
+
+    /// Binary data payload.
+    /// This can be compiled code of a contract OR the hash of the invoked
+    /// method signature and encoded parameters.
     pub data: Option<Vec<u8>>,
 
     /// Set "true" to poll transfer status after issuance for its acceptance.
@@ -184,6 +213,7 @@ where
         let signer_nonce = if let Some(signer_nonce) = self.signer_nonce {
             signer_nonce
         } else {
+            log::info!("nonce not specified -- fetching latest");
             self.inner.latest_nonce().await?
         };
         log::info!("latest signer nonce {}", signer_nonce);
@@ -198,21 +228,27 @@ where
         if let Some(to) = &self.to {
             tx_request = tx_request.to(ethers::prelude::H160::from(to.as_fixed_bytes()));
         }
+
         if let Some(value) = &self.value {
-            tx_request = tx_request.value(ethers::prelude::U256::from(value.as_u128()));
+            let converted: ethers::prelude::U256 = value.into();
+            tx_request = tx_request.value(converted);
         }
+
         if let Some(max_priority_fee_per_gas) = &self.max_priority_fee_per_gas {
-            tx_request = tx_request.max_priority_fee_per_gas(ethers::prelude::U256::from(
-                max_priority_fee_per_gas.as_u128(),
-            ));
+            let converted: ethers::prelude::U256 = max_priority_fee_per_gas.into();
+            tx_request = tx_request.max_priority_fee_per_gas(converted);
         }
+
         if let Some(max_fee_per_gas) = &self.max_fee_per_gas {
-            tx_request =
-                tx_request.max_fee_per_gas(ethers::prelude::U256::from(max_fee_per_gas.as_u128()));
+            let converted: ethers::prelude::U256 = max_fee_per_gas.into();
+            tx_request = tx_request.max_fee_per_gas(converted);
         }
+
         if let Some(gas_limit) = &self.gas_limit {
-            tx_request = tx_request.gas(ethers::prelude::U256::from(gas_limit.as_u128()));
+            let converted: ethers::prelude::U256 = gas_limit.into();
+            tx_request = tx_request.gas(converted);
         }
+
         if let Some(data) = &self.data {
             tx_request = tx_request.data(data.clone());
         }
@@ -259,7 +295,7 @@ where
         // serde_json::to_string(&tx).unwrap()
         if let Some(inner) = &tx {
             assert_eq!(inner.hash(), tx_receipt.transaction_hash);
-            log::info!("{} successfully issued", inner.hash());
+            log::info!("successfully issued transaction '{}'", inner.hash());
         } else {
             log::warn!("transaction not found in get_transaction");
         }
@@ -273,6 +309,66 @@ where
     }
 }
 
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
 impl<'a, T, S> Tx<'a, T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
@@ -282,7 +378,7 @@ where
     /// Issues the transaction and returns the transaction Id.
     /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
     #[deprecated(note = "not working... TODO: fix")]
-    pub async fn submit0(&self) -> io::Result<H256> {
+    pub async fn submit_manual(&self) -> io::Result<H256> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
             "issuing transaction [chain Id {}, value {:?}, from {}, to {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {:?}, max_fee_per_gas {:?}, gas_limit {:?}]",
@@ -311,18 +407,23 @@ where
         if let Some(to) = self.to {
             tx = tx.to(to);
         }
+
         if let Some(value) = self.value {
             tx = tx.value(value);
         }
+
         if let Some(max_priority_fee_per_gas) = self.max_priority_fee_per_gas {
             tx = tx.max_priority_fee_per_gas(max_priority_fee_per_gas);
         }
+
         if let Some(max_fee_per_gas) = self.max_fee_per_gas {
             tx = tx.max_fee_per_gas(max_fee_per_gas);
         }
+
         if let Some(gas_limit) = self.gas_limit {
             tx = tx.gas_limit(gas_limit);
         }
+
         if let Some(data) = &self.data {
             tx = tx.data(data.clone());
         }
@@ -345,6 +446,7 @@ where
 
         if let Some(r) = &resp.result {
             assert_eq!(tx_hash, *r);
+            log::info!("successfully issued transaction '{}'", tx_hash);
         } else {
             // "coreth,subnet-evm/eth.EthAPIBackend.SendTx" adds this transaction to its transaction pool
             // which means, this transaction was sent but still pending, thus no result

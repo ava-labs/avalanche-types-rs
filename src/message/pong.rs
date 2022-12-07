@@ -18,14 +18,17 @@ impl Default for Message {
 impl Message {
     pub fn default() -> Self {
         Message {
-            msg: p2p::Pong { uptime_pct: 0 },
+            msg: p2p::Pong {
+                uptime: 0,
+                subnet_uptimes: vec![],
+            },
             gzip_compress: false,
         }
     }
 
     #[must_use]
-    pub fn uptime_pct(mut self, uptime_pct: u32) -> Self {
-        self.msg.uptime_pct = uptime_pct;
+    pub fn uptime_pct(mut self, uptime: u32) -> Self {
+        self.msg.uptime = uptime;
         self
     }
 

@@ -285,7 +285,7 @@ impl ChainConfig {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#FeeConfig
+/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/commontype#FeeConfig
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeConfig {
@@ -303,10 +303,17 @@ pub struct FeeConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub base_fee_change_denominator: Option<u64>,
 
+    /// USE WITH CAUTION!
+    /// Set min/max block gas cost the same and low to
+    /// keep the gas price constant (useful for load tests).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_block_gas_cost: Option<u64>,
+    /// USE WITH CAUTION!
+    /// Set min/max block gas cost the same and low to
+    /// keep the gas price constant (useful for load tests).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_block_gas_cost: Option<u64>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block_gas_cost_step: Option<u64>,
 }
@@ -387,6 +394,7 @@ pub struct ContractNativeMinterConfig {
     /// Timestamp for the upgrade.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block_timestamp: Option<u64>,
+
     /// Set to "true" for the upgrade to deactivate the precompile and reset its storage.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disable: Option<bool>,

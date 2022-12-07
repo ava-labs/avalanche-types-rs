@@ -3,6 +3,13 @@
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-avalanche_types-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/avalanche-types)
 ![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
+## AvalancheGo Compatibility
+| Crate Version(s) | AvalancheGo Version(s) | Protocol Version |
+| --- | ----------- | --- |
+| v0.0.134-155 | v1.9.2,v1.9.3 | 19
+| v0.0.156 | v1.9.4 | 20
+
+## Introduction
 The `avalanche-types` crate implements Avalanche primitive types in Rust. `avalanche-types` is the canonical representation of Avalanche types in Rust. Avalanche types are separated by modules and are all under the `src` directory.
 
 This crate also provides an SDK library for developing subnets in Rust. For the SDK functionality, see `src/subnet` which contains everything required to build a subnet VM in Rust.
@@ -30,7 +37,7 @@ If more clarification is required, try opening an [issue] with the question.
 
 [issue]: https://github.com/ava-labs/avalanche-types-rs/issues/new
 
-### Features
+## Features
 
 - Ids (e.g., [`src/ids`](./src/ids))
 - Transaction types/serialization (e.g., [`src/platformvm/txs`](./src/platformvm/txs))

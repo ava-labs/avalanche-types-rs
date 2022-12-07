@@ -1,3 +1,5 @@
+pub mod engine;
+
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State
 #[derive(PartialEq, Eq)]
 pub enum State {

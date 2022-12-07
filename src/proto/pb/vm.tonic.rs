@@ -203,7 +203,7 @@ pub mod vm_client {
         }
         pub async fn build_block(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::google::protobuf::Empty>,
+            request: impl tonic::IntoRequest<super::BuildBlockRequest>,
         ) -> Result<tonic::Response<super::BuildBlockResponse>, tonic::Status> {
             self.inner
                 .ready()
@@ -751,7 +751,7 @@ pub mod vm_server {
         >;
         async fn build_block(
             &self,
-            request: tonic::Request<super::super::google::protobuf::Empty>,
+            request: tonic::Request<super::BuildBlockRequest>,
         ) -> Result<tonic::Response<super::BuildBlockResponse>, tonic::Status>;
         async fn parse_block(
             &self,
@@ -1223,9 +1223,7 @@ pub mod vm_server {
                 "/vm.VM/BuildBlock" => {
                     #[allow(non_camel_case_types)]
                     struct BuildBlockSvc<T: Vm>(pub Arc<T>);
-                    impl<
-                        T: Vm,
-                    > tonic::server::UnaryService<super::super::google::protobuf::Empty>
+                    impl<T: Vm> tonic::server::UnaryService<super::BuildBlockRequest>
                     for BuildBlockSvc<T> {
                         type Response = super::BuildBlockResponse;
                         type Future = BoxFuture<
@@ -1234,9 +1232,7 @@ pub mod vm_server {
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::super::google::protobuf::Empty,
-                            >,
+                            request: tonic::Request<super::BuildBlockRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).build_block(request).await };

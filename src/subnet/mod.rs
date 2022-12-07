@@ -1,3 +1,4 @@
+pub mod config;
 pub mod rpc;
 
 use std::io::{self, Error, ErrorKind};

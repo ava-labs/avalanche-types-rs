@@ -132,10 +132,8 @@ pub struct Config {
     pub whitelisted_subnets: Option<String>,
 
     /// Chain configuration directory for all chains.
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.7.6/config/flags.go#L25-L44
     pub chain_config_dir: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subnet_config_dir: Option<String>,
+    pub subnet_config_dir: String,
 
     /// A comma seperated string of explicit nodeID and IPs
     /// to contact for starting state sync. Useful for testing.
@@ -311,7 +309,7 @@ impl Config {
             whitelisted_subnets: None,
 
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
-            subnet_config_dir: Some(String::from(DEFAULT_SUBNET_CONFIG_DIR)),
+            subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,
@@ -392,7 +390,7 @@ impl Config {
             whitelisted_subnets: None,
 
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
-            subnet_config_dir: Some(String::from(DEFAULT_SUBNET_CONFIG_DIR)),
+            subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,
@@ -473,7 +471,7 @@ impl Config {
             whitelisted_subnets: None,
 
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
-            subnet_config_dir: Some(String::from(DEFAULT_SUBNET_CONFIG_DIR)),
+            subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,

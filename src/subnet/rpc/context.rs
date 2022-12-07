@@ -18,10 +18,12 @@ pub struct Context {
     pub chain_id: Id,
     pub node_id: NodeId,
     pub x_chain_id: Id,
+    pub c_chain_id: Id,
     pub avax_asset_id: Id,
     pub keystore: KeystoreClient<Channel>,
     pub shared_memory: SharedMemoryClient<Channel>,
     pub bc_lookup: AliasReaderClient<Channel>,
     pub sn_lookup: SubnetLookupClient<Channel>,
+    pub chain_data_dir: String,
     // TODO metrics
 }

@@ -1,10 +1,13 @@
 use std::io::Result;
 
-use crate::{ids::Id, subnet::rpc::consensus::snowman};
+use crate::{
+    ids::Id,
+    subnet::rpc::{consensus::snowman, snow::engine::common::vm::Vm},
+};
 
 /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVm
 #[tonic::async_trait]
-pub trait ChainVm: crate::subnet::rpc::common::vm::Vm + Getter + Parser {
+pub trait ChainVm: Vm + Getter + Parser {
     /// Attempt to create a new block from ChainVm data
     /// Returns either a block or an error
     async fn build_block(&self) -> Result<Box<dyn snowman::Block + Send + Sync>>;

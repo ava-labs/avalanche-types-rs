@@ -1,6 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{message, proto::pb::p2p};
+use crate::{ids, message, proto::pb::p2p};
 use prost::Message as ProstMessage;
 
 #[derive(
@@ -18,6 +18,7 @@ pub struct ClaimedIpPort {
     pub ip_port: u32,
     pub time: u64,
     pub sig: Vec<u8>,
+    pub tx_id: ids::Id,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -52,6 +53,7 @@ impl Message {
                 ip_port: v.ip_port,
                 timestamp: v.time,
                 signature: prost::bytes::Bytes::from(v.sig),
+                tx_id: prost::bytes::Bytes::from(v.tx_id.to_vec()),
             });
         }
 
@@ -157,6 +159,7 @@ fn test_message() {
             ip_port: 8080,
             time: 7,
             sig: vec![0x01, 0x02, 0x03, 0x04],
+            tx_id: ids::Id::empty(),
         },
         ClaimedIpPort {
             certificate: vec![0x01, 0x02, 0x03],
@@ -164,6 +167,7 @@ fn test_message() {
             ip_port: 8081,
             time: 7,
             sig: vec![0x01, 0x02, 0x03, 0x04],
+            tx_id: ids::Id::empty(),
         },
     ]);
 
