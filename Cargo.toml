@@ -46,7 +46,7 @@ sha2 = { version = "0.10.6", optional = false }
 sha3 = { version = "0.10.6", optional = false }
 
 # [OPTIONAL] for "libsecp256k1"
-secp256k1 = { version = "0.24.1", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
+secp256k1 = { version = "0.25.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
 aws-manager = { version = "0.21.13", optional = true } # https://github.com/gyuho/aws-manager/tags
