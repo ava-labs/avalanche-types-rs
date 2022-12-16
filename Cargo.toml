@@ -49,7 +49,7 @@ sha3 = { version = "0.10.6", optional = false }
 secp256k1 = { version = "0.24.1", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.21.13", optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.22.1", optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.21.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.52.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
