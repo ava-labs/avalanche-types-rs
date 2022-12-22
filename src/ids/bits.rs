@@ -7,7 +7,7 @@ const BITS_PER_BYTES: usize = 8;
 
 /// Returns "true" if two Ids are equal for the range [start, end).
 /// This does bit-per-bit comparison for the Id type of [u8; ID_LEN].
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#EqualSubset
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#EqualSubset>
 pub fn equal_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> bool {
     if end == 0 {
         return true;
@@ -146,7 +146,7 @@ fn test_equal_subset_out_of_bounds() {
 
 /// Returns the "id1" index of the first different bit in the range [start, end).
 /// This does bit-per-bit comparison for the Id type of [u8; ID_LEN].
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#FirstDifferenceSubset
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#FirstDifferenceSubset>
 pub fn first_difference_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> (usize, bool) {
     if end == 0 {
         return (0, false);
@@ -356,7 +356,7 @@ impl Bit {
 
 /// Set that can contain uints in the range [0, 64).
 /// All functions are O(1). The zero value is the empty set.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#BitSet64
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#BitSet64>
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Set64(u64);
 
@@ -420,8 +420,8 @@ impl Default for Set64 {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl fmt::Display for Set64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

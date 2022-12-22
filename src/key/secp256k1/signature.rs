@@ -6,7 +6,7 @@ use hmac::digest::generic_array::GenericArray;
 /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs
 /// 65-byte signature -- see "compactSigSize"
 /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#SECP256K1RSigLen
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#SECP256K1RSigLen>
 /// ref. "secp256k1::constants::SCHNORR_SIGNATURE_SIZE" + 1
 pub const LEN: usize = 65;
 
@@ -35,7 +35,7 @@ impl Sig {
 
     /// Loads the recoverable signature from the DER-encoded bytes,
     /// as defined by ANS X9.62–2005 and RFC 3279 Section 2.2.3.
-    /// ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature
+    /// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
     pub fn from_der(
         raw_sig: &[u8],
         digest: &[u8],

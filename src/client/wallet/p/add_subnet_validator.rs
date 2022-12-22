@@ -13,8 +13,8 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents P-chain "AddSubnetValidator" transaction.
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L360-L390 "NewAddSubnetValidatorTx"
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L512 "NewAddSubnetValidatorTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L360-L390> "NewAddSubnetValidatorTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L512> "NewAddSubnetValidatorTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where

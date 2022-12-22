@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 pub const DEFAULT_VERSION: &str = "2.0";
 pub const DEFAULT_ID: u32 = 1;
 
-/// ref. https://www.jsonrpc.org/specification
-/// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
+/// ref. <https://www.jsonrpc.org/specification>
+/// ref. <https://docs.avax.network/build/avalanchego-apis/issuing-api-calls>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Request {
     pub jsonrpc: String,
@@ -44,17 +44,12 @@ impl Request {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct RequestWithParamsArray {
     pub jsonrpc: String,
@@ -83,17 +78,12 @@ impl RequestWithParamsArray {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct RequestWithParamsHashMapArray {
     pub jsonrpc: String,
@@ -122,18 +112,13 @@ impl RequestWithParamsHashMapArray {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EndIndex {

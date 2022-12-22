@@ -4,8 +4,8 @@ use crate::{client::p as client_p, formatting, ids, key, platformvm, txs};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents P-chain "CreateChain" transaction.
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L459-L498 "NewCreateChainTx"
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L345 "NewCreateChainTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L459-L498> "NewCreateChainTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L345> "NewCreateChainTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
@@ -123,19 +123,6 @@ where
             self.vm_id,
             self.chain_name,
             picked_http_rpc.1
-        );
-
-        let cur_balance_p = self.inner.balance().await?;
-        if cur_balance_p < self.inner.inner.create_blockchain_tx_fee {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("key address {} (balance {} nano-AVAX, network {}) does not have enough to cover stake amount + fee {}", self.inner.inner.p_address, cur_balance_p, self.inner.inner.network_name, self.inner.inner.create_blockchain_tx_fee),
-             ));
-        };
-        log::info!(
-            "{} current P-chain balance {}",
-            self.inner.inner.p_address,
-            cur_balance_p
         );
 
         let (ins, unstaked_outs, _, signers) = self

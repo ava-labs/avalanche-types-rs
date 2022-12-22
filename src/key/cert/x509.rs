@@ -12,7 +12,7 @@ use rustls_pemfile::{read_one, Item};
 use rsa::{pkcs1::LineEnding, pkcs8::EncodePrivateKey, RsaPrivateKey};
 
 /// Generates a X509 certificate pair and returns them in DER format.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/staking#NewCertAndKeyBytes
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/staking#NewCertAndKeyBytes>
 pub fn generate_default_der() -> io::Result<(rustls::PrivateKey, rustls::Certificate)> {
     log::info!("generating key and cert (DER format)");
 
@@ -59,7 +59,7 @@ fn test_generate_default_der() {
 }
 
 /// Generates a X509 certificate pair and writes them as PEM files.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/staking#NewCertAndKeyBytes
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/staking#NewCertAndKeyBytes>
 ///
 /// See https://github.com/ava-labs/avalanche-ops/blob/ad1730ed193cf1cd5056f23d130c3defc897cab5/avalanche-types/src/cert.rs
 /// to use "openssl" crate.
@@ -292,7 +292,7 @@ pub fn load_or_generate_pem(key_path: &str, cert_path: &str) -> io::Result<(node
     Ok((node_id, generated))
 }
 
-/// ref. https://doc.rust-lang.org/std/fs/fn.read.html
+/// ref. <https://doc.rust-lang.org/std/fs/fn.read.html>
 fn read_vec(p: &str) -> io::Result<Vec<u8>> {
     let mut f = File::open(p)?;
     let metadata = fs::metadata(p)?;
@@ -384,7 +384,7 @@ pub fn create_default_params() -> io::Result<CertificateParams> {
 
 /// Creates default certificate parameters.
 /// Use RSA for Apple M1.
-/// ref. https://github.com/sfackler/rust-native-tls/issues/225
+/// ref. <https://github.com/sfackler/rust-native-tls/issues/225>
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]
 pub fn create_default_params() -> io::Result<CertificateParams> {
     let mut cert_params = CertificateParams::default();

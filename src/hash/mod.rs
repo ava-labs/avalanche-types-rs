@@ -27,7 +27,7 @@ pub fn sha256(b: impl AsRef<[u8]>) -> Vec<u8> {
 
 /// Converts bytes to the short address bytes (20-byte).
 /// e.g., "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
 pub fn sha256_ripemd160<B>(b: B) -> io::Result<Vec<u8>>
 where
     B: AsRef<[u8]>,

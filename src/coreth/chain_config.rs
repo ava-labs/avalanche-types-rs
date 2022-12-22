@@ -7,13 +7,13 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 /// To be persisted in "chain_config_dir".
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/plugin/evm#Config
-/// ref. https://github.com/ava-labs/coreth/blob/v0.8.16/plugin/evm/config.go
-/// ref. https://serde.rs/container-attrs.html
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/plugin/evm#Config>
+/// ref. <https://github.com/ava-labs/coreth/blob/v0.8.16/plugin/evm/config.go>
+/// ref. <https://serde.rs/container-attrs.html>
 ///
 /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
 /// the config file for this chain is located at {chain-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json
-/// ref. https://docs.avax.network/subnets/customize-a-subnet#chain-configs
+/// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
 ///
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -120,7 +120,7 @@ pub const DEFAULT_METRICS_ENABLED: bool = true;
 pub const DEFAULT_LOG_LEVEL: &str = "info";
 pub const DEFAULT_LOG_JSON_FORMAT: bool = true;
 
-/// ref. https://docs.avax.network/nodes/maintain/run-offline-pruning
+/// ref. <https://docs.avax.network/nodes/maintain/run-offline-pruning>
 pub const DEFAULT_OFFLINE_PRUNING_DATA_DIR: &str = "/data/c-chain-offline-pruning";
 
 impl Default for Config {
@@ -196,16 +196,11 @@ impl Config {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 
-    /// Saves the current anchor node to disk
+    /// Saves the current chain config to disk
     /// and overwrites the file.
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing Config to '{}'", file_path);
@@ -213,16 +208,9 @@ impl Config {
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
 
-        let ret = serde_json::to_vec(self);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Config to YAML {}", e),
-                ));
-            }
-        };
+        let d = serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+
         let mut f = File::create(file_path)?;
         f.write_all(&d)?;
 

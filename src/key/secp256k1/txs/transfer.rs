@@ -6,10 +6,10 @@ use std::{
 use crate::{codec, key};
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOutput
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOut
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOutput>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOut>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput>
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Output {
     pub amount: u64,
@@ -216,10 +216,10 @@ fn test_sort_transfer_outputs() {
     assert_eq!(outputs, sorted_outputs);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableInput
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableIn
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Input
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableInput>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableIn>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Input>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Input {
     pub amount: u64,

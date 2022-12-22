@@ -4,7 +4,7 @@ use crate::{choices, codec::serde::hex_0x_utxo::Hex0xUtxo, ids, jsonrpc, txs};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxRequest {
     pub jsonrpc: String,
@@ -33,13 +33,8 @@ impl IssueTxRequest {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
@@ -50,7 +45,7 @@ pub struct IssueTxParams {
     pub encoding: String,
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxResponse {
     pub jsonrpc: String,
@@ -80,7 +75,7 @@ impl IssueTxResponse {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain#avmissuetx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxResult {
     #[serde(rename = "txID")]
@@ -132,7 +127,7 @@ fn test_issue_tx() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxStatusResponse {
     pub jsonrpc: String,
@@ -162,7 +157,7 @@ impl GetTxStatusResponse {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxStatusResult {
@@ -214,7 +209,7 @@ fn test_get_tx_status() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
+/// ref. <https://docs.avax.network/build/avalanchego-apis/issuing-api-calls>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetUtxosRequest {
     pub jsonrpc: String,
@@ -243,17 +238,12 @@ impl GetUtxosRequest {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUtxosParams {
@@ -262,7 +252,7 @@ pub struct GetUtxosParams {
     pub encoding: String,
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetUtxosResponse {
     pub jsonrpc: String,
@@ -275,7 +265,7 @@ pub struct GetUtxosResponse {
     pub error: Option<super::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -399,7 +389,7 @@ fn test_get_utxos_non_empty() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetBalanceResponse {
     pub jsonrpc: String,
@@ -412,7 +402,7 @@ pub struct GetBalanceResponse {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetBalanceResult {
@@ -482,7 +472,7 @@ fn test_get_balance() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetAssetDescriptionResponse {
     pub jsonrpc: String,
@@ -495,7 +485,7 @@ pub struct GetAssetDescriptionResponse {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetAssetDescriptionResult {
@@ -565,7 +555,7 @@ fn test_get_asset_description() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
+/// ref. <https://docs.avax.network/build/avalanchego-apis/issuing-api-calls>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueStopVertexRequest {
     pub jsonrpc: String,
@@ -594,13 +584,8 @@ impl IssueStopVertexRequest {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 

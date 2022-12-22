@@ -7,7 +7,7 @@ use crate::jsonrpc::health;
 
 /// "If a single piece of data must be accessible from more than one task
 /// concurrently, then it must be shared using synchronization primitives such as Arc."
-/// ref. https://tokio.rs/tokio/tutorial/spawning
+/// ref. <https://tokio.rs/tokio/tutorial/spawning>
 pub async fn check(http_rpc: Arc<String>, liveness: bool) -> io::Result<health::Response> {
     let url_path = {
         if liveness {

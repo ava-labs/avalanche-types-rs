@@ -10,7 +10,7 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXOID
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXOID>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Id {
     #[serde(rename = "txID")]
@@ -75,7 +75,7 @@ impl PartialEq for Id {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortUTXOIDs
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortUTXOIDs>
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- txs::utxo::test_sort_utxo_ids --exact --show-output
 #[test]
 fn test_sort_utxo_ids() {
@@ -132,7 +132,7 @@ fn test_utxo_id() {
 }
 
 /// Do not parse the internal tests.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXO
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXO>
 /// TODO: implement ordering?
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct Utxo {
@@ -145,10 +145,10 @@ pub struct Utxo {
     /// The underlying type is one of the following:
     ///
     /// "*secp256k1fx.TransferOutput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput>
     ///
     /// "*platformvm.StakeableLockOut" which embeds "*secp256k1fx.TransferOutput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut>
     ///
     /// MUST: only one of the following can be "Some".
     pub transfer_output: Option<key::secp256k1::txs::transfer::Output>,
@@ -241,7 +241,7 @@ impl Utxo {
 
     /// Parses raw bytes to "Utxo".
     /// It assumes the data are already decoded from "hex".
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXO
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXO>
     pub fn unpack(d: &[u8]) -> io::Result<Self> {
         let packer = packer::Packer::load_bytes_for_unpack(d.len() + 1024, d);
 

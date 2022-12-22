@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use jsonrpc_core::IoHandler;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#LockOption
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#LockOption>
 #[derive(Debug)]
 pub enum LockOptions {
     WriteLock = 0,
@@ -36,7 +36,7 @@ impl TryFrom<u32> for LockOptions {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#HTTPHandler
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#HTTPHandler>
 #[derive(Debug)]
 pub struct HttpHandler {
     pub lock_option: LockOptions,

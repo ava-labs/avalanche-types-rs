@@ -1,3 +1,14 @@
+//! Implements an in-memory database useful for testing.
+//!
+//!```rust
+//! use avalanche_types::subnet::rpc::database::memdb::Database;
+//!
+//! let mut db = Database::new();
+//! let resp = db.put("foo".as_bytes(), "bar".as_bytes()).await;
+//! let resp = db.has("foo".as_bytes()).await;
+//! assert_eq!(resp.unwrap(), true);
+//! ```
+
 use std::{
     collections::HashMap,
     io,
@@ -25,7 +36,7 @@ impl Database {
 }
 
 /// Database is an ephemeral key-value store that implements the Database interface.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database/memdb#Database
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/memdb#Database>
 impl crate::subnet::rpc::database::Database for Database {}
 
 #[tonic::async_trait]
@@ -116,6 +127,7 @@ async fn test_memdb() {
     let db = Database::new();
     let _ = db.close().await;
     let resp = db.get("foo".as_bytes()).await;
+    print!("found {:?}", resp);
     assert!(resp.is_err());
     assert_eq!(resp.err().unwrap().to_string(), "database closed");
 

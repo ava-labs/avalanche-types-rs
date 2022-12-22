@@ -67,8 +67,8 @@ impl Default for Errors {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -4,22 +4,31 @@
 ![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
 ## AvalancheGo Compatibility
+
 | Crate Version(s) | AvalancheGo Version(s) | Protocol Version |
-| --- | ----------- | --- |
-| v0.0.134-155 | v1.9.2,v1.9.3 | 19
-| v0.0.156 | v1.9.4 | 20
+| ---------------- | ---------------------- | ---------------- |
+| v0.0.134-155     | v1.9.2,v1.9.3          | 19               |
+| v0.0.156-176     | v1.9.4                 | 20               |
+| v0.0.177+        | v1.9.5                 | 21               |
 
 ## Introduction
-The `avalanche-types` crate implements Avalanche primitive types in Rust. `avalanche-types` is the canonical representation of Avalanche types in Rust. Avalanche types are separated by modules and are all under the `src` directory.
 
-This crate also provides an SDK library for developing subnets in Rust. For the SDK functionality, see `src/subnet` which contains everything required to build a subnet VM in Rust.
+The `avalanche-types` crate implements and is the canonical representation of
+Avalanche primitive types in Rust.  Avalanche types are separated by modules and
+are all under the `src` directory.
+
+This crate also provides an SDK library for developing subnets in Rust. For the
+SDK functionality, see `src/subnet` which contains everything required to build
+a subnet VM in Rust.
+
 The following VMs were built with the SDK:
 * Simple Rust VM: [TimestampVM](https://github.com/ava-labs/timestampvm-rs)
 * Complex Rust VM: [SpacesVM](https://github.com/ava-labs/spacesvm-rs)
 
 ## Getting Started
 
-Examples can be found in [`examples`] and is a good first step to getting an understanding of general usage.
+Examples can be found in [`examples`] and is a good first step to getting an
+understanding of general usage.
 
 ### Tutorials
 
@@ -28,7 +37,8 @@ a basic example of using the Rust SDK.
 
 ### Rust Version
 
-`avalanche-types` currently works on Rust `1.65` and above as it requires support for the 2021 edition. This project uses the stable toolchain.
+`avalanche-types` currently works on Rust `1.66` and above as it requires
+support for the 2021 edition. This project uses the stable toolchain.
 
 ## Getting Help
 

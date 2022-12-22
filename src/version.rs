@@ -37,7 +37,7 @@ impl PartialEq for ApplicationVersion {
     }
 }
 
-/// ref. https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq
+/// ref. <https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq>
 impl Hash for ApplicationVersion {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.app.hash(state);

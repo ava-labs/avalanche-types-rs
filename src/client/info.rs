@@ -6,7 +6,7 @@ use std::{
 use crate::jsonrpc::{self, info};
 
 /// e.g., "info.getNetworkName".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname>
 pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkNameResponse> {
     log::info!("getting network name for {}", http_rpc);
 
@@ -25,7 +25,7 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
 }
 
 /// e.g., "info.getNetworkID".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid>
 pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResponse> {
     log::info!("getting network ID for {}", http_rpc);
 
@@ -44,7 +44,7 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
 }
 
 /// e.g., "info.getBlockchainID".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetblockchainid
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetblockchainid>
 pub async fn get_blockchain_id(
     http_rpc: &str,
     chain_alias: &str,
@@ -70,7 +70,7 @@ pub async fn get_blockchain_id(
 }
 
 /// e.g., "info.getNodeID".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
 pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> {
     log::info!("getting node ID for {}", http_rpc);
 
@@ -85,7 +85,7 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
 }
 
 /// e.g., "info.getNodeVersion".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
 pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersionResponse> {
     let joined = http_manager::join_uri(http_rpc, "ext/info")?;
     log::info!("getting node version for {}", joined.as_str());
@@ -105,7 +105,7 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
 }
 
 /// e.g., "info.getVMs".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetvms
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetvms>
 pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
     log::info!("getting VMs for {}", http_rpc);
 
@@ -120,7 +120,7 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
 }
 
 /// e.g., "info.isBootstrapped".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped>
 pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedResponse> {
     log::info!("getting bootstrapped for {}", http_rpc);
 
@@ -139,7 +139,7 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 }
 
 /// e.g., "info.getTxFee".
-/// ref. https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee>
 pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
     log::info!("getting node ID for {}", http_rpc);
 

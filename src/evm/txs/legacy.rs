@@ -11,16 +11,16 @@ use rlp::RlpStream;
 /// "only replay-protected (EIP-155) transactions allowed over RPC".
 ///
 /// Represents a legacy Ethereum transaction.
-/// ref. https://ethereum.org/en/developers/docs/transactions
+/// ref. <https://ethereum.org/en/developers/docs/transactions>
 /// ref. "ethers-core::types::transaction::TransactionRequest"
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#LegacyTx
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#LegacyTx>
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Tx {
     /// Sequence number originated from this account to prevent message replay attack
-    /// ref. https://eips.ethereum.org/EIPS/eip-155
+    /// ref. <https://eips.ethereum.org/EIPS/eip-155>
     ///
     /// Must keep track of nonces when creating transactions programmatically.
     /// If two transactions were transmitted with the same nonce,
@@ -117,7 +117,7 @@ impl Tx {
 
     /// RLP-encodes the base fields.
     /// ref. "ethers-core::types::transaction::TransactionRequest::rlp"
-    /// ref. https://github.com/onbjerg/ethers-flashbots/issues/11
+    /// ref. <https://github.com/onbjerg/ethers-flashbots/issues/11>
     fn rlp_base(&self, rlp: &mut RlpStream) {
         super::rlp_opt(rlp, &self.signer_nonce); // #1
         super::rlp_opt(rlp, &self.gas_price); // #2

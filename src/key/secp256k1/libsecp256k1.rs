@@ -74,7 +74,7 @@ impl PrivateKey {
     /// Signs the 32-byte SHA256 output message with the ECDSA private key and the recoverable code.
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
     /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
-    /// ref. https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs
+    /// ref. <https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs>
     pub fn sign_digest(&self, digest: &[u8]) -> io::Result<key::secp256k1::signature::Sig> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
@@ -128,8 +128,8 @@ impl key::secp256k1::SignOnly for PrivateKey {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl std::fmt::Display for PrivateKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -161,7 +161,7 @@ impl PublicKey {
     }
 
     /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
     pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
         let compressed = self.to_compressed_bytes();
         hash::sha256_ripemd160(&compressed)
@@ -169,7 +169,7 @@ impl PublicKey {
 
     /// "hashing.PubkeyBytesToAddress"
     /// ref. "pk.PublicKey().Address().Bytes()"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
     pub fn to_short_id(&self) -> io::Result<crate::ids::short::Id> {
         let compressed = self.to_compressed_bytes();
         short::Id::from_public_key_bytes(&compressed)
@@ -186,8 +186,8 @@ impl PublicKey {
     }
 
     /// Encodes the public key in ETH address format.
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
     pub fn to_eth_address(&self) -> String {
         let h160_addr = self.to_h160();
         let addr_hex = hex::encode(h160_addr);
@@ -222,8 +222,8 @@ impl From<PublicKey> for libsecp256k1::PublicKey {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -231,8 +231,12 @@ impl std::fmt::Display for PublicKey {
     }
 }
 
-/// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
+/// ref. <https://doc.rust-lang.org/book/ch10-02-traits.html>
 impl key::secp256k1::ReadOnly for PublicKey {
+    fn key_type(&self) -> key::secp256k1::KeyType {
+        key::secp256k1::KeyType::Hot
+    }
+
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         self.to_avax_address(network_id, chain_id_alias)
     }

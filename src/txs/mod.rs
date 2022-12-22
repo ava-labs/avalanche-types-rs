@@ -11,7 +11,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#BaseTx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#BaseTx>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
@@ -305,7 +305,7 @@ impl Tx {
                         return Err(Error::new(
                             ErrorKind::InvalidInput,
                             format!(
-                                "unexpected type ID {} for TransferableInpu",
+                                "unexpected type ID {} for TransferableInput",
                                 type_id_transferable_in
                             ),
                         ));
@@ -479,7 +479,7 @@ fn test_base_tx_serialization() {
     ));
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#Metadata
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#Metadata>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Metadata {
     pub id: ids::Id,

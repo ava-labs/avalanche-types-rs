@@ -1,6 +1,7 @@
+//! Current runtime state of a VM.
 pub mod engine;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State>
 #[derive(PartialEq, Eq)]
 pub enum State {
     Initializing = 0,
@@ -10,7 +11,7 @@ pub enum State {
 }
 
 impl State {
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State.String
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State.String>
     pub fn as_str(&self) -> &str {
         match self {
             State::Initializing => "Initializing state",

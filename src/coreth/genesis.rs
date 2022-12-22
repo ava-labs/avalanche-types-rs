@@ -7,10 +7,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#Genesis
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/params#ChainConfig
-/// ref. https://github.com/ava-labs/avalanchego/tree/dev/genesis
-/// ref. https://github.com/ava-labs/avalanche-network-runner/blob/main/local/default/genesis.json
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/core#Genesis>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/params#ChainConfig>
+/// ref. <https://github.com/ava-labs/avalanchego/tree/dev/genesis>
+/// ref. <https://github.com/ava-labs/avalanche-network-runner/blob/main/local/default/genesis.json>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Genesis {
@@ -36,7 +36,7 @@ pub struct Genesis {
     pub coinbase: Option<String>,
 
     /// MUST BE ordered by its key in order for all nodes to have the same JSON outputs.
-    /// ref. https://doc.rust-lang.org/std/collections/index.html#use-a-btreemap-when
+    /// ref. <https://doc.rust-lang.org/std/collections/index.html#use-a-btreemap-when>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alloc: Option<BTreeMap<String, AllocAccount>>,
 
@@ -55,9 +55,9 @@ pub struct Genesis {
 /// On the P-Chain, one AVAX is 10^9  units.
 /// On the C-Chain, one AVAX is 10^18 units.
 /// "0x204FCE5E3E25026110000000" is "10000000000000000000000000000" (10,000,000,000 AVAX).
-/// ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
-/// ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-/// ref. https://snowtrace.io/unitconverter
+/// ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
+/// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
+/// ref. <https://snowtrace.io/unitconverter>
 pub const DEFAULT_INITIAL_AMOUNT: &str = "0x204FCE5E3E25026110000000";
 
 impl Default for Genesis {
@@ -99,18 +99,11 @@ impl Genesis {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize to JSON {}", e),
-                ));
-            }
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 
-    /// Saves the current anchor node to disk
+    /// Saves the current coreth genesis to disk
     /// and overwrites the file.
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing Genesis to '{}'", file_path);
@@ -118,16 +111,9 @@ impl Genesis {
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
 
-        let ret = serde_json::to_vec(self);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Genesis to YAML {}", e),
-                ));
-            }
-        };
+        let d = serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+
         let mut f = File::create(file_path)?;
         f.write_all(&d)?;
 
@@ -135,7 +121,7 @@ impl Genesis {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/params#ChainConfig
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/params#ChainConfig>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChainConfig {
@@ -224,8 +210,8 @@ impl ChainConfig {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisAlloc
-/// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisAccount
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisAlloc>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisAccount>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AllocAccount {
@@ -237,7 +223,7 @@ pub struct AllocAccount {
     #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
     pub balance: primitive_types::U256,
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisMultiCoinBalance
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/core#GenesisMultiCoinBalance>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcbalance: Option<BTreeMap<String, u64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -273,6 +259,9 @@ fn test_parse() {
     let resp: Genesis = serde_json::from_str(
         r#"
 {
+    "unknown1": "field1",
+    "unknown2": "field2",
+
         "config": {
             "chainId": 1000777,
             "homesteadBlock": 0,

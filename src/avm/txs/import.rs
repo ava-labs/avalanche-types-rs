@@ -3,9 +3,9 @@ use std::io::{self, Error, ErrorKind};
 use crate::{avm::txs::fx, codec, hash, ids, key, platformvm, txs};
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#ImportTx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#UnsignedTx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#ImportTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#UnsignedTx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
     /// The transaction ID is empty for unsigned tx
@@ -61,9 +61,8 @@ impl Tx {
         *(codec::X_TYPES.get(&Self::type_name()).unwrap()) as u32
     }
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx.SignSECP256K1Fx
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
-    /// TODO: support ledger signing
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx.SignSECP256K1Fx>
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash>
     pub async fn sign<T: key::secp256k1::SignOnly>(
         &mut self,
         signers: Vec<Vec<T>>,
@@ -182,7 +181,7 @@ impl Tx {
                         return Err(Error::new(
                             ErrorKind::InvalidInput,
                             format!(
-                                "unexpected type ID {} for TransferableInpu",
+                                "unexpected type ID {} for TransferableInput",
                                 type_id_transferable_in
                             ),
                         ));

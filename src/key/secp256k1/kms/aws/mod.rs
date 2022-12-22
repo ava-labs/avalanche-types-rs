@@ -1,8 +1,15 @@
 pub mod eth_signer;
 
-use std::io::{self, Error, ErrorKind};
+use std::{
+    collections::HashMap,
+    io::{self, Error, ErrorKind},
+};
 
-use crate::{hash, key};
+use crate::{
+    hash,
+    ids::short,
+    key::{self, secp256k1::ReadOnly},
+};
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
@@ -10,9 +17,9 @@ use aws_sdk_kms::model::{KeySpec, KeyUsageType};
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
 /// Note that the actual private key never leaves KMS.
 /// Private key signing operation must be done via AWS KMS API.
-/// ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html
+/// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html>
 #[derive(Debug, Clone)]
-pub struct Signer {
+pub struct Cmk {
     /// AWS KMS API wrapper.
     pub kms_manager: kms::Manager,
 
@@ -25,19 +32,26 @@ pub struct Signer {
     pub public_key: key::secp256k1::public_key::Key,
 }
 
-impl Signer {
-    /// Generates a private key from random bytes.
+impl Cmk {
+    /// Generates a new CMK.
     pub async fn create(kms_manager: kms::Manager, name: &str) -> io::Result<Self> {
         let cmk = kms_manager
             .create_key(name, KeySpec::EccSecgP256K1, KeyUsageType::SignVerify)
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.create_key {}", e)))?;
 
+        let mut loaded = Self::from_arn(kms_manager, &cmk.arn).await?;
+        loaded.id = cmk.id.clone();
+        Ok(loaded)
+    }
+
+    /// Loads the Cmk from its Arn or Id.
+    pub async fn from_arn(kms_manager: kms::Manager, arn: &str) -> io::Result<Self> {
         // derives the public key from its private key
         let pubkey = kms_manager
             .client()
             .get_public_key()
-            .key_id(&cmk.id)
+            .key_id(arn) // or use Cmk Id
             .send()
             .await
             .map_err(|e| {
@@ -46,29 +60,65 @@ impl Signer {
 
         if let Some(blob) = pubkey.public_key() {
             let public_key = key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())?;
-            log::info!("created key with ETH address {}", public_key.eth_address());
+            log::info!(
+                "fetched public key ETH address {} from CMK",
+                public_key.eth_address()
+            );
 
             return Ok(Self {
                 kms_manager,
                 public_key,
-                id: cmk.id,
-                arn: cmk.arn,
+                id: String::new(),
+                arn: arn.to_string(),
             });
         }
 
         return Err(Error::new(ErrorKind::Other, "public key blob not found"));
     }
 
-    /// Schedules to delete the KMS CMK, with 7-day grace period.
-    pub async fn delete(&self) -> io::Result<()> {
+    /// Schedules to delete the KMS CMK.
+    pub async fn delete(&self, pending_window_in_days: i32) -> io::Result<()> {
         self.kms_manager
-            .schedule_to_delete(&self.id)
+            .schedule_to_delete(&self.arn, pending_window_in_days)
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed schedule_to_delete {}", e)))
     }
 
-    pub fn public_key(&self) -> key::secp256k1::public_key::Key {
+    pub fn to_public_key(&self) -> key::secp256k1::public_key::Key {
         self.public_key
+    }
+
+    /// Converts to Info.
+    pub fn to_info(&self, network_id: u32) -> io::Result<key::secp256k1::Info> {
+        let short_addr = self.public_key.to_short_id()?;
+        let eth_addr = self.public_key.eth_address();
+        let h160_addr = self.public_key.h160_address();
+
+        let mut addresses = HashMap::new();
+        let x_address = self.public_key.hrp_address(network_id, "X")?;
+        let p_address = self.public_key.hrp_address(network_id, "P")?;
+        let c_address = self.public_key.hrp_address(network_id, "C")?;
+        addresses.insert(
+            network_id,
+            key::secp256k1::ChainAddresses {
+                x_address,
+                p_address,
+                c_address,
+            },
+        );
+
+        Ok(key::secp256k1::Info {
+            id: Some(self.arn.clone()),
+            key_type: key::secp256k1::KeyType::AwsKms,
+
+            addresses,
+
+            short_address: short_addr,
+            eth_address: eth_addr,
+            h160_address: h160_addr,
+
+            ..Default::default()
+        })
     }
 
     pub async fn sign_digest(
@@ -97,7 +147,7 @@ impl Signer {
 }
 
 #[async_trait]
-impl key::secp256k1::SignOnly for Signer {
+impl key::secp256k1::SignOnly for Cmk {
     type Error = aws_manager::errors::Error;
 
     fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
@@ -107,5 +157,32 @@ impl key::secp256k1::SignOnly for Signer {
     async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], aws_manager::errors::Error> {
         let sig = self.sign_digest(msg).await?;
         Ok(sig.to_bytes())
+    }
+}
+
+/// ref. <https://doc.rust-lang.org/book/ch10-02-traits.html>
+impl key::secp256k1::ReadOnly for Cmk {
+    fn key_type(&self) -> key::secp256k1::KeyType {
+        key::secp256k1::KeyType::AwsKms
+    }
+
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+        self.to_public_key().hrp_address(network_id, chain_id_alias)
+    }
+
+    fn short_address(&self) -> io::Result<short::Id> {
+        self.to_public_key().to_short_id()
+    }
+
+    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
+        self.to_public_key().to_short_bytes()
+    }
+
+    fn eth_address(&self) -> String {
+        self.to_public_key().eth_address()
+    }
+
+    fn h160_address(&self) -> primitive_types::H160 {
+        self.to_public_key().to_h160()
     }
 }

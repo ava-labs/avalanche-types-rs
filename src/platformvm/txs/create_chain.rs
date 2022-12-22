@@ -3,9 +3,9 @@ use std::io::{self, Error, ErrorKind};
 use crate::{codec, hash, ids, key, txs};
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#CreateChainTx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#CreateChainTx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
     /// The transaction ID is empty for unsigned tx
@@ -71,9 +71,8 @@ impl Tx {
         *(codec::P_TYPES.get(&Self::type_name()).unwrap()) as u32
     }
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx.Sign
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
-    /// TODO: support ledger signing
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx.Sign
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
     pub async fn sign<T: key::secp256k1::SignOnly>(
         &mut self,
         signers: Vec<Vec<T>>,

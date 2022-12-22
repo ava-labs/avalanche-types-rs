@@ -140,6 +140,7 @@ impl Key {
         let pubkey = self.to_public_key();
         let short_addr = pubkey.to_short_id()?;
         let eth_addr = pubkey.eth_address();
+        let h160_addr = pubkey.to_h160();
 
         let mut addresses = HashMap::new();
         let x_address = pubkey.hrp_address(network_id, "X")?;
@@ -155,22 +156,25 @@ impl Key {
         );
 
         Ok(key::secp256k1::Info {
-            mnemonic_phrase: None,
+            id: None,
+            key_type: key::secp256k1::KeyType::Hot,
 
-            private_key_cb58: pk_cb58,
-            private_key_hex: pk_hex,
+            mnemonic_phrase: None,
+            private_key_cb58: Some(pk_cb58),
+            private_key_hex: Some(pk_hex),
 
             addresses,
 
             short_address: short_addr,
             eth_address: eth_addr,
+            h160_address: h160_addr,
         })
     }
 
     /// Signs the 32-byte SHA256 output message with the ECDSA private key and the recoverable code.
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
     /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
-    /// ref. https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs
+    /// ref. <https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs>
     pub fn sign_digest(&self, digest: &[u8]) -> io::Result<Sig> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
@@ -209,8 +213,8 @@ impl From<Key> for k256::SecretKey {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -232,8 +236,12 @@ impl key::secp256k1::SignOnly for Key {
     }
 }
 
-/// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
+/// ref. <https://doc.rust-lang.org/book/ch10-02-traits.html>
 impl key::secp256k1::ReadOnly for Key {
+    fn key_type(&self) -> key::secp256k1::KeyType {
+        key::secp256k1::KeyType::Hot
+    }
+
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         self.to_public_key().hrp_address(network_id, chain_id_alias)
     }

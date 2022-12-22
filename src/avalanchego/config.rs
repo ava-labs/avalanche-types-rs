@@ -12,9 +12,9 @@ use serde::{Deserialize, Serialize};
 /// For example, you may configure cert paths on your local laptop
 /// but the actual Avalanche nodes run on the remote machines
 /// so the paths will be invalid.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/config
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.7.10/config/flags.go
-/// ref. https://serde.rs/container-attrs.html
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/config>
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.10/config/flags.go>
+/// ref. <https://serde.rs/container-attrs.html>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
@@ -31,15 +31,21 @@ pub struct Config {
     /// Set it to 1 for mainnet.
     /// e.g., "mainnet" is 1, "fuji" is 5, "local" is 12345.
     /// "utils/constants/NetworkID" only accepts string for known networks.
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants#pkg-constants
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants#NetworkName
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants#pkg-constants>
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants#NetworkName>
+    #[serde(default)]
     pub network_id: u32,
 
+    #[serde(default)]
     pub db_type: String,
     /// Database directory, must be a valid path in remote host machine.
+    #[serde(default)]
     pub db_dir: String,
+
     /// Logging directory, must be a valid path in remote host machine.
+    #[serde(default)]
     pub log_dir: String,
+
     /// "avalanchego" logging level.
     /// See "utils/logging/level.go".
     /// e.g., "INFO", "FATAL", "DEBUG", "VERBO", etc..
@@ -53,6 +59,7 @@ pub struct Config {
     pub log_display_level: Option<String>,
 
     /// HTTP port.
+    #[serde(default)]
     pub http_port: u32,
     /// HTTP host, which avalanchego defaults to 127.0.0.1.
     /// Set it to 0.0.0.0 to expose the HTTP API to all incoming traffic.
@@ -74,6 +81,7 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub staking_enabled: Option<bool>,
     /// Staking port.
+    #[serde(default)]
     pub staking_port: u32,
     /// MUST BE a valid path in remote host machine.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,11 +139,16 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub whitelisted_subnets: Option<String>,
 
-    /// Chain configuration directory for all chains.
+    /// Chain configuration directory (e.g., /data/avalanche-configs/chains/C/config.json).
+    /// Default to "/data/avalanche-configs/chains".
+    #[serde(default)]
     pub chain_config_dir: String,
+    /// Subnet configuration directory (e.g., /data/avalanche-configs/subnets/C.json).
+    /// Default to "/data/avalanche-configs/subnets".
+    #[serde(default)]
     pub subnet_config_dir: String,
 
-    /// A comma seperated string of explicit nodeID and IPs
+    /// A comma separated string of explicit nodeID and IPs
     /// to contact for starting state sync. Useful for testing.
     /// NOTE: Actual state data will be downloaded from nodes
     /// specified in the C-Chain config, or the entire network
@@ -145,7 +158,7 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state_sync_ips: Option<String>,
 
-    /// Continous profile flags
+    /// Continuous profile flags
     #[serde(skip_serializing_if = "Option::is_none")]
     pub profile_dir: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -233,8 +246,8 @@ pub const DEFAULT_API_METRICS_ENABLED: bool = true;
 pub const DEFAULT_API_HEALTH_ENABLED: bool = true;
 pub const DEFAULT_API_IPCS_ENABLED: bool = true;
 
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.7.18/config/flags.go#L35-L52
-/// ref. https://docs.avax.network/subnets/customize-a-subnet#chain-configs
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.18/config/flags.go#L35-L52>
+/// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
 pub const DEFAULT_CHAIN_CONFIG_DIR: &str = "/data/avalanche-configs/chains";
 pub const DEFAULT_SUBNET_CONFIG_DIR: &str = "/data/avalanche-configs/subnets";
 
@@ -511,13 +524,8 @@ impl Config {
 
     /// Converts to string with JSON encoder.
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 
     /// Saves the current configuration to disk
@@ -540,16 +548,8 @@ impl Config {
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
 
-        let ret = serde_json::to_vec(self);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Config to JSON {}", e),
-                ));
-            }
-        };
+        let d = serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
 
         log::info!("syncing avalanchego Config to '{}'", p);
         let mut f = File::create(p)?;

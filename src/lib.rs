@@ -25,6 +25,9 @@ pub mod coreth;
 #[cfg(feature = "subnet_evm")]
 pub mod subnet_evm;
 
+#[cfg(feature = "xsvm")]
+pub mod xsvm;
+
 #[cfg(feature = "message")]
 pub mod message;
 
@@ -37,5 +40,5 @@ pub mod evm;
 #[cfg(feature = "proto")]
 pub mod proto;
 
-#[cfg(feature = "subnet")]
+#[cfg(any(doc, feature = "subnet"))]
 pub mod subnet;

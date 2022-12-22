@@ -1,3 +1,5 @@
+pub mod export;
+pub mod import;
 pub mod transfer;
 
 use std::io;
@@ -64,5 +66,15 @@ where
     #[must_use]
     pub fn transfer(&self) -> transfer::Tx<T> {
         transfer::Tx::new(self)
+    }
+
+    #[must_use]
+    pub fn export(&self) -> export::Tx<T> {
+        export::Tx::new(self)
+    }
+
+    #[must_use]
+    pub fn import(&self) -> import::Tx<T> {
+        import::Tx::new(self)
     }
 }

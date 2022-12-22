@@ -18,7 +18,7 @@ pub trait Closer {
 #[tonic::async_trait]
 pub trait Database: CloneBox + KeyValueReaderWriterDeleter + Closer + Checkable {}
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database#KeyValueReaderWriterDeleter
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#KeyValueReaderWriterDeleter>
 #[tonic::async_trait]
 pub trait KeyValueReaderWriterDeleter {
     async fn has(&self, key: &[u8]) -> Result<bool>;
@@ -52,7 +52,7 @@ pub trait VersionedDatabase {
     async fn close(&mut self) -> Result<()>;
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database#ErrClosed
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#ErrClosed>
 #[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive)]
 pub enum DatabaseError {
     None = 0,

@@ -20,7 +20,7 @@ fn main() {
     let pubkey = k.to_public_key();
 
     let entry = k.to_info(network_id).unwrap();
-    assert_eq!(private_key, entry.private_key_cb58);
+    assert_eq!(private_key, entry.private_key_cb58.clone().unwrap());
     assert_eq!(
         entry.addresses.get(&network_id).unwrap().x_address,
         pubkey.hrp_address(network_id, "X").unwrap()

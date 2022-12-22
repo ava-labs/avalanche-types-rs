@@ -11,7 +11,7 @@ use tokio::time::{sleep, Duration, Instant};
 pub const DEFAULT_GAS: u64 = 21000;
 
 /// Represents an Ethereum transaction.
-/// ref. https://ethereum.org/en/developers/docs/transactions/
+/// ref. <https://ethereum.org/en/developers/docs/transactions/>
 ///
 /// NOTE: The default coreth and subnet-evm will fail this transaction with
 /// "only replay-protected (EIP-155) transactions allowed over RPC".
@@ -25,7 +25,7 @@ where
     pub inner: client::wallet::evm::Evm<'a, T, S>,
 
     /// Sequence number originated from this account to prevent message replay attack
-    /// ref. https://eips.ethereum.org/EIPS/eip-155
+    /// ref. <https://eips.ethereum.org/EIPS/eip-155>
     pub signer_nonce: Option<U256>,
 
     /// "gas_price" is what the originator is willing to pay for the gas.

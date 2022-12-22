@@ -4,8 +4,8 @@ use crate::{ids::short, key};
 use serde::{Deserialize, Serialize};
 
 /// Support multiple keys as a chain.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/wallet/chain/p/builder.go
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain>
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.9/wallet/chain/p/builder.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Keychain<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly> {
     pub keys: Vec<T>,
@@ -27,14 +27,14 @@ where
         }
     }
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Get
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Get>
     pub fn get(&self, short_addr: &short::Id) -> Option<T> {
         self.short_addr_to_key_index
             .get(short_addr)
             .map(|k| self.keys[(*k) as usize].clone())
     }
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Match
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Match>
     pub fn match_threshold(
         &self,
         output_owners: &key::secp256k1::txs::OutputOwners,
@@ -69,7 +69,7 @@ where
     }
 
     /// Returns "None" if the threshold is NOT met.
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Spend
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Keychain.Spend>
     /// TODO: support spend on "secp256k1fx::MintOutput"
     pub fn spend(
         &self,

@@ -10,7 +10,7 @@ pub struct TestDecidable {
 
     /// "Status" enum uses String
     /// so cannot implement/derive "Copy" to use "Cell"
-    /// ref. https://stackoverflow.com/questions/38215753/how-do-i-implement-copy-and-clone-for-a-type-that-contains-a-string-or-any-type
+    /// ref. <https://stackoverflow.com/questions/38215753/how-do-i-implement-copy-and-clone-for-a-type-that-contains-a-string-or-any-type>
     ///
     /// Use "Box" instead to overwrite.
     pub status: Box<Status>,
@@ -85,7 +85,7 @@ impl Decidable for TestDecidable {
         if matches!(status, Status::Unknown(_) | Status::Rejected) {
             return Err(Error::Other {
                 message: format!(
-                    "invalid state transaition from {} to {}",
+                    "invalid state transaction from {} to {}",
                     status,
                     Status::Accepted
                 ),
@@ -104,7 +104,7 @@ impl Decidable for TestDecidable {
         if matches!(status, Status::Unknown(_) | Status::Accepted) {
             return Err(Error::Other {
                 message: format!(
-                    "invalid state transaition from {} to {}",
+                    "invalid state transaction from {} to {}",
                     status,
                     Status::Rejected
                 ),

@@ -7,7 +7,7 @@ pub const DEFAULT_CUSTOM_NETWORK_ID: u32 = 1000000;
 pub const FALLBACK_HRP: &str = "custom";
 
 lazy_static! {
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants>
     pub static ref NETWORK_ID_TO_NETWORK_NAME: HashMap<u32, &'static str> = {
         let mut m = HashMap::new();
         m.insert(1, "mainnet");
@@ -19,7 +19,7 @@ lazy_static! {
         m
     };
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants>
     pub static ref NETWORK_NAME_TO_NETWORK_ID: HashMap<&'static str, u32> = {
         let mut m = HashMap::new();
         m.insert("mainnet", 1);
@@ -31,7 +31,7 @@ lazy_static! {
         m
     };
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants>
     pub static ref NETWORK_ID_TO_HRP: HashMap<u32, &'static str> = {
         let mut m = HashMap::new();
         m.insert(1, "avax");
@@ -43,7 +43,7 @@ lazy_static! {
         m
     };
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants>
     pub static ref HRP_TO_NETWORK_ID: HashMap<&'static str, u32> = {
         let mut m = HashMap::new();
         m.insert("avax", 1);

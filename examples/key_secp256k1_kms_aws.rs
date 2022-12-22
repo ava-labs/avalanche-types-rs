@@ -23,14 +23,25 @@ fn main() {
     let mut key_name = id_manager::time::with_prefix("test");
     key_name.push_str("-cmk");
 
-    let pk = ab!(key::secp256k1::kms::aws::Signer::create(
-        kms_manager,
+    let cmk = ab!(key::secp256k1::kms::aws::Cmk::create(
+        kms_manager.clone(),
         &key_name
     ))
     .unwrap();
 
+    let cmk_info = cmk.to_info(1).unwrap();
+    println!("cmk_info: {}", cmk_info);
+
+    let cmk2 = ab!(key::secp256k1::kms::aws::Cmk::from_arn(
+        kms_manager,
+        &cmk.arn
+    ))
+    .unwrap();
+    let cmk_info2 = cmk2.to_info(1).unwrap();
+    println!("cmk_info2: {}", cmk_info2);
+
     let digest = [0u8; ring::digest::SHA256_OUTPUT_LEN];
-    match ab!(pk.sign_digest(&digest)) {
+    match ab!(cmk.sign_digest(&digest)) {
         Ok(sig) => {
             log::info!(
                 "successfully signed with signature output {} bytes",
@@ -41,10 +52,11 @@ fn main() {
             log::warn!("failed to sign, error: {:?}", e);
         }
     }
-    ab!(pk.delete()).unwrap();
 
     thread::sleep(time::Duration::from_secs(5));
+    ab!(cmk.delete(7)).unwrap();
 
     // error should be ignored if it's already scheduled for delete
-    ab!(pk.delete()).unwrap();
+    thread::sleep(time::Duration::from_secs(5));
+    ab!(cmk.delete(7)).unwrap();
 }

@@ -2,7 +2,7 @@ use std::io::{self, Error, ErrorKind};
 
 use crate::hash;
 
-/// ref. https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
+/// ref. <https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md>
 pub fn eth_checksum(addr: &str) -> String {
     let addr_lower_case = addr
         .trim_start_matches(super::private_key::HEX_ENCODE_PREFIX)
@@ -28,7 +28,7 @@ pub fn eth_checksum(addr: &str) -> String {
     checksum_eip55(&addr_lower_case, &hex::encode(digest_h256))
 }
 
-/// ref. https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
+/// ref. <https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md>
 fn checksum_eip55(addr: &str, addr_hash: &str) -> String {
     let mut chksum = String::new();
     for (c, hash_char) in addr.chars().zip(addr_hash.chars()) {
@@ -41,9 +41,9 @@ fn checksum_eip55(addr: &str, addr_hash: &str) -> String {
     chksum
 }
 
-/// ref. https://eips.ethereum.org/EIPS/eip-55
-/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
-/// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
+/// ref. <https://eips.ethereum.org/EIPS/eip-55>
+/// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
+/// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
 pub fn h160_to_eth_address(h160_addr: primitive_types::H160) -> String {
     let addr_hex = hex::encode(h160_addr);
 

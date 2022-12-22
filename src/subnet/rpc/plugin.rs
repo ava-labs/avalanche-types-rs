@@ -19,7 +19,7 @@ use tokio::sync::broadcast::Receiver;
 use tonic::transport::server::NamedService;
 use tonic_health::server::health_reporter;
 
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.4/version/constants.go#L15-L17
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.5/version/constants.go#L15-L17>
 struct HandshakeConfig {
     protocol_version: &'static str,
 }

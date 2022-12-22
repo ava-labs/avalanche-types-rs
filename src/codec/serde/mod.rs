@@ -1,4 +1,5 @@
 pub mod hex_0x_bytes;
+pub mod hex_0x_primitive_types_h160;
 pub mod hex_0x_primitive_types_h256;
 pub mod hex_0x_primitive_types_u256;
 pub mod hex_0x_u64;

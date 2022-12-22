@@ -1,3 +1,4 @@
+//! RPC Chain VM Server.
 use std::sync::Arc;
 
 use crate::{
@@ -12,7 +13,6 @@ use crate::{
             keystore::keystore_client::KeystoreClient,
             messenger::{messenger_client::MessengerClient, NotifyRequest},
             sharedmemory::shared_memory_client::SharedMemoryClient,
-            subnetlookup::subnet_lookup_client::SubnetLookupClient,
             vm,
         },
     },
@@ -87,7 +87,6 @@ where
         let keystore = KeystoreClient::new(client_conn.clone());
         let shared_memory = SharedMemoryClient::new(client_conn.clone());
         let bc_lookup = AliasReaderClient::new(client_conn.clone());
-        let sn_lookup = SubnetLookupClient::new(client_conn.clone());
         let app_sender = appsender::client::Client::new(client_conn.clone());
 
         let ctx = Some(Context {
@@ -101,7 +100,6 @@ where
             keystore,
             shared_memory,
             bc_lookup,
-            sn_lookup,
             chain_data_dir: req.chain_data_dir,
         });
 
@@ -380,7 +378,8 @@ where
     /// accepted by the consensus engine should be able to be fetched. It is not
     /// required for blocks that have been rejected by the consensus engine to be
     /// able to be fetched.
-    /// ref: https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Getter
+    ///
+    /// ref: <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Getter>
     async fn get_block(
         &self,
         req: Request<vm::GetBlockRequest>,

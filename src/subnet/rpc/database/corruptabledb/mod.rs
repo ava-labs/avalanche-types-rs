@@ -1,3 +1,4 @@
+//! Database corruption manager.
 use std::{
     io,
     sync::{
@@ -9,6 +10,9 @@ use std::{
 use super::errors;
 use tokio::sync::RwLock;
 
+/// Database wrapper which blocks further calls to the database at first sign of corruption.
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/corruptabledb#Database>
 #[derive(Clone)]
 pub struct Database {
     db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,
@@ -28,9 +32,6 @@ impl Database {
     }
 }
 
-/// Database is a wrapper around Database it prevents any future calls
-/// in case a corruption occurs.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database/corruptabledb#Database
 impl crate::subnet::rpc::database::Database for Database {}
 
 #[tonic::async_trait]

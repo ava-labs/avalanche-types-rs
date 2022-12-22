@@ -3,9 +3,9 @@ use std::cmp::Ordering;
 use crate::{ids, key, platformvm, txs};
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOutput
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOut
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOutput>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableOut>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Output {
     #[serde(rename = "assetID")]
@@ -18,10 +18,10 @@ pub struct Output {
     /// The underlying type is one of the following:
     ///
     /// "*secp256k1fx.TransferOutput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferOutput>
     ///
     /// "*platformvm.StakeableLockOut" which embeds "*secp256k1fx.TransferOutput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut>
     ///
     /// MUST: only one of the following can be "Some".
     #[serde(rename = "output")]
@@ -46,7 +46,7 @@ impl Output {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableOutputs
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableOutputs>
 impl Ord for Output {
     fn cmp(&self, other: &Output) -> Ordering {
         let asset_id_ord = self.asset_id.cmp(&(other.asset_id));
@@ -123,7 +123,7 @@ impl PartialEq for Output {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableOutputs
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableOutputs>
 /// ref. "avalanchego/vms/components/avax.TestTransferableOutputSorting"
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- txs::transferable::test_sort_transferable_outputs --exact --show-output
 #[test]
@@ -397,9 +397,9 @@ fn test_sort_transferable_outputs() {
     assert_eq!(outputs, sorted_outputs);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableInput
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableIn
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableInput>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#TransferableIn>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Input {
     #[serde(flatten)]
@@ -414,10 +414,10 @@ pub struct Input {
     /// The underlying type is one of the following:
     ///
     /// "*secp256k1fx.TransferInput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#TransferInput>
     ///
     /// "*platformvm.StakeableLockIn" which embeds "*secp256k1fx.TransferInput"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockIn
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockIn>
     ///
     /// MUST: only one of the following can be "Some".
     #[serde(rename = "input")]
@@ -443,8 +443,9 @@ impl Input {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputs
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputsWithSigners
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputs>
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputsWithSigners>
 impl Ord for Input {
     fn cmp(&self, other: &Input) -> Ordering {
         self.utxo_id
@@ -468,8 +469,8 @@ impl PartialEq for Input {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputs
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputsWithSigners
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputs>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#SortTransferableInputsWithSigners>
 /// ref. "avalanchego/vms/components/avax.TestTransferableInputSorting"
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- txs::transferable::test_sort_transferable_inputs --exact --show-output
 #[test]

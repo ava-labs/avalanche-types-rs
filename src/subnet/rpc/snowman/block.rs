@@ -5,7 +5,7 @@ use crate::{
     subnet::rpc::{consensus::snowman, snow::engine::common::vm::Vm},
 };
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVm
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVm>
 #[tonic::async_trait]
 pub trait ChainVm: Vm + Getter + Parser {
     /// Attempt to create a new block from ChainVm data
@@ -23,13 +23,13 @@ pub trait ChainVm: Vm + Getter + Parser {
     async fn last_accepted(&self) -> Result<Id>;
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Getter
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Getter>
 #[tonic::async_trait]
 pub trait Getter {
     async fn get_block(&self, id: Id) -> Result<Box<dyn snowman::Block + Send + Sync>>;
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Parser
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Parser>
 #[tonic::async_trait]
 pub trait Parser {
     async fn parse_block(&self, bytes: &[u8]) -> Result<Box<dyn snowman::Block + Send + Sync>>;

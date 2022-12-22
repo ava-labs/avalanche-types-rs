@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_with::serde_as;
 
 /// Represents AvalancheGo health status.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#APIHealthReply
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#APIHealthReply>
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct Response {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -18,7 +18,7 @@ pub struct Response {
 }
 
 /// Represents AvalancheGo health status.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#Result
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/api/health#Result>
 #[serde_as]
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +36,7 @@ pub struct CheckResult {
     pub time_of_first_failure: Option<DateTime<Utc>>,
 }
 
-/// ref. https://doc.rust-lang.org/std/str/trait.FromStr.html
+/// ref. <https://doc.rust-lang.org/std/str/trait.FromStr.html>
 impl FromStr for Response {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -58,75 +58,78 @@ fn test_parse() {
         .is_test(true)
         .try_init();
 
-    let data = "
+    let data = r#"
 
 {
-    \"checks\": {
-        \"C\": {
-            \"message\": {
-                \"consensus\": {
-                    \"longestRunningBlock\": \"0s\",
-                    \"outstandingBlocks\": 0
+    "unknown1": "field1",
+    "unknown2": "field2",
+
+    "checks": {
+        "C": {
+            "message": {
+                "consensus": {
+                    "longestRunningBlock": "0s",
+                    "outstandingBlocks": 0
                 },
-                \"vm\": null
+                "vm": null
             },
-            \"timestamp\": \"2022-02-16T08:15:01.766696642Z\",
-            \"duration\": 5861
+            "timestamp": "2022-02-16T08:15:01.766696642Z",
+            "duration": 5861
         },
-        \"P\": {
-            \"message\": {
-                \"consensus\": {
-                    \"longestRunningBlock\": \"0s\",
-                    \"outstandingBlocks\": 0
+        "P": {
+            "message": {
+                "consensus": {
+                    "longestRunningBlock": "0s",
+                    "outstandingBlocks": 0
                 },
-                \"vm\": {
-                    \"percentConnected\": 1
+                "vm": {
+                    "percentConnected": 1
                 }
             },
-            \"timestamp\": \"2022-02-16T08:15:01.766695342Z\",
-            \"duration\": 19790
+            "timestamp": "2022-02-16T08:15:01.766695342Z",
+            "duration": 19790
         },
-        \"X\": {
-            \"message\": {
-                \"consensus\": {
-                    \"outstandingVertices\": 0,
-                    \"snowstorm\": {
-                        \"outstandingTransactions\": 0
+        "X": {
+            "message": {
+                "consensus": {
+                    "outstandingVertices": 0,
+                    "snowstorm": {
+                        "outstandingTransactions": 0
                     }
                 },
-                \"vm\": null
+                "vm": null
             },
-            \"timestamp\": \"2022-02-16T08:15:01.766712432Z\",
-            \"duration\": 8731
+            "timestamp": "2022-02-16T08:15:01.766712432Z",
+            "duration": 8731
         },
-        \"bootstrapped\": {
-            \"message\": [],
-            \"timestamp\": \"2022-02-16T08:15:01.766704522Z\",
-            \"duration\": 8120
+        "bootstrapped": {
+            "message": [],
+            "timestamp": "2022-02-16T08:15:01.766704522Z",
+            "duration": 8120
         },
-        \"network\": {
-            \"message\": {
-                \"connectedPeers\": 4,
-                \"sendFailRate\": 0.016543146704195332,
-                \"timeSinceLastMsgReceived\": \"1.766701162s\",
-                \"timeSinceLastMsgSent\": \"3.766701162s\"
+        "network": {
+            "message": {
+                "connectedPeers": 4,
+                "sendFailRate": 0.016543146704195332,
+                "timeSinceLastMsgReceived": "1.766701162s",
+                "timeSinceLastMsgSent": "3.766701162s"
             },
-            \"timestamp\": \"2022-02-16T08:15:01.766702722Z\",
-            \"duration\": 5600
+            "timestamp": "2022-02-16T08:15:01.766702722Z",
+            "duration": 5600
         },
-        \"router\": {
-            \"message\": {
-                \"longestRunningRequest\": \"0s\",
-                \"outstandingRequests\": 0
+        "router": {
+            "message": {
+                "longestRunningRequest": "0s",
+                "outstandingRequests": 0
             },
-            \"timestamp\": \"2022-02-16T08:15:01.766689781Z\",
-            \"duration\": 11210
+            "timestamp": "2022-02-16T08:15:01.766689781Z",
+            "duration": 11210
         }
     },
-    \"healthy\": true
+    "healthy": true
 }
 
-";
+"#;
 
     let parsed = Response::from_str(data).unwrap();
     info!("parsed: {:?}", parsed);

@@ -9,14 +9,14 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm/fxs#FxCredential
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/verify#Verifiable
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Credential
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm/fxs#FxCredential>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/verify#Verifiable>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Credential>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Credential {
     /// Signatures, each must be length of 65.
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#SECP256K1RSigLen
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#SECP256K1RSigLen>
     #[serde_as(as = "Vec<Hex0xBytes>")]
     pub signatures: Vec<Vec<u8>>,
 }
@@ -230,7 +230,7 @@ impl PartialEq for SigIndices {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#OutputOwners
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#OutputOwners>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct OutputOwners {
     pub locktime: u64,
@@ -363,7 +363,7 @@ fn test_sort_output_owners() {
     assert_eq!(owners, sorted_owners);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Input
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#Input>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct Input {
     pub sig_indices: Vec<u32>,

@@ -6,7 +6,8 @@ use std::io::Result;
 use crate::ids;
 
 /// AppSender sends application (Vm) level messages.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#AppSender
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#AppSender>
 #[tonic::async_trait]
 pub trait AppSender: CloneBox {
     async fn send_app_request(

@@ -24,7 +24,7 @@ pub trait Block: Decidable + Initializer + StatusWriter + Sync + Send {
     async fn verify(&mut self) -> Result<()>;
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/choices#Decidable
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/choices#Decidable>
 #[tonic::async_trait]
 pub trait Decidable {
     /// Returns the ID of this block's parent.

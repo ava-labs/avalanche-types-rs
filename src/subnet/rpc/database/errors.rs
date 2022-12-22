@@ -1,3 +1,4 @@
+//! Custom database errors and helpers.
 use std::io::{Error, ErrorKind};
 
 /// Accepts an error and returns a corruption error if the original error is not "database closed"

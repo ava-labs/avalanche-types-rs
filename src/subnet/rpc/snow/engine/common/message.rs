@@ -1,6 +1,7 @@
+//! Consensus engine message type.
 use num_derive::{FromPrimitive, ToPrimitive};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Message
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Message>
 #[derive(FromPrimitive, ToPrimitive, PartialEq, Eq, Debug)]
 pub enum Message {
     /// Notifies a consensus engine that its VM has pending transactions
@@ -16,7 +17,7 @@ pub enum Message {
 }
 
 impl Message {
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Message.String
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Message.String>
     pub fn as_str(&self) -> &str {
         match self {
             Message::PendingTxs => "Pending Transactions",

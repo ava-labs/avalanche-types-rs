@@ -48,17 +48,12 @@ where
     pub fn new(x: &crate::client::wallet::x::X<T>) -> Self {
         Self {
             inner: x.clone(),
-
             receiver: short::Id::empty(),
-
             amount: 0,
-
             check_acceptance: false,
-
             poll_initial_wait: Duration::from_millis(500),
             poll_interval: Duration::from_millis(700),
             poll_timeout: Duration::from_secs(300),
-
             dry_mode: false,
         }
     }
@@ -128,17 +123,16 @@ where
         // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/spend.go#L39 "stake"
         // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L355 "AddValidator"
         // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L614 "stake"
-        let sender_x_utxos =
-            client_x::get_utxos(&picked_http_rpc.1, &self.inner.inner.x_address).await?;
-        let sender_x_utxos_result = sender_x_utxos.result.unwrap();
-        let sender_x_utxos = sender_x_utxos_result.utxos.unwrap();
+        // TODO: paginate next results
+        let utxos = client_x::get_utxos(&picked_http_rpc.1, &self.inner.inner.x_address).await?;
+        let utxos_result = utxos.result.unwrap();
+        let utxos = utxos_result.utxos.unwrap();
         log::debug!(
             "fetched UTXOs for inputs: numFetched {:?}, endIndex {:?} and {} UTXOs",
-            sender_x_utxos_result.num_fetched,
-            sender_x_utxos_result.end_index,
-            sender_x_utxos.len()
+            utxos_result.num_fetched,
+            utxos_result.end_index,
+            utxos.len()
         );
-        // TODO: paginate next results
 
         let mut inputs: Vec<txs::transferable::Input> = Vec::new();
         let mut outputs: Vec<txs::transferable::Output> = vec![
@@ -167,7 +161,7 @@ where
             .expect("unexpected None duration_since")
             .as_secs();
 
-        for utxo in sender_x_utxos.iter() {
+        for utxo in utxos.iter() {
             if utxo.asset_id != self.inner.inner.avax_asset_id {
                 continue;
             }
@@ -183,7 +177,7 @@ where
                 inputs.push(txs::transferable::Input {
                     utxo_id: utxo.utxo_id.clone(),
                     asset_id: utxo.asset_id.clone(),
-                    transfer_input: Some(input.clone()),
+                    transfer_input: Some(input),
                     ..Default::default()
                 });
 
@@ -215,19 +209,6 @@ where
         inputs.sort();
         outputs.sort();
 
-        log::debug!(
-            "baseTx has {} inputs and {} outputs",
-            inputs.len(),
-            outputs.len()
-        );
-        let base_tx = txs::Tx {
-            network_id: self.inner.inner.network_id,
-            blockchain_id: self.inner.inner.blockchain_id_x.clone(),
-            transferable_outputs: Some(outputs),
-            transferable_inputs: Some(inputs.clone()),
-            ..Default::default()
-        };
-
         // make sure it does not incur "tx has 1 credentials but 2 inputs. Should be same" error
         let mut signers: Vec<Vec<T>> = Vec::new();
         for _ in 0..inputs.len() {
@@ -237,7 +218,18 @@ where
             log::debug!("signing for multiple inputs ({} inputs)", inputs.len());
         }
 
-        let mut tx = avm::txs::Tx::new(base_tx);
+        log::debug!(
+            "baseTx has {} inputs and {} outputs",
+            inputs.len(),
+            outputs.len()
+        );
+        let mut tx = avm::txs::Tx::new(txs::Tx {
+            network_id: self.inner.inner.network_id,
+            blockchain_id: self.inner.inner.blockchain_id_x.clone(),
+            transferable_outputs: Some(outputs),
+            transferable_inputs: Some(inputs.clone()),
+            ..Default::default()
+        });
         tx.sign(signers).await?;
 
         if self.dry_mode {

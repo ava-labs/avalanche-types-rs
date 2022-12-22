@@ -10,7 +10,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 /// To be persisted in "subnet_config_dir".
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/chains#SubnetConfig
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/chains#SubnetConfig>
 ///
 /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
 /// the config file for this chain is located at {subnet-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt.json
@@ -50,16 +51,11 @@ impl Config {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 
-    /// Saves the current anchor node to disk
+    /// Saves the current subnet config to disk
     /// and overwrites the file.
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing subnet config to '{}'", file_path);
@@ -67,16 +63,9 @@ impl Config {
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
 
-        let ret = serde_json::to_vec(self);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Config to YAML {}", e),
-                ));
-            }
-        };
+        let d = serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+
         let mut f = File::create(file_path)?;
         f.write_all(&d)?;
 

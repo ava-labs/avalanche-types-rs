@@ -90,7 +90,7 @@ fn test_custom_de_serializer() {
 /// "0x5f5e100" or "0x5F5E100" is "100000000".
 /// "0x1312D00" is "20000000".
 /// NOTE: copied from "big-num-manager".
-/// ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
+/// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
 fn from_hex_to_big_int(s: &str) -> io::Result<BigInt> {
     let sb = s.trim_start_matches("0x").as_bytes();
 
@@ -109,7 +109,7 @@ fn from_hex_to_big_int(s: &str) -> io::Result<BigInt> {
 
 /// #, adds a 0x in front of the output.
 /// NOTE: copied from "big-num-manager".
-/// ref. https://doc.rust-lang.org/nightly/core/fmt/trait.LowerHex.html
+/// ref. <https://doc.rust-lang.org/nightly/core/fmt/trait.LowerHex.html>
 fn big_int_to_lower_hex(v: &BigInt) -> String {
     format!("{:#x}", v)
 }

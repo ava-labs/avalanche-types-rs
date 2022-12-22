@@ -2,7 +2,7 @@ use std::io::Result;
 
 use semver::Version;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database/manager#VersionedDatabase
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/manager#VersionedDatabase>
 #[derive(Clone)]
 pub struct VersionedDatabase {
     pub db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,

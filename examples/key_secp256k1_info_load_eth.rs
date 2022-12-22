@@ -26,7 +26,7 @@ fn main() {
     let entry = k.to_info(network_id).unwrap();
     assert_eq!(
         prefix_manager::prepend_0x(&private_key),
-        entry.private_key_hex
+        entry.private_key_hex.clone().unwrap()
     );
     assert_eq!(
         entry.addresses.get(&network_id).unwrap().x_address,

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowball#Parameters
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/avalanche#Parameters
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowball#Parameters>
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/avalanche#Parameters>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SnowballParameters {

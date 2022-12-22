@@ -6,7 +6,7 @@ use std::{
 use crate::jsonrpc::{self, avm};
 
 /// e.g., "avm.issueTx" on "http://[ADDR]:9650" and "/ext/bc/X" path.
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmissuetx>
 pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<avm::IssueTxResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/bc/X")?;
     log::debug!("issuing a transaction via {}", joined.as_str());
@@ -28,7 +28,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<avm::IssueTxRespon
 }
 
 /// e.g., "avm.getTxStatus" on "http://[ADDR]:9650" and "/ext/bc/X" path.
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus>
 pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> io::Result<avm::GetTxStatusResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/bc/X")?;
     log::debug!("getting tx status via {}", joined.as_str());
@@ -48,7 +48,7 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> io::Result<avm::GetTx
 }
 
 /// e.g., "avm.getBalance" on "http://[ADDR]:9650" and "/ext/bc/X" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance>
 pub async fn get_balance(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetBalanceResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/bc/X")?;
     log::debug!("getting balances for {} via {}", xaddr, joined.as_str());
@@ -69,7 +69,7 @@ pub async fn get_balance(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetBala
 }
 
 /// e.g., "avm.getAssetDescription".
-/// ref. https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription
+/// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain/#avmgetassetdescription>
 pub async fn get_asset_description(
     http_rpc: &str,
     asset_id: &str,
@@ -100,7 +100,7 @@ pub async fn get_asset_description(
 
 /// e.g., "avm.getUTXOs" on "http://[ADDR]:9650" and "/ext/bc/X" path.
 /// TODO: support paginated calls
-/// ref. https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
 pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetUtxosResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/bc/X")?;
     log::debug!("getting UTXOs for {} via {:?}", xaddr, joined);

@@ -17,7 +17,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct Tx {
     #[serde(rename = "unsignedTx")]
@@ -41,7 +41,7 @@ impl Tx {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgettx>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct UnsignedTx {
@@ -164,7 +164,7 @@ fn test_json_deserialize() {
     );
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockIn
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockIn>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct StakeableLockIn {
     pub locktime: u64,
@@ -288,7 +288,7 @@ fn test_sort_stakeable_lock_ins() {
     assert_eq!(ins, sorted_ins);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#StakeableLockOut>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct StakeableLockOut {
     pub locktime: u64,
@@ -513,9 +513,9 @@ fn test_sort_stakeable_lock_outs() {
     assert_eq!(outs, sorted_outs);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#Validator
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#AddValidatorArgs
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/api#Staker
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#Validator>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#AddValidatorArgs>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/api#Staker>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Validator {
     pub node_id: node::Id,

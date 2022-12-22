@@ -4,14 +4,14 @@ use async_trait::async_trait;
 
 #[derive(Clone, Debug)]
 pub struct Signer {
-    pub inner: super::Signer,
+    pub inner: super::Cmk,
     pub chain_id: primitive_types::U256,
     pub address: ethers_core::types::Address,
 }
 
 impl Signer {
-    pub fn new(inner: super::Signer, chain_id: primitive_types::U256) -> io::Result<Self> {
-        let short_bytes = inner.public_key().to_short_bytes()?;
+    pub fn new(inner: super::Cmk, chain_id: primitive_types::U256) -> io::Result<Self> {
+        let short_bytes = inner.to_public_key().to_short_bytes()?;
         let address = ethers_core::types::Address::from_slice(&short_bytes);
         Ok(Self {
             inner,
@@ -101,10 +101,13 @@ fn rsig_to_ethsig(
 ) -> ethers_core::types::Signature {
     let v: u8 = sig.recovery_id().into();
     let v = (v + 27) as u64;
+
     let r_bytes: ethers_core::k256::FieldBytes = sig.r().into();
     let s_bytes: ethers_core::k256::FieldBytes = sig.s().into();
+
     let r = ethers_core::types::U256::from_big_endian(r_bytes.as_slice());
     let s = ethers_core::types::U256::from_big_endian(s_bytes.as_slice());
+
     ethers_core::types::Signature { r, s, v }
 }
 

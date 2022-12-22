@@ -13,8 +13,8 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents P-chain "AddValidator" transaction.
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L325-L358 "NewAddValidatorTx"
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L428 "NewAddValidatorTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L325-L358> "NewAddValidatorTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L428> "NewAddValidatorTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
@@ -28,7 +28,7 @@ where
     /// On the X-Chain, one AVAX is 10^9  units.
     /// On the P-Chain, one AVAX is 10^9  units.
     /// On the C-Chain, one AVAX is 10^18 units.
-    /// ref. https://snowtrace.io/unitconverter
+    /// ref. <https://snowtrace.io/unitconverter>
     pub stake_amount: u64,
 
     pub start_time: DateTime<Utc>,

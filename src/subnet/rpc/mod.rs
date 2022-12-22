@@ -9,5 +9,5 @@ pub mod snowman;
 pub mod utils;
 pub mod vm;
 
-#[cfg(feature = "subnet_metrics")]
+#[cfg(any(doc, feature = "subnet_metrics"))]
 pub mod metrics;

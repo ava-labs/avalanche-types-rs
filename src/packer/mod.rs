@@ -35,9 +35,9 @@ pub const BOOL_LEN: usize = 1;
 pub const BOOL_SENTINEL: bool = false;
 
 /// Packer packs and unpacks the underlying bytes array.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer
-/// ref. https://doc.rust-lang.org/1.7.0/book/mutability.html
-/// ref. https://doc.rust-lang.org/std/cell/struct.Cell.html
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer>
+/// ref. <https://doc.rust-lang.org/1.7.0/book/mutability.html>
+/// ref. <https://doc.rust-lang.org/std/cell/struct.Cell.html>
 pub struct Packer {
     /// largest allowed size of expanding the byte array
     max_size: usize,
@@ -186,7 +186,7 @@ impl Packer {
     /// Ensures the remaining capacity of the bytes array
     /// so it can write "n" bytes to the array.
     /// ref. "avalanchego/utils/wrappers.Packer.Expand"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Expand
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Expand>
     pub fn expand(&self, n: usize) -> io::Result<()> {
         // total number of bytes that must be remained in the bytes array
         let needed_size = self.get_offset() + n;
@@ -225,7 +225,7 @@ impl Packer {
 
     /// Returns an error if the packer has insufficient length for the input size.
     /// ref. "avalanchego/utils/wrappers.Packer.CheckSpace"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.CheckSpace
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.CheckSpace>
     fn check_remaining_unpack(&self, bytes_to_read: usize) -> io::Result<()> {
         let needed_size = self.get_offset() + bytes_to_read;
         let bytes_n = self.bytes_len();
@@ -244,7 +244,7 @@ impl Packer {
 
     /// Writes the "u8" value at the offset and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackByte"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackByte
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackByte>
     pub fn pack_byte(&self, v: u8) -> io::Result<()> {
         self.expand(BYTE_LEN)?;
 
@@ -271,7 +271,7 @@ impl Packer {
     /// Unpacks the byte in the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackByte"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackByte
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackByte>
     pub fn unpack_byte(&self) -> io::Result<u8> {
         self.check_remaining_unpack(BYTE_LEN)?;
 
@@ -290,7 +290,7 @@ impl Packer {
 
     /// Writes the "u16" value at the offset and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackShort"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackShort
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackShort>
     pub fn pack_u16(&self, v: u16) -> io::Result<()> {
         self.expand(U16_LEN)?;
 
@@ -318,7 +318,7 @@ impl Packer {
     /// Unpacks the u16 from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackShort"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackShort
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackShort>
     pub fn unpack_u16(&self) -> io::Result<u16> {
         self.check_remaining_unpack(U16_LEN)?;
 
@@ -341,7 +341,7 @@ impl Packer {
     /// Writes the "u32" value at the offset and increments the offset afterwards.
     /// This is also used for encoding the type IDs from codec.
     /// ref. "avalanchego/utils/wrappers.Packer.PackInt"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackInt
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackInt>
     pub fn pack_u32(&self, v: u32) -> io::Result<()> {
         self.expand(U32_LEN)?;
 
@@ -369,7 +369,7 @@ impl Packer {
     /// Unpacks the u32 from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackInt"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackInt
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackInt>
     pub fn unpack_u32(&self) -> io::Result<u32> {
         self.check_remaining_unpack(U32_LEN)?;
 
@@ -391,7 +391,7 @@ impl Packer {
 
     /// Writes the "u64" value at the offset and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackLong"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackLong
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackLong>
     pub fn pack_u64(&self, v: u64) -> io::Result<()> {
         self.expand(U64_LEN)?;
 
@@ -419,7 +419,7 @@ impl Packer {
     /// Unpacks the u64 from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackLong"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackLong
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackLong>
     pub fn unpack_u64(&self) -> io::Result<u64> {
         self.check_remaining_unpack(U64_LEN)?;
 
@@ -443,7 +443,7 @@ impl Packer {
 
     /// Writes the "bool" value at the offset and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackBool"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackBool
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackBool>
     pub fn pack_bool(&self, v: bool) -> io::Result<()> {
         if v {
             self.pack_byte(1)
@@ -455,7 +455,7 @@ impl Packer {
     /// Unpacks the bool in the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackBool"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackBool
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackBool>
     pub fn unpack_bool(&self) -> io::Result<bool> {
         let b = self.unpack_byte()?;
         match b {
@@ -472,7 +472,7 @@ impl Packer {
 
     /// Writes the "u8" fixed-size array from the offset and increments the offset as much.
     /// ref. "avalanchego/utils/wrappers.Packer.PackFixedBytes"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackFixedBytes
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackFixedBytes>
     pub fn pack_bytes(&self, v: &[u8]) -> io::Result<()> {
         let n = v.len();
         self.expand(n)?;
@@ -501,7 +501,7 @@ impl Packer {
     /// Unpacks the "u8" fixed-size array from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackFixedBytes"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackFixedBytes
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackFixedBytes>
     pub fn unpack_bytes(&self, n: usize) -> io::Result<Vec<u8>> {
         self.check_remaining_unpack(n)?;
 
@@ -519,9 +519,9 @@ impl Packer {
     }
 
     /// Writes the "u8" slice from the offset and increments the offset as much.
-    /// The first 4-byte is used for encoding lengh header.
+    /// The first 4-byte is used for encoding length header.
     /// ref. "avalanchego/utils/wrappers.Packer.PackBytes"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackBytes
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackBytes>
     pub fn pack_bytes_with_header(&self, v: &[u8]) -> io::Result<()> {
         self.pack_u32(v.len() as u32)?;
         self.pack_bytes(v)
@@ -530,7 +530,7 @@ impl Packer {
     /// Unpacks the "u8" slice from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackBytes"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackBytes
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackBytes>
     pub fn unpack_bytes_with_header(&self) -> io::Result<Vec<u8>> {
         let n = self.unpack_u32()?;
         self.unpack_bytes(n as usize)
@@ -538,7 +538,7 @@ impl Packer {
 
     /// Writes the two-dimensional "u8" slice from the offset and increments the offset as much.
     /// ref. "avalanchego/utils/wrappers.Packer.PackFixedByteSlices"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackFixedByteSlices
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackFixedByteSlices>
     pub fn pack_2d_bytes(&self, v: Vec<Vec<u8>>) -> io::Result<()> {
         self.pack_u32(v.len() as u32)?;
         for vv in v.iter() {
@@ -550,7 +550,7 @@ impl Packer {
     /// Unpacks the two-dimensional "u8" slice from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackFixedByteSlices"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackFixedByteSlices
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackFixedByteSlices>
     pub fn unpack_2d_bytes(&self, n: usize) -> io::Result<Vec<Vec<u8>>> {
         let total = self.unpack_u32()?;
         let mut rs: Vec<Vec<u8>> = Vec::new();
@@ -563,7 +563,7 @@ impl Packer {
 
     /// Writes the two-dimensional "u8" slice from the offset and increments the offset as much.
     /// ref. "avalanchego/utils/wrappers.Packer.Pack2DByteSlice"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Pack2DByteSlice
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Pack2DByteSlice>
     pub fn pack_2d_bytes_with_header(&self, v: Vec<Vec<u8>>) -> io::Result<()> {
         self.pack_u32(v.len() as u32)?;
         for vv in v.iter() {
@@ -575,7 +575,7 @@ impl Packer {
     /// Unpacks the two-dimensional "u8" slice from the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.Unpack2DByteSlice"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Unpack2DByteSlice
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.Unpack2DByteSlice>
     pub fn unpack_2d_bytes_with_header(&self) -> io::Result<Vec<Vec<u8>>> {
         let total = self.unpack_u32()?;
         let mut rs: Vec<Vec<u8>> = Vec::new();
@@ -588,7 +588,7 @@ impl Packer {
 
     /// Writes str from the offset and increments the offset as much.
     /// ref. "avalanchego/utils/wrappers.Packer.PackStr"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackStr
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackStr>
     pub fn pack_str(&self, v: &str) -> io::Result<()> {
         let n = v.len() as u16;
         if n > MAX_STR_LEN {
@@ -606,9 +606,9 @@ impl Packer {
     ///
     /// TODO: Go "UnpackStr" does deep-copy of bytes to "string" cast
     /// Can we bypass deep-copy by passing around bytes?
-    /// ref. https://github.com/golang/go/issues/25484
+    /// ref. <https://github.com/golang/go/issues/25484>
     ///
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackStr
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackStr>
     pub fn unpack_str(&self) -> io::Result<String> {
         let n = self.unpack_u16()?;
         let d = self.unpack_bytes(n as usize)?;

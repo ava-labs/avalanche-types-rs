@@ -11,8 +11,8 @@ use crate::{constants, coreth::genesis as coreth_genesis, key};
 use serde::{Deserialize, Serialize};
 
 /// Represents Avalanche network genesis configuration.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Config
-/// ref. https://serde.rs/container-attrs.html
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Config>
+/// ref. <https://serde.rs/container-attrs.html>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Genesis {
     #[serde(rename = "networkID")]
@@ -209,16 +209,10 @@ impl Genesis {
 
             message: self.message.clone(),
         };
-        let ret = serde_json::to_vec(&genesis_file);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Config to JSON {}", e),
-                ));
-            }
-        };
+
+        let d = serde_json::to_vec(&genesis_file)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+
         let mut f = File::create(file_path)?;
         f.write_all(&d)?;
 
@@ -271,7 +265,7 @@ impl Genesis {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Allocation
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Allocation>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Allocation {
     #[serde(rename = "avaxAddr", skip_serializing_if = "Option::is_none")]
@@ -284,7 +278,7 @@ pub struct Allocation {
     /// On the X-Chain, one AVAX is 10^9  units.
     /// On the P-Chain, one AVAX is 10^9  units.
     /// On the C-Chain, one AVAX is 10^18 units.
-    /// ref. https://snowtrace.io/unitconverter
+    /// ref. <https://snowtrace.io/unitconverter>
     #[serde(rename = "initialAmount", skip_serializing_if = "Option::is_none")]
     pub initial_amount: Option<u64>,
     #[serde(rename = "unlockSchedule", skip_serializing_if = "Option::is_none")]
@@ -295,14 +289,14 @@ pub struct Allocation {
 /// On the P-Chain, one AVAX is 10^9  units.
 /// On the C-Chain, one AVAX is 10^18 units.
 /// 300,000,000 AVAX.
-/// ref. https://snowtrace.io/unitconverter
+/// ref. <https://snowtrace.io/unitconverter>
 pub const DEFAULT_INITIAL_AMOUNT_X_CHAIN: u64 = 300000000000000000;
 
 /// On the X-Chain, one AVAX is 10^9  units.
 /// On the P-Chain, one AVAX is 10^9  units.
 /// On the C-Chain, one AVAX is 10^18 units.
 /// 200,000,000 AVAX.
-/// ref. https://snowtrace.io/unitconverter
+/// ref. <https://snowtrace.io/unitconverter>
 pub const DEFAULT_LOCKED_AMOUNT_P_CHAIN: u64 = 200000000000000000;
 
 impl Default for Allocation {
@@ -323,7 +317,7 @@ impl Allocation {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#LockedAmount
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#LockedAmount>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct LockedAmount {
     /// P-chain amount to lock for the duration of "locktime"
@@ -331,7 +325,7 @@ pub struct LockedAmount {
     /// On the X-Chain, one AVAX is 10^9  units.
     /// On the P-Chain, one AVAX is 10^9  units.
     /// On the C-Chain, one AVAX is 10^18 units.
-    /// ref. https://snowtrace.io/unitconverter
+    /// ref. <https://snowtrace.io/unitconverter>
     #[serde(rename = "amount", skip_serializing_if = "Option::is_none")]
     pub amount: Option<u64>,
     /// Unix timestamp to unlock the "amount".
@@ -361,7 +355,7 @@ impl LockedAmount {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Staker
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/genesis#Staker>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Staker {
     #[serde(rename = "nodeID", skip_serializing_if = "Option::is_none")]

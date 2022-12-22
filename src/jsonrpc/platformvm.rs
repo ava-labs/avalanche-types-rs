@@ -8,7 +8,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxRequest {
     pub jsonrpc: String,
@@ -35,15 +35,9 @@ impl IssueTxRequest {
             params: None,
         }
     }
-
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
@@ -83,7 +77,7 @@ impl IssueTxResponse {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct IssueTxResult {
     #[serde(rename = "txID")]
@@ -135,7 +129,7 @@ fn test_issue_tx() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxResponse {
     pub jsonrpc: String,
@@ -165,7 +159,7 @@ impl GetTxResponse {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxResult {
     pub tx: platformvm::txs::Tx,
@@ -258,7 +252,7 @@ fn test_get_tx() {
     assert_eq!(parsed_resp.result.clone().unwrap().encoding, "json");
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxStatusResponse {
     pub jsonrpc: String,
@@ -288,7 +282,7 @@ impl GetTxStatusResponse {
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTxStatusResult {
@@ -339,7 +333,7 @@ fn test_get_tx_status() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetHeightResponse {
     pub jsonrpc: String,
@@ -352,7 +346,7 @@ pub struct GetHeightResponse {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetHeightResult {
@@ -400,7 +394,7 @@ fn test_get_height() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/issuing-api-calls
+/// ref. <https://docs.avax.network/build/avalanchego-apis/issuing-api-calls>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetUtxosRequest {
     pub jsonrpc: String,
@@ -429,17 +423,12 @@ impl GetUtxosRequest {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUtxosParams {
@@ -448,7 +437,7 @@ pub struct GetUtxosParams {
     pub encoding: String,
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetUtxosResponse {
     pub jsonrpc: String,
@@ -461,7 +450,7 @@ pub struct GetUtxosResponse {
     pub error: Option<super::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetutxos>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -585,7 +574,7 @@ fn test_get_utxos_non_empty() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetBalanceResponse {
     pub jsonrpc: String,
@@ -598,7 +587,7 @@ pub struct GetBalanceResponse {
     pub error: Option<jsonrpc::ResponseError>,
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetBalanceResult {
@@ -697,7 +686,7 @@ fn test_get_balance() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct GetCurrentValidatorsResponse {
     pub jsonrpc: String,
@@ -723,8 +712,8 @@ impl GetCurrentValidatorsResponse {
     }
 }
 
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct GetCurrentValidatorsResult {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -743,8 +732,8 @@ impl GetCurrentValidatorsResult {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ApiPrimaryValidator {
@@ -820,7 +809,7 @@ impl ApiPrimaryValidator {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIOwner
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIOwner>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct ApiOwner {
@@ -847,8 +836,8 @@ impl ApiOwner {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct ApiPrimaryDelegator {
@@ -1015,7 +1004,7 @@ fn test_get_current_validators() {
     assert_eq!(resp, expected);
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIUTXO
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#APIUTXO>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct ApiUtxo {

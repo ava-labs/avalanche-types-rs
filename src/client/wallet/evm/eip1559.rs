@@ -9,13 +9,13 @@ use primitive_types::{H160, H256, U256};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents an EIP-1559 Ethereum transaction (dynamic fee transaction in coreth/subnet-evm).
-/// ref. https://ethereum.org/en/developers/docs/transactions
-/// ref. https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md
+/// ref. <https://ethereum.org/en/developers/docs/transactions>
+/// ref. <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md>
 /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest"
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx>
 ///
 /// The transaction cost is "value" + "gas" * "gas_price" in coreth (ref. "types.Transaction.Cost").
 /// Which is, "value" + "gas_limit" * "max_fee_per_gas".
@@ -35,13 +35,17 @@ where
     pub inner: client::wallet::evm::Evm<'a, T, S>,
 
     /// Sequence number originated from this account to prevent message replay attack
-    /// ref. https://eips.ethereum.org/EIPS/eip-155
+    /// ref. <https://eips.ethereum.org/EIPS/eip-155>
     ///
     /// Must keep track of nonces when creating transactions programmatically.
     /// If two transactions were transmitted with the same nonce,
     /// only one will be confirmed and the other will be rejected.
     ///
-    /// None for next available nonce.
+    /// Note that nonce increments regardless whether a transaction execution succeeds or not.
+    /// The nonce increments when the transaction is included in the block, but
+    /// its execution can fail and still pays the gas.
+    ///
+    /// None for automatically fetching the next available nonce.
     pub signer_nonce: Option<U256>,
 
     /// Maximum transaction fee as a premium.

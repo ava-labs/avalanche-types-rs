@@ -7,7 +7,7 @@ use std::{
 use crate::ids::{bits, Id};
 
 /// Represents a bag of multiple Ids for binary voting.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#Bag
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#Bag>
 pub struct Bag {
     counts: Rc<RefCell<HashMap<Id, u32>>>,
     size: Cell<u32>,
@@ -322,7 +322,7 @@ fn test_bag_split() {
 const MIN_UNIQUE_BAG_SIZE: usize = 16;
 
 /// Maps from an Id to the BitSet.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#UniqueBag
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#UniqueBag>
 pub struct Unique(Rc<RefCell<HashMap<Id, Rc<RefCell<bits::Set64>>>>>);
 
 impl Unique {
@@ -404,8 +404,8 @@ impl Default for Unique {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl std::fmt::Display for Unique {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

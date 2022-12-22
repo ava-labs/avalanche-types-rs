@@ -6,7 +6,7 @@ use std::{
 use crate::jsonrpc::{self, platformvm};
 
 /// e.g., "platform.issueTx" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
 pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<platformvm::IssueTxResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/P")?;
     log::debug!("issuing a transaction via {:?}", joined.as_str());
@@ -28,7 +28,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<platformvm::IssueT
 }
 
 /// e.g., "platform.getTx" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx>
 pub async fn get_tx(http_rpc: &str, tx_id: &str) -> io::Result<platformvm::GetTxResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/P")?;
     log::debug!("getting tx via {}", joined.as_str());
@@ -49,7 +49,7 @@ pub async fn get_tx(http_rpc: &str, tx_id: &str) -> io::Result<platformvm::GetTx
 }
 
 /// e.g., "platform.getTxStatus" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus>
 pub async fn get_tx_status(
     http_rpc: &str,
     tx_id: &str,
@@ -76,7 +76,7 @@ pub async fn get_tx_status(
 }
 
 /// e.g., "platform.getHeight" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight>
 pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/P")?;
     log::debug!("getting height for {:?}", joined);
@@ -99,7 +99,7 @@ pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightRespo
 }
 
 /// e.g., "platform.getBalance" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance>
 pub async fn get_balance(
     http_rpc: &str,
     paddr: &str,
@@ -126,7 +126,7 @@ pub async fn get_balance(
 }
 
 /// e.g., "platform.getUTXOs" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos>
 pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::GetUtxosResponse> {
     let joined = http_manager::join_uri(http_rpc, "/ext/P")?;
     log::debug!("getting UTXOs for {} via {:?}", paddr, joined);
@@ -153,8 +153,8 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::Ge
 }
 
 /// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 pub async fn get_primary_network_validators(
     http_rpc: &str,
 ) -> io::Result<platformvm::GetCurrentValidatorsResponse> {
@@ -179,8 +179,8 @@ pub async fn get_primary_network_validators(
 }
 
 /// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator
+/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 pub async fn get_subnet_validators(
     http_rpc: &str,
     subnet_id: &str,

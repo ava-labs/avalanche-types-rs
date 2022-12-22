@@ -26,7 +26,7 @@ pub struct Key(pub k256::PublicKey);
 impl Key {
     /// Decodes compressed or uncompressed public key bytes with Elliptic-Curve-Point-to-Octet-String
     /// encoding described in SEC 1: Elliptic Curve Cryptography (Version 2.0) section 2.3.3 (page 10).
-    /// ref. http://www.secg.org/sec1-v2.pdf
+    /// ref. <http://www.secg.org/sec1-v2.pdf>
     pub fn from_sec1_bytes(b: &[u8]) -> io::Result<Self> {
         let pubkey = k256::PublicKey::from_sec1_bytes(b).map_err(|e| {
             Error::new(
@@ -94,15 +94,18 @@ impl Key {
     }
 
     /// "hashing.PubkeyBytesToAddress"
+    ///
     /// ref. "pk.PublicKey().Address().Bytes()"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    ///
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
     pub fn to_short_id(&self) -> io::Result<crate::ids::short::Id> {
         let compressed = self.to_compressed_bytes();
         short::Id::from_public_key_bytes(&compressed)
     }
 
     /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    ///
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
     pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
         let compressed = self.to_compressed_bytes();
         hash::sha256_ripemd160(&compressed)
@@ -132,8 +135,10 @@ impl Key {
     }
 
     /// Encodes the public key in ETH address format.
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress
-    /// ref. https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex
+    ///
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
+    ///
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
     pub fn eth_address(&self) -> String {
         address::h160_to_eth_address(self.to_h160())
     }
@@ -163,8 +168,10 @@ impl From<Key> for k256::ecdsa::VerifyingKey {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+///
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
+///
 /// Use "Self.to_string()" to directly invoke this
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -172,8 +179,12 @@ impl std::fmt::Display for Key {
     }
 }
 
-/// ref. https://doc.rust-lang.org/book/ch10-02-traits.html
+/// ref. <https://doc.rust-lang.org/book/ch10-02-traits.html>
 impl key::secp256k1::ReadOnly for Key {
+    fn key_type(&self) -> key::secp256k1::KeyType {
+        key::secp256k1::KeyType::Hot
+    }
+
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         self.hrp_address(network_id, chain_id_alias)
     }

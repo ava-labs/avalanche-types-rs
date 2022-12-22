@@ -106,6 +106,25 @@ pub mod validator_state_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn get_subnet_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetSubnetIdRequest>,
+        ) -> Result<tonic::Response<super::GetSubnetIdResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/validatorstate.ValidatorState/GetSubnetID",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         pub async fn get_validator_set(
             &mut self,
             request: impl tonic::IntoRequest<super::GetValidatorSetRequest>,
@@ -142,6 +161,10 @@ pub mod validator_state_server {
             &self,
             request: tonic::Request<super::super::google::protobuf::Empty>,
         ) -> Result<tonic::Response<super::GetCurrentHeightResponse>, tonic::Status>;
+        async fn get_subnet_id(
+            &self,
+            request: tonic::Request<super::GetSubnetIdRequest>,
+        ) -> Result<tonic::Response<super::GetSubnetIdResponse>, tonic::Status>;
         async fn get_validator_set(
             &self,
             request: tonic::Request<super::GetValidatorSetRequest>,
@@ -279,6 +302,46 @@ pub mod validator_state_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetCurrentHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/validatorstate.ValidatorState/GetSubnetID" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetSubnetIDSvc<T: ValidatorState>(pub Arc<T>);
+                    impl<
+                        T: ValidatorState,
+                    > tonic::server::UnaryService<super::GetSubnetIdRequest>
+                    for GetSubnetIDSvc<T> {
+                        type Response = super::GetSubnetIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetSubnetIdRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).get_subnet_id(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetSubnetIDSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

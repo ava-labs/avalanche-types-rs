@@ -9,13 +9,13 @@ use rlp::RlpStream;
 ///
 /// Represents an EIP-1559 Ethereum transaction (dynamic fee transaction in coreth/subnet-evm).
 ///
-/// ref. https://ethereum.org/en/developers/docs/transactions
-/// ref. https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md
+/// ref. <https://ethereum.org/en/developers/docs/transactions>
+/// ref. <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md>
 /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest"
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx>
 ///
 /// The transaction cost is "value" + "gas" * "gas_price" in coreth (ref. "types.Transaction.Cost").
 /// Which is, "value" + "gas_limit" * "max_fee_per_gas".
@@ -31,7 +31,7 @@ pub struct Tx {
     pub chain_id: U256,
 
     /// Sequence number originated from this account to prevent message replay attack
-    /// ref. https://eips.ethereum.org/EIPS/eip-155
+    /// ref. <https://eips.ethereum.org/EIPS/eip-155>
     ///
     /// Must keep track of nonces when creating transactions programmatically.
     /// If two transactions were transmitted with the same nonce,
@@ -150,7 +150,7 @@ impl Tx {
     /// RLP-encodes the base fields.
     /// ref. "ethers-core::types::transaction::eip2718::TypedTransaction::rlp"
     /// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest::rlp"
-    /// ref. https://github.com/onbjerg/ethers-flashbots/issues/11
+    /// ref. <https://github.com/onbjerg/ethers-flashbots/issues/11>
     fn rlp_base(&self, rlp: &mut RlpStream) {
         rlp.append(&self.chain_id); // #1
         super::rlp_opt(rlp, &self.signer_nonce); // #2

@@ -1,3 +1,9 @@
+//! Avalanche Rust SDK: Types and building blocks to assist with creating a custom `subnet` VM.
+//!
+//! Example VM's created with SDK:
+//! * Simple Rust VM: [TimestampVM](https://github.com/ava-labs/timestampvm-rs)
+//! * Complex Rust VM: [SpacesVM](https://github.com/ava-labs/spacesvm-rs)
+
 pub mod config;
 pub mod rpc;
 

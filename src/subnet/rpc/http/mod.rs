@@ -1,7 +1,7 @@
 pub mod client;
 pub mod server;
 
-/// ref: https://pkg.go.dev/net/http#Handler
+/// ref: <https://pkg.go.dev/net/http#Handler>
 #[tonic::async_trait]
 pub trait Handler {
     async fn serve_http(

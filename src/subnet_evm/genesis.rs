@@ -8,8 +8,8 @@ use std::{
 use crate::key;
 use serde::{Deserialize, Serialize};
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#Genesis
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#ChainConfig
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#Genesis>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#ChainConfig>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Genesis {
@@ -25,7 +25,7 @@ pub struct Genesis {
     pub extra_data: Option<String>,
 
     /// Make sure this is set equal to "ChainConfig.FeeConfig.gas_limit".
-    /// ref. https://github.com/ava-labs/subnet-evm/pull/63
+    /// ref. <https://github.com/ava-labs/subnet-evm/pull/63>
     ///
     /// Use https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert.
     #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
@@ -40,8 +40,8 @@ pub struct Genesis {
 
     /// MUST BE ordered by its key in order for all nodes to have the same JSON outputs.
     /// And expressed as hex strings with the canonical 0x prefix.
-    /// ref. https://doc.rust-lang.org/std/collections/index.html#use-a-btreemap-when
-    /// ref. https://docs.avax.network/subnets/customize-a-subnet#setting-the-genesis-allocation
+    /// ref. <https://doc.rust-lang.org/std/collections/index.html#use-a-btreemap-when>
+    /// ref. <https://docs.avax.network/subnets/customize-a-subnet#setting-the-genesis-allocation>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alloc: Option<BTreeMap<String, AllocAccount>>,
 
@@ -65,8 +65,8 @@ pub struct Genesis {
 /// On the P-Chain, one AVAX is 10^9  units.
 /// On the C-Chain, one AVAX is 10^18 units.
 /// "0x204FCE5E3E25026110000000" is "10000000000000000000000000000" (10,000,000,000 AVAX).
-/// ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
-/// ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
+/// ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
+/// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
 pub const DEFAULT_INITIAL_AMOUNT: &str = "0x204FCE5E3E25026110000000";
 
 impl Default for Genesis {
@@ -92,7 +92,7 @@ impl Genesis {
 
             // ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
             // ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-            gas_limit: primitive_types::U256::from_str_radix("0x1C9C380", 16).unwrap(),
+            gas_limit: primitive_types::U256::from_str_radix("0x7A1200", 16).unwrap(),
 
             difficulty: primitive_types::U256::default(),
             mix_hash: Some(String::from(
@@ -146,26 +146,17 @@ impl Genesis {
     }
 
     pub fn encode_json(&self) -> io::Result<String> {
-        match serde_json::to_string(&self) {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to serialize to JSON {}", e),
-            )),
-        }
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
     }
 
     /// Encodes the genesis to bytes.
     pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
-        serde_json::to_vec(self).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed encode genesis to JSON {}", e),
-            )
-        })
+        serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed encode JSON {}", e)))
     }
 
-    /// Saves the current anchor node to disk
+    /// Saves the current genesis to disk
     /// and overwrites the file.
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing Genesis to '{}'", file_path);
@@ -173,16 +164,9 @@ impl Genesis {
         let parent_dir = path.parent().expect("unexpected None parent");
         fs::create_dir_all(parent_dir)?;
 
-        let ret = serde_json::to_vec(self);
-        let d = match ret {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("failed to serialize Genesis to YAML {}", e),
-                ));
-            }
-        };
+        let d = serde_json::to_vec(self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+
         let mut f = File::create(file_path)?;
         f.write_all(&d)?;
 
@@ -190,12 +174,18 @@ impl Genesis {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#ChainConfig
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#ChainConfig>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChainConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chain_id: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fee_config: Option<FeeConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_fee_recipients: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub homestead_block: Option<u64>,
@@ -224,21 +214,16 @@ pub struct ChainConfig {
     #[serde(rename = "subnetEVMTimestamp", skip_serializing_if = "Option::is_none")]
     pub subnet_evm_timestamp: Option<u64>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fee_config: Option<FeeConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_fee_recipients: Option<bool>,
-
-    /// ref. https://docs.avax.network/subnets/customize-a-subnet
+    /// ref. <https://docs.avax.network/subnets/customize-a-subnet>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contract_deployer_allow_list_config: Option<ContractDeployerAllowListConfig>,
-    /// ref. https://docs.avax.network/subnets/customize-a-subnet
+    /// ref. <https://docs.avax.network/subnets/customize-a-subnet>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contract_native_minter_config: Option<ContractNativeMinterConfig>,
-    /// ref. https://docs.avax.network/subnets/customize-a-subnet
+    /// ref. <https://docs.avax.network/subnets/customize-a-subnet>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tx_allow_list_config: Option<TxAllowListConfig>,
-    /// ref. https://docs.avax.network/subnets/customize-a-subnet
+    /// ref. <https://docs.avax.network/subnets/customize-a-subnet>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fee_manager_config: Option<FeeManagerConfig>,
 }
@@ -250,12 +235,17 @@ impl Default for ChainConfig {
 }
 
 impl ChainConfig {
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
     pub fn default() -> Self {
         Self {
             // don't use local ID "43112" to avoid config override
             // ref. https://github.com/ava-labs/coreth/blob/v0.8.6/plugin/evm/vm.go#L326-L328
             // ref. https://github.com/ava-labs/avalanche-ops/issues/8
             chain_id: Some(2000777),
+
+            fee_config: Some(FeeConfig::default()),
+            allow_fee_recipients: None,
+
             homestead_block: Some(0),
 
             eip150_block: Some(0),
@@ -274,9 +264,6 @@ impl ChainConfig {
 
             subnet_evm_timestamp: Some(0),
 
-            fee_config: Some(FeeConfig::default()),
-            allow_fee_recipients: None,
-
             contract_deployer_allow_list_config: None,
             contract_native_minter_config: None,
             tx_allow_list_config: None,
@@ -285,12 +272,13 @@ impl ChainConfig {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/commontype#FeeConfig
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/commontype#FeeConfig>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeConfig {
     /// Make sure this is set equal to "Genesis.gas_limit".
-    /// ref. https://github.com/ava-labs/subnet-evm/pull/63
+    /// ref. <https://github.com/ava-labs/subnet-evm/pull/63>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_limit: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -325,12 +313,18 @@ impl Default for FeeConfig {
 }
 
 /// C-chain is 8-million
-/// ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
-/// ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-/// ref. https://github.com/ava-labs/public-chain-assets/blob/main/chains/53935/genesis.json
-pub const DEFAULT_GAS_LIMIT: u64 = 30000000;
-
+/// ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
+/// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
+/// ref. <https://github.com/ava-labs/public-chain-assets/blob/main/chains/53935/genesis.json>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
+pub const DEFAULT_GAS_LIMIT: u64 = 8_000_000;
 pub const DEFAULT_TARGET_BLOCK_RATE: u64 = 2;
+pub const DEFAULT_MIN_BASE_FEE: u64 = 25_000_000_000;
+pub const DEFAULT_TARGET_GAS: u64 = 15_000_000;
+pub const DEFAULT_BASE_FEE_CHANGE_DENOMINATOR: u64 = 36;
+pub const DEFAULT_MIN_BLOCK_GAS_COST: u64 = 0;
+pub const DEFAULT_MAX_BLOCK_GAS_COST: u64 = 1_000_000;
+pub const DEFAULT_BLOCK_GAS_COST_STEP: u64 = 200_000;
 
 impl FeeConfig {
     pub fn default() -> Self {
@@ -338,20 +332,20 @@ impl FeeConfig {
             gas_limit: Some(DEFAULT_GAS_LIMIT),
             target_block_rate: Some(DEFAULT_TARGET_BLOCK_RATE),
 
-            min_base_fee: Some(40000000),
-            target_gas: Some(75000000),
-            base_fee_change_denominator: Some(48),
+            min_base_fee: Some(DEFAULT_MIN_BASE_FEE),
+            target_gas: Some(DEFAULT_TARGET_GAS),
+            base_fee_change_denominator: Some(DEFAULT_BASE_FEE_CHANGE_DENOMINATOR),
 
-            min_block_gas_cost: Some(0),
-            max_block_gas_cost: Some(2000000000000000000),
-            block_gas_cost_step: Some(1000000000000000000),
+            min_block_gas_cost: Some(DEFAULT_MIN_BLOCK_GAS_COST),
+            max_block_gas_cost: Some(DEFAULT_MAX_BLOCK_GAS_COST),
+            block_gas_cost_step: Some(DEFAULT_BLOCK_GAS_COST_STEP),
         }
     }
 }
 
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/contract_deployer_allow_list.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/contract_deployer_allow_list.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractDeployerAllowListConfig {
@@ -382,9 +376,9 @@ impl ContractDeployerAllowListConfig {
     }
 }
 
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/contract_native_minter.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/contract_native_minter.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractNativeMinterConfig {
@@ -416,9 +410,9 @@ impl ContractNativeMinterConfig {
     }
 }
 
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/tx_allow_list.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/tx_allow_list.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TxAllowListConfig {
@@ -449,9 +443,9 @@ impl TxAllowListConfig {
     }
 }
 
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/fee_config_manager.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go
-/// ref. https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/fee_config_manager.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/precompile/upgradeable.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/master/params/precompile_config.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeManagerConfig {
@@ -482,8 +476,8 @@ impl FeeManagerConfig {
     }
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisAlloc
-/// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisAccount
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisAlloc>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisAccount>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AllocAccount {
@@ -495,7 +489,7 @@ pub struct AllocAccount {
     #[serde(with = "crate::codec::serde::hex_0x_primitive_types_u256")]
     pub balance: primitive_types::U256,
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisMultiCoinBalance
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#GenesisMultiCoinBalance>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcbalance: Option<BTreeMap<String, u64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -520,6 +514,7 @@ impl AllocAccount {
     }
 }
 
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- subnet_evm::genesis::test_parse --exact --show-output
 #[test]
 fn test_parse() {
     let _ = env_logger::builder().is_test(true).try_init();
@@ -528,6 +523,9 @@ fn test_parse() {
     let resp: Genesis = serde_json::from_str(
         r#"
 {
+    "unknown1": "field1",
+    "unknown2": "field2",
+
         "config": {
             "chainId": 2000777,
             "homesteadBlock": 0,
@@ -542,14 +540,14 @@ fn test_parse() {
             "muirGlacierBlock": 0,
             "subnetEVMTimestamp": 0,
             "feeConfig": {
-                "gasLimit": 30000000,
-                "minBaseFee": 40000000,
-                "targetGas": 75000000,
-                "baseFeeChangeDenominator": 48,
+                "gasLimit": 8000000,
+                "minBaseFee": 25000000000,
+                "targetGas": 15000000,
+                "baseFeeChangeDenominator": 36,
                 "minBlockGasCost": 0,
-                "maxBlockGasCost": 2000000000000000000,
+                "maxBlockGasCost": 1000000,
                 "targetBlockRate": 2,
-                "blockGasCostStep": 1000000000000000000
+                "blockGasCostStep": 200000
             }
         },
         "alloc": {
@@ -560,7 +558,7 @@ fn test_parse() {
         "nonce": "0x0",
         "timestamp": "0x0",
         "extraData": "0x00",
-        "gasLimit": "0x1C9C380",
+        "gasLimit": "0x7A1200",
         "difficulty": "0x0",
         "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "coinbase": "0x0000000000000000000000000000000000000000",

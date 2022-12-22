@@ -1,3 +1,4 @@
+//! Database Server
 use std::sync::Arc;
 
 use crate::{
@@ -20,11 +21,11 @@ use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 use zerocopy::AsBytes;
 
+/// Serves a [`crate::subnet::rpc::database::Database`] over over RPC.
 pub struct Server {
     pub inner: Arc<RwLock<Box<dyn crate::subnet::rpc::database::Database + Send + Sync>>>,
 }
 
-/// A gRPC server which wraps a subnet::rpc::database::Database impl allowing client control over over RPC.
 impl Server {
     pub fn new(
         db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,

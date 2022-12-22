@@ -31,8 +31,8 @@ lazy_static! {
     static ref EMPTY: Vec<u8> = vec![0; LEN];
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ID
-/// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ID>
+/// ref. <https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety>
 #[derive(Debug, Clone, Copy, Eq, AsBytes, FromBytes, Unaligned)]
 #[repr(transparent)]
 pub struct Id([u8; LEN]);
@@ -61,7 +61,7 @@ impl Id {
     }
 
     /// SHA256-hashes the given byte slice into an Id.
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ToID
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ToID>
     pub fn sha256(d: impl AsRef<[u8]>) -> Self {
         Id::from_slice(&hash::sha256(d))
     }
@@ -93,7 +93,7 @@ impl Id {
     }
 
     /// Returns the bit value at the i-th index of the byte array (0 or 1).
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ID.Bit
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ID.Bit>
     pub fn bit(&self, i: usize) -> bits::Bit {
         let byte_index = i / 8;
         let bit_index = i % 8;
@@ -122,8 +122,8 @@ impl AsRef<[u8]> for Id {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -132,7 +132,7 @@ impl fmt::Display for Id {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/str/trait.FromStr.html
+/// ref. <https://doc.rust-lang.org/std/str/trait.FromStr.html>
 impl FromStr for Id {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -154,7 +154,7 @@ impl From<std::borrow::Cow<'static, str>> for Id {
 }
 
 /// Custom serializer.
-/// ref. https://serde.rs/impl-serialize.html
+/// ref. <https://serde.rs/impl-serialize.html>
 impl Serialize for Id {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -165,7 +165,7 @@ impl Serialize for Id {
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Id, D::Error>
     where
@@ -220,7 +220,7 @@ where
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn deserialize_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
 where
     D: Deserializer<'de>,
@@ -233,7 +233,7 @@ where
 
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "ids::must_deserialize_id")] to serde without derive.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn must_deserialize_id<'de, D>(deserializer: D) -> Result<Id, D::Error>
 where
     D: Deserializer<'de>,
@@ -248,7 +248,7 @@ where
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn deserialize_ids<'de, D>(deserializer: D) -> Result<Option<Vec<Id>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -261,7 +261,7 @@ where
 
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "short::must_deserialize_ids")] to serde with derive.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn must_deserialize_ids<'de, D>(deserializer: D) -> Result<Vec<Id>, D::Error>
 where
     D: Deserializer<'de>,
@@ -399,7 +399,7 @@ impl PartialEq for Id {
     }
 }
 
-/// ref. https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq
+/// ref. <https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq>
 impl Hash for Id {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);

@@ -7,8 +7,8 @@ const CHECKSUM_LENGTH: usize = 4;
 
 /// Implements "formatting.EncodeWithChecksum" with "formatting.CB58".
 /// "ids.ShortID.String" appends checksum to the digest bytes.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum>
 pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
     // "hashing.Checksum" of "sha256.Sum256"
     let checksum = hash::sha256(d);
@@ -26,8 +26,8 @@ pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
 
 /// Implements "formatting.EncodeWithChecksum" with "formatting.CB58".
 /// "ids.ShortID.String" appends checksum to the digest bytes.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum>
 pub fn encode_cb58_with_checksum_vec(d: &[u8]) -> Vec<u8> {
     // "hashing.Checksum" of "sha256.Sum256"
     let checksum = hash::sha256(d);
@@ -44,7 +44,7 @@ pub fn encode_cb58_with_checksum_vec(d: &[u8]) -> Vec<u8> {
 }
 
 /// Implements "formatting.Decode" with "formatting.CB58".
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode
 pub fn decode_cb58_with_checksum(d: &str) -> io::Result<Vec<u8>> {
     let decoded = match bs58::decode(d).into_vec() {
         Ok(v) => v,
@@ -109,8 +109,8 @@ fn test_encode_c58_with_checksum() {
 
 /// Implements "formatting.EncodeWithChecksum" with "formatting.Hex".
 /// "ids.ShortID.String" appends checksum to the digest bytes.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum>
 pub fn encode_hex_with_checksum(d: &[u8]) -> String {
     // "hashing.Checksum" of "sha256.Sum256"
     let checksum = hash::sha256(d);
@@ -125,7 +125,7 @@ pub fn encode_hex_with_checksum(d: &[u8]) -> String {
 }
 
 /// Implements "formatting.Decode" with "formatting.Hex".
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode>
 pub fn decode_hex_with_checksum(d: &[u8]) -> io::Result<Vec<u8>> {
     let decoded = match hex::decode(d) {
         Ok(v) => v,
@@ -192,8 +192,8 @@ fn test_encode_hex_with_checksum() {
 }
 
 /// Implements "formatting.FormatAddress/FormatBech32".
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#FormatAddress
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#FormatBech32
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#FormatAddress>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#FormatBech32>
 pub fn address(chain_id_alias: &str, hrp: &str, d: &[u8]) -> io::Result<String> {
     assert_eq!(d.len(), 20);
 

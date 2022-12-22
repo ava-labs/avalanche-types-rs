@@ -7,8 +7,8 @@ use crate::hash;
 use serde::{self, Deserialize, Serialize};
 
 /// Represents raw transaction bytes.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/avalanche/vertex#SortHashOf
-/// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/avalanche/vertex#SortHashOf>
+/// ref. <https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety>
 #[derive(Debug, Clone, Deserialize, Serialize, Eq)]
 #[repr(transparent)]
 pub struct Data(Vec<u8>);
@@ -55,7 +55,7 @@ impl PartialEq for Data {
     }
 }
 
-/// ref. https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq
+/// ref. <https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq>
 impl Hash for Data {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);

@@ -17,8 +17,8 @@ lazy_static! {
     static ref EMPTY: Vec<u8> = vec![0; LEN];
 }
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ShortID
-/// ref. https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#ShortID>
+/// ref. <https://docs.rs/zerocopy/latest/zerocopy/trait.AsBytes.html#safety>
 #[derive(Debug, Clone, Eq, AsBytes, FromBytes, Unaligned)]
 #[repr(transparent)]
 pub struct Id([u8; LEN]);
@@ -53,7 +53,7 @@ impl Id {
     }
 
     /// "hashing.PubkeyBytesToAddress"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
     pub fn from_public_key_bytes<S>(pub_key_bytes: S) -> io::Result<Self>
     where
         S: AsRef<[u8]>,
@@ -73,8 +73,8 @@ impl AsRef<[u8]> for Id {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -83,7 +83,7 @@ impl fmt::Display for Id {
     }
 }
 
-/// ref. https://doc.rust-lang.org/std/str/trait.FromStr.html
+/// ref. <https://doc.rust-lang.org/std/str/trait.FromStr.html>
 impl FromStr for Id {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -99,7 +99,7 @@ impl FromStr for Id {
 }
 
 /// Custom serializer.
-/// ref. https://serde.rs/impl-serialize.html
+/// ref. <https://serde.rs/impl-serialize.html>
 impl Serialize for Id {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -110,7 +110,7 @@ impl Serialize for Id {
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Id, D::Error>
     where
@@ -138,7 +138,7 @@ where
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn deserialize_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
 where
     D: Deserializer<'de>,
@@ -151,7 +151,7 @@ where
 
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "ids::must_deserialize_id")] to serde without derive.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn must_deserialize_id<'de, D>(deserializer: D) -> Result<Id, D::Error>
 where
     D: Deserializer<'de>,
@@ -168,7 +168,7 @@ where
 }
 
 /// Custom deserializer.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn deserialize_ids<'de, D>(deserializer: D) -> Result<Option<Vec<Id>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -181,7 +181,7 @@ where
 
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "short::must_deserialize_ids")] to serde with derive.
-/// ref. https://serde.rs/impl-deserialize.html
+/// ref. <https://serde.rs/impl-deserialize.html>
 pub fn must_deserialize_ids<'de, D>(deserializer: D) -> Result<Vec<Id>, D::Error>
 where
     D: Deserializer<'de>,
@@ -303,7 +303,7 @@ impl PartialEq for Id {
     }
 }
 
-/// ref. https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq
+/// ref. <https://rust-lang.github.io/rust-clippy/master/index.html#derive_hash_xor_eq>
 impl Hash for Id {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);

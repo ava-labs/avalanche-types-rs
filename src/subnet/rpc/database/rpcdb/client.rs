@@ -1,3 +1,4 @@
+//! Database Client
 use std::io::{self, Error, ErrorKind};
 
 use crate::{
@@ -14,6 +15,9 @@ use num_traits::FromPrimitive;
 use prost::bytes::Bytes;
 use tonic::transport::Channel;
 
+/// DatabaseClient is an implementation of [`crate::subnet::rpc::database::Database`] that talks over RPC.
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/rpcdb#DatabaseClient>
 #[derive(Clone)]
 pub struct DatabaseClient {
     inner: RpcDbDatabaseClient<Channel>,
@@ -29,8 +33,6 @@ impl DatabaseClient {
     }
 }
 
-/// DatabaseClient is an implementation of Database that talks over RPC.
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database/rpcdb#DatabaseClient
 impl crate::subnet::rpc::database::Database for DatabaseClient {}
 
 #[tonic::async_trait]

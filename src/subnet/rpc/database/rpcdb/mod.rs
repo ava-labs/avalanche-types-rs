@@ -1,3 +1,4 @@
+//! Implements a database exposed by RPC.
 pub mod client;
 pub mod server;
 

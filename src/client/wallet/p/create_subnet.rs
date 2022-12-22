@@ -4,8 +4,8 @@ use crate::{client::p as client_p, formatting, ids, key, platformvm, txs};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents P-chain "CreateSubnet" transaction.
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L500-L525 "NewCreateSubnetTx"
-/// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L392 "NewCreateSubnetTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L500-L525> "NewCreateSubnetTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L392> "NewCreateSubnetTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
@@ -81,19 +81,6 @@ where
     pub async fn issue(&self) -> io::Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!("creating a new subnet via {}", picked_http_rpc.1);
-
-        let cur_balance_p = self.inner.balance().await?;
-        if cur_balance_p < self.inner.inner.create_subnet_tx_fee {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("key address {} (balance {} nano-AVAX, network {}) does not have enough to cover fee {}", self.inner.inner.p_address, cur_balance_p, self.inner.inner.network_name, self.inner.inner.create_subnet_tx_fee),
-             ));
-        };
-        log::info!(
-            "{} current P-chain balance {}",
-            self.inner.inner.p_address,
-            cur_balance_p
-        );
 
         let (ins, unstaked_outs, _, signers) = self
             .inner

@@ -87,10 +87,10 @@ pub mod sharedmemory {
     include!("sharedmemory.rs");
     // @@protoc_insertion_point(sharedmemory)
 }
-// @@protoc_insertion_point(attribute:subnetlookup)
-pub mod subnetlookup {
-    include!("subnetlookup.rs");
-    // @@protoc_insertion_point(subnetlookup)
+// @@protoc_insertion_point(attribute:teleporter)
+pub mod teleporter {
+    include!("teleporter.rs");
+    // @@protoc_insertion_point(teleporter)
 }
 // @@protoc_insertion_point(attribute:validatorstate)
 pub mod validatorstate {

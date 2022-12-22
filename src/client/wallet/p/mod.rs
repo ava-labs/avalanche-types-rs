@@ -2,6 +2,8 @@ pub mod add_subnet_validator;
 pub mod add_validator;
 pub mod create_chain;
 pub mod create_subnet;
+pub mod export;
+pub mod import;
 
 use std::{
     cmp,
@@ -109,9 +111,9 @@ where
         Ok(false)
     }
 
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/utxo/handler.go#L169 "Spend"
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L325-L358 "NewAddValidatorTx"
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L428 "NewAddValidatorTx"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/utxo/handler.go#L169> "Spend"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L325-L358> "NewAddValidatorTx"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L428> "NewAddValidatorTx"
     async fn spend(
         &self,
         amount: u64,
@@ -348,9 +350,9 @@ where
         Ok((ins, returned_outputs, staked_outputs, signers))
     }
 
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/utxo/handler.go#L411 "Authorize"
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/wallet/chain/p/builder.go#L360-L390 "NewAddSubnetValidatorTx"
-    /// ref. https://github.com/ava-labs/avalanchego/blob/v1.9.0/vms/platformvm/txs/builder/builder.go#L512 "NewAddSubnetValidatorTx"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/utxo/handler.go#L411> "Authorize"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L360-L390> "NewAddSubnetValidatorTx"
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L512> "NewAddSubnetValidatorTx"
     async fn authorize(
         &self,
         subnet_id: ids::Id,
@@ -413,5 +415,15 @@ where
     #[must_use]
     pub fn create_chain(&self) -> create_chain::Tx<T> {
         create_chain::Tx::new(self)
+    }
+
+    #[must_use]
+    pub fn export(&self) -> export::Tx<T> {
+        export::Tx::new(self)
+    }
+
+    #[must_use]
+    pub fn import(&self) -> import::Tx<T> {
+        import::Tx::new(self)
     }
 }

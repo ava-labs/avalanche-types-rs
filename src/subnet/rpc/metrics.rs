@@ -1,3 +1,4 @@
+//! Support for Prometheus metrics.
 use crate::proto::pb::io::prometheus::client::{
     Bucket, Counter, Gauge, Histogram, LabelPair, Metric, MetricFamily, Quantile, Summary,
 };

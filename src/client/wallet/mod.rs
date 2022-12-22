@@ -18,6 +18,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone> {
+    pub key_type: key::secp256k1::KeyType,
     pub keychain: key::secp256k1::keychain::Keychain<T>,
 
     pub http_rpcs: Vec<String>,
@@ -26,12 +27,12 @@ pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone
     pub network_id: u32,
     pub network_name: String,
 
-    pub h160_address: primitive_types::H160,
     pub x_address: String,
     pub p_address: String,
     pub c_address: String,
     pub short_address: short::Id,
     pub eth_address: String,
+    pub h160_address: primitive_types::H160,
 
     pub blockchain_id_x: ids::Id,
     pub blockchain_id_p: ids::Id,
@@ -51,24 +52,25 @@ pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone
     pub create_blockchain_tx_fee: u64,
 }
 
-/// ref. https://doc.rust-lang.org/std/string/trait.ToString.html
-/// ref. https://doc.rust-lang.org/std/fmt/trait.Display.html
+/// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
+/// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 /// Use "Self.to_string()" to directly invoke this
 impl<T> fmt::Display for Wallet<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "key_type: {:?}\n", self.key_type)?;
         write!(f, "http_rpcs: {:?}\n", self.http_rpcs)?;
         write!(f, "network_id: {}\n", self.network_id)?;
         write!(f, "network_name: {}\n", self.network_name)?;
 
-        write!(f, "h160_address: {}\n", self.h160_address)?;
         write!(f, "x_address: {}\n", self.x_address)?;
         write!(f, "p_address: {}\n", self.p_address)?;
         write!(f, "c_address: {}\n", self.c_address)?;
         write!(f, "short_address: {}\n", self.short_address)?;
         write!(f, "eth_address: {}\n", self.eth_address)?;
+        write!(f, "h160_address: {}\n", self.h160_address)?;
 
         write!(f, "blockchain_id_x: {}\n", self.blockchain_id_x)?;
         write!(f, "blockchain_id_p: {}\n", self.blockchain_id_p)?;
@@ -175,8 +177,8 @@ where
 {
     pub fn new(key: &T) -> Self {
         Self {
-            http_rpcs: Vec::new(),
             key: key.clone(),
+            http_rpcs: Vec::new(),
         }
     }
 
@@ -247,6 +249,7 @@ where
         };
 
         let w = Wallet {
+            key_type: self.key.key_type(),
             keychain,
 
             http_rpcs: self.http_rpcs.clone(),
@@ -255,12 +258,12 @@ where
             network_id,
             network_name,
 
-            h160_address,
             x_address: self.key.hrp_address(network_id, "X").unwrap(),
             p_address: self.key.hrp_address(network_id, "P").unwrap(),
             c_address: self.key.hrp_address(network_id, "C").unwrap(),
             short_address: self.key.short_address().unwrap(),
             eth_address: self.key.eth_address(),
+            h160_address,
 
             blockchain_id_x,
             blockchain_id_p,

@@ -1,3 +1,4 @@
+//! Database manager.
 pub mod versioned_database;
 
 use std::{
@@ -8,7 +9,7 @@ use std::{
 use crate::subnet::rpc::database::manager::versioned_database::VersionedDatabase;
 use tokio::sync::RwLock;
 
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/database/manager#Manager
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/manager#Manager>
 #[tonic::async_trait]
 pub trait Manager {
     async fn current(&self) -> io::Result<VersionedDatabase>;

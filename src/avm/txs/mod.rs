@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 /// and "input" amounts to the "consumed". The check fails with "errInsufficientFunds",
 /// if the "produced" amount ("fee" + "outputs") is greater than the "consumed" ("inputs").
 ///
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#BaseTx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#UnsignedTx
-/// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#FlowChecker
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#BaseTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#UnsignedTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#FlowChecker>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
     /// The transaction ID is empty for unsigned tx
@@ -69,9 +69,8 @@ impl Tx {
         *(codec::X_TYPES.get(&Self::type_name()).unwrap()) as u32
     }
 
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm/txs#Tx.SignSECP256K1Fx
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
-    /// TODO: support ledger signing
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm/txs#Tx.SignSECP256K1Fx>
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash>
     pub async fn sign<T: key::secp256k1::SignOnly>(
         &mut self,
         signers: Vec<Vec<T>>,

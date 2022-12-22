@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 /// Response for "eth_blockNumber".
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct BlockNumberResponse {
     pub jsonrpc: String,
@@ -37,7 +37,7 @@ fn test_block_number() {
 }
 
 /// Response for "eth_chainId".
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct ChainIdResponse {
     pub jsonrpc: String,
@@ -71,7 +71,7 @@ fn test_chain_id() {
 }
 
 /// Response for "eth_gasPrice".
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GasPriceResponse {
     pub jsonrpc: String,
@@ -105,8 +105,8 @@ fn test_gas_price() {
 }
 
 /// Response for "eth_getBalance".
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-/// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance>
+/// ref. <https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetBalanceResponse {
     pub jsonrpc: String,
@@ -161,7 +161,7 @@ fn test_get_balance() {
 
 /// Response for "eth_getTransactionCount".
 /// Returns the number of transactions send from this address.
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTransactionCountResponse {
     pub jsonrpc: String,
@@ -197,7 +197,7 @@ fn test_get_transaction_count() {
 
 /// Response for "eth_getTransactionReceipt".
 /// Returns the receipt of a transaction by transaction hash.
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct GetTransactionReceiptResponse {
     pub jsonrpc: String,
@@ -207,7 +207,7 @@ pub struct GetTransactionReceiptResponse {
     pub result: Option<GetTransactionReceiptResult>,
 }
 
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -297,9 +297,9 @@ fn test_get_transaction_receipt() {
 }
 
 /// Response for "eth_sendRawTransaction".
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct SendRawTransactionResponse {

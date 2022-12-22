@@ -36,7 +36,7 @@ pub async fn chain_id(http_rpc: &str, chain_id_alias: &str) -> io::Result<evm::C
 /// Fetches the balance.
 /// "chain_id_alias" is "C" for C-chain, and blockchain Id for subnet-evm.
 /// e.g., "eth_getBalance" on "http://[ADDR]:9650" and "/ext/bc/C/rpc" path.
-/// ref. https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance
+/// ref. <https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance>
 pub async fn get_balance(
     http_rpc: &str,
     chain_id_alias: &str,
@@ -63,7 +63,7 @@ pub async fn get_balance(
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed eth_getBalance '{}'", e)))
 }
 
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount>
 pub async fn get_latest_transaction_count(
     http_rpc: &str,
     chain_id_alias: &str,
@@ -95,7 +95,7 @@ pub async fn get_latest_transaction_count(
 }
 
 /// Get transaction receipt.
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt>
 pub async fn get_transaction_receipt(
     http_rpc: &str,
     chain_id_alias: &str,
@@ -126,9 +126,9 @@ pub async fn get_transaction_receipt(
     })
 }
 
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction
-/// ref. https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
 pub async fn send_raw_transaction(
     http_rpc: &str,
     chain_id_alias: &str,

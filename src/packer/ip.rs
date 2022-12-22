@@ -16,10 +16,10 @@ pub const IP_LEN: usize = IP_ADDR_LEN + packer::U16_LEN;
 impl Packer {
     /// Writes the "IP" value at the offset in 16-byte representation and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackIP"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackIP
-    /// ref. https://doc.rust-lang.org/std/net/enum.IpAddr.html
-    /// ref. https://doc.rust-lang.org/std/net/struct.Ipv4Addr.html
-    /// ref. https://doc.rust-lang.org/std/net/struct.Ipv6Addr.html
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackIP>
+    /// ref. <https://doc.rust-lang.org/std/net/enum.IpAddr.html>
+    /// ref. <https://doc.rust-lang.org/std/net/struct.Ipv4Addr.html>
+    /// ref. <https://doc.rust-lang.org/std/net/struct.Ipv6Addr.html>
     pub fn pack_ip(&self, ip_addr: IpAddr, port: u16) -> io::Result<()> {
         let ip_bytes = match ip_addr {
             IpAddr::V4(v) => {
@@ -39,7 +39,7 @@ impl Packer {
     /// Unpacks the "IP" in the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackIP"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIP
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIP>
     pub fn unpack_ip(&self) -> io::Result<(IpAddr, u16)> {
         let ip = self.unpack_bytes(IP_ADDR_LEN)?;
         let ip_array: [u8; IP_ADDR_LEN] = fix_vector_size(ip);
@@ -67,7 +67,7 @@ impl Packer {
     /// Writes the list of "IP" values at the offset in 16-byte representation
     /// and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackIPs"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackIPs
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackIPs>
     pub fn pack_ips(&self, ips: &[(IpAddr, u16)]) -> io::Result<()> {
         let n = ips.len();
         self.pack_u32(n as u32)?;
@@ -80,7 +80,7 @@ impl Packer {
     /// Unpacks the list of "IP"s in the "offset" position,
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackIPs"
-    /// ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIPs
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIPs>
     pub fn unpack_ips(&self) -> io::Result<Vec<(IpAddr, u16)>> {
         let n = self.unpack_u32()?;
         let mut rs: Vec<(IpAddr, u16)> = Vec::new();
@@ -97,7 +97,7 @@ fn fix_vector_size<T, const N: usize>(v: Vec<T>) -> [T; N] {
         .unwrap_or_else(|v: Vec<T>| panic!("expected vec length {} but {}", N, v.len()))
 }
 
-/// ref. https://doc.rust-lang.org/std/primitive.slice.html#method.align_to
+/// ref. <https://doc.rust-lang.org/std/primitive.slice.html#method.align_to>
 fn all_zeroes(d: &[u8]) -> bool {
     let (prefix, aligned, suffix) = unsafe { d.align_to::<u128>() };
     prefix.iter().all(|&x| x == 0)
