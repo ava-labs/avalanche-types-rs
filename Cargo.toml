@@ -222,5 +222,5 @@ doctest = false
 
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
-development = ["id-manager", "tokio-test", "tonic-reflection"]
-normal = ["rsa"]
+development = ["id-manager", "tokio-test", "tonic-reflection", "tempfile"]
+normal = ["rsa", "rustls-pemfile"]
