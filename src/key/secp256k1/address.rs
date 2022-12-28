@@ -2,54 +2,33 @@ use std::io::{self, Error, ErrorKind};
 
 use crate::hash;
 
-/// ref. <https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md>
-pub fn eth_checksum(addr: &str) -> String {
-    let addr_lower_case = addr
-        .trim_start_matches(super::private_key::HEX_ENCODE_PREFIX)
-        .to_lowercase();
-    let digest_h256 = hash::keccak256(&addr_lower_case.as_bytes());
-
-    // this also works...
-    //
-    // addr_lower_case
-    //     .chars()
-    //     .enumerate()
-    //     .map(|(i, c)| {
-    //         if matches!(c, 'a' | 'b' | 'c' | 'd' | 'e' | 'f')
-    //             && (digest_h256[i >> 1] & if i % 2 == 0 { 128 } else { 8 } != 0)
-    //         {
-    //             c.to_ascii_uppercase()
-    //         } else {
-    //             c
-    //         }
-    //     })
-    //     .collect::<String>()
-
-    checksum_eip55(&addr_lower_case, &hex::encode(digest_h256))
-}
-
-/// ref. <https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md>
-fn checksum_eip55(addr: &str, addr_hash: &str) -> String {
-    let mut chksum = String::new();
-    for (c, hash_char) in addr.chars().zip(addr_hash.chars()) {
-        if hash_char.to_digit(16) >= Some(8) {
-            chksum.extend(c.to_uppercase());
-        } else {
-            chksum.push(c);
-        }
-    }
-    chksum
-}
-
 /// ref. <https://eips.ethereum.org/EIPS/eip-55>
 /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
 /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
-pub fn h160_to_eth_address(h160_addr: primitive_types::H160) -> String {
-    let addr_hex = hex::encode(h160_addr);
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/utils/mod.rs> "to_checksum"
+pub fn h160_to_eth_address(h160_addr: &primitive_types::H160, chain_id: Option<u8>) -> String {
+    let prefixed_addr = match chain_id {
+        Some(chain_id) => format!("{chain_id}0x{h160_addr:x}"),
+        None => format!("{h160_addr:x}"),
+    };
 
-    // make EIP-55 compliant
-    let addr_eip55 = eth_checksum(&addr_hex);
-    prefix_manager::prepend_0x(&addr_eip55)
+    let hex_h256 = hex::encode(hash::keccak256(prefixed_addr));
+    let hex_h256 = hex_h256.as_bytes();
+
+    let hex_addr = hex::encode(h160_addr.as_bytes());
+    let hex_addr = hex_addr.as_bytes();
+
+    hex_addr
+        .iter()
+        .zip(hex_h256)
+        .fold("0x".to_owned(), |mut s, (addr, hash)| {
+            s.push(if *hash >= 56 {
+                addr.to_ascii_uppercase() as char
+            } else {
+                addr.to_ascii_lowercase() as char
+            });
+            s
+        })
 }
 
 /// Converts "bech32::encode"d AVAX address to the short address bytes (20-byte) and HRP for network name.
@@ -90,9 +69,9 @@ fn test_avax_address_to_short_bytes() {
     let pubkey = pk.to_public_key();
     let short_addr = pubkey.to_short_bytes().unwrap();
 
-    let x_avax_addr = pubkey.hrp_address(1, "X").unwrap();
-    let p_avax_addr = pubkey.hrp_address(1, "P").unwrap();
-    let c_avax_addr = pubkey.hrp_address(1, "C").unwrap();
+    let x_avax_addr = pubkey.to_hrp_address(1, "X").unwrap();
+    let p_avax_addr = pubkey.to_hrp_address(1, "P").unwrap();
+    let c_avax_addr = pubkey.to_hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
     log::info!("AVAX C address: {}", c_avax_addr);

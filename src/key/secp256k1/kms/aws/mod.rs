@@ -5,14 +5,11 @@ use std::{
     io::{self, Error, ErrorKind},
 };
 
-use crate::{
-    hash,
-    ids::short,
-    key::{self, secp256k1::ReadOnly},
-};
+use crate::{hash, ids::short, key};
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
+use ethers_core::k256::ecdsa::recoverable::Signature as RSig;
 
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
 /// Note that the actual private key never leaves KMS.
@@ -40,13 +37,21 @@ impl Cmk {
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.create_key {}", e)))?;
 
-        let mut loaded = Self::from_arn(kms_manager, &cmk.arn).await?;
-        loaded.id = cmk.id.clone();
-        Ok(loaded)
+        Self::from_arn(kms_manager, &cmk.arn).await
     }
 
     /// Loads the Cmk from its Arn or Id.
     pub async fn from_arn(kms_manager: kms::Manager, arn: &str) -> io::Result<Self> {
+        let desc = kms_manager
+            .client()
+            .describe_key()
+            .key_id(arn)
+            .send()
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.describe_key {}", e)))?;
+        let id = desc.key_metadata().unwrap().key_id().unwrap().to_string();
+        log::info!("described key Id '{id}' from '{arn}'");
+
         // derives the public key from its private key
         let pubkey = kms_manager
             .client()
@@ -59,21 +64,27 @@ impl Cmk {
             })?;
 
         if let Some(blob) = pubkey.public_key() {
-            let public_key = key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())?;
+            // same as "key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())"
+            // ref. <https://github.com/gakonst/ethers-rs/tree/master/ethers-signers/src/aws>
+            let verifying_key =
+                key::secp256k1::public_key::load_ecdsa_verifying_key_from_public_key(
+                    blob.as_ref(),
+                )?;
+            let public_key = key::secp256k1::public_key::Key::from_verifying_key(&verifying_key);
             log::info!(
-                "fetched public key ETH address {} from CMK",
-                public_key.eth_address()
+                "fetched CMK public key with ETH address '{}'",
+                public_key.to_eth_address(),
             );
 
             return Ok(Self {
                 kms_manager,
                 public_key,
-                id: String::new(),
+                id,
                 arn: arn.to_string(),
             });
         }
 
-        return Err(Error::new(ErrorKind::Other, "public key blob not found"));
+        return Err(Error::new(ErrorKind::Other, "public key not found"));
     }
 
     /// Schedules to delete the KMS CMK.
@@ -91,13 +102,13 @@ impl Cmk {
     /// Converts to Info.
     pub fn to_info(&self, network_id: u32) -> io::Result<key::secp256k1::Info> {
         let short_addr = self.public_key.to_short_id()?;
-        let eth_addr = self.public_key.eth_address();
-        let h160_addr = self.public_key.h160_address();
+        let eth_addr = self.public_key.to_eth_address();
+        let h160_addr = self.public_key.to_h160();
 
         let mut addresses = HashMap::new();
-        let x_address = self.public_key.hrp_address(network_id, "X")?;
-        let p_address = self.public_key.hrp_address(network_id, "P")?;
-        let c_address = self.public_key.hrp_address(network_id, "C")?;
+        let x_address = self.public_key.to_hrp_address(network_id, "X")?;
+        let p_address = self.public_key.to_hrp_address(network_id, "P")?;
+        let c_address = self.public_key.to_hrp_address(network_id, "C")?;
         addresses.insert(
             network_id,
             key::secp256k1::ChainAddresses {
@@ -121,27 +132,32 @@ impl Cmk {
         })
     }
 
-    pub async fn sign_digest(
-        &self,
-        digest: &[u8],
-    ) -> Result<key::secp256k1::signature::Sig, aws_manager::errors::Error> {
+    pub async fn sign_digest(&self, digest: &[u8]) -> Result<RSig, aws_manager::errors::Error> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
         // DER-encoded >65-byte signature, need convert to 65-byte recoverable signature
-        // ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html
-        // ref. https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature
-        let raw = self
+        // ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
+        let raw_der = self
             .kms_manager
-            .secp256k1_sign_digest(&self.id, digest)
+            .sign_digest_secp256k1_ecdsa_sha256(&self.id, digest)
             .await?;
 
-        // converts to recoverable signature of 65-byte
-        key::secp256k1::signature::Sig::from_der(&raw, digest, &self.public_key.into()).map_err(
-            |e| aws_manager::errors::Error::Other {
-                message: format!("key::secp256k1::signature::Sig::from_der {}", e),
+        let sig = key::secp256k1::signature::decode_signature(&raw_der).map_err(|e| {
+            aws_manager::errors::Error::Other {
+                message: format!("failed decode_signature {}", e),
                 is_retryable: false,
-            },
+            }
+        })?;
+
+        let mut fixed_digest = [0u8; hash::SHA256_OUTPUT_LEN];
+        fixed_digest.copy_from_slice(digest);
+        Ok(
+            key::secp256k1::signature::rsig_from_digest_bytes_trial_recovery(
+                &sig,
+                fixed_digest,
+                &self.public_key.to_verifying_key(),
+            ),
         )
     }
 }
@@ -156,7 +172,11 @@ impl key::secp256k1::SignOnly for Cmk {
 
     async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], aws_manager::errors::Error> {
         let sig = self.sign_digest(msg).await?;
-        Ok(sig.to_bytes())
+
+        let mut b = [0u8; key::secp256k1::signature::LEN];
+        b.copy_from_slice(&sig.as_ref());
+
+        Ok(b)
     }
 }
 
@@ -167,7 +187,8 @@ impl key::secp256k1::ReadOnly for Cmk {
     }
 
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.to_public_key().hrp_address(network_id, chain_id_alias)
+        self.to_public_key()
+            .to_hrp_address(network_id, chain_id_alias)
     }
 
     fn short_address(&self) -> io::Result<short::Id> {
@@ -179,7 +200,7 @@ impl key::secp256k1::ReadOnly for Cmk {
     }
 
     fn eth_address(&self) -> String {
-        self.to_public_key().eth_address()
+        self.to_public_key().to_eth_address()
     }
 
     fn h160_address(&self) -> primitive_types::H160 {

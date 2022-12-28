@@ -100,7 +100,7 @@ fn test_keys() {
     for k in TEST_KEYS.iter() {
         log::info!(
             "[KEY] test key eth address {:?}",
-            k.to_public_key().eth_address()
+            k.to_public_key().to_eth_address()
         );
     }
     for ki in TEST_INFOS.iter() {
@@ -237,7 +237,9 @@ impl fmt::Display for Info {
     std::hash::Hash,
 )]
 pub enum KeyType {
+    #[serde(rename = "hot")]
     Hot,
+    #[serde(rename = "aws-kms")]
     AwsKms,
     Unknown(String),
 }
@@ -341,33 +343,33 @@ fn test_keys_address() {
             let pubkey = sk.to_public_key();
 
             assert_eq!(
-                pubkey.hrp_address(1, "X").unwrap(),
+                pubkey.to_hrp_address(1, "X").unwrap(),
                 ki.addresses.get(&1).unwrap().x_address
             );
             assert_eq!(
-                pubkey.hrp_address(1, "P").unwrap(),
+                pubkey.to_hrp_address(1, "P").unwrap(),
                 ki.addresses.get(&1).unwrap().p_address
             );
             assert_eq!(
-                pubkey.hrp_address(1, "C").unwrap(),
+                pubkey.to_hrp_address(1, "C").unwrap(),
                 ki.addresses.get(&1).unwrap().c_address
             );
 
             assert_eq!(
-                pubkey.hrp_address(9999, "X").unwrap(),
+                pubkey.to_hrp_address(9999, "X").unwrap(),
                 ki.addresses.get(&9999).unwrap().x_address
             );
             assert_eq!(
-                pubkey.hrp_address(9999, "P").unwrap(),
+                pubkey.to_hrp_address(9999, "P").unwrap(),
                 ki.addresses.get(&9999).unwrap().p_address
             );
             assert_eq!(
-                pubkey.hrp_address(9999, "C").unwrap(),
+                pubkey.to_hrp_address(9999, "C").unwrap(),
                 ki.addresses.get(&9999).unwrap().c_address
             );
 
             assert_eq!(pubkey.to_short_id().unwrap(), ki.short_address);
-            assert_eq!(pubkey.eth_address(), ki.eth_address);
+            assert_eq!(pubkey.to_eth_address(), ki.eth_address);
         }
     }
 }

@@ -30,18 +30,18 @@ fn main() {
     );
     assert_eq!(
         entry.addresses.get(&network_id).unwrap().x_address,
-        pubkey.hrp_address(network_id, "X").unwrap()
+        pubkey.to_hrp_address(network_id, "X").unwrap()
     );
     assert_eq!(
         entry.addresses.get(&network_id).unwrap().p_address,
-        pubkey.hrp_address(network_id, "P").unwrap()
+        pubkey.to_hrp_address(network_id, "P").unwrap()
     );
     assert_eq!(
         entry.addresses.get(&network_id).unwrap().c_address,
-        pubkey.hrp_address(network_id, "C").unwrap()
+        pubkey.to_hrp_address(network_id, "C").unwrap()
     );
     assert_eq!(entry.short_address, pubkey.to_short_id().unwrap());
-    assert_eq!(entry.eth_address, pubkey.eth_address());
+    assert_eq!(entry.eth_address, pubkey.to_eth_address());
 
     print!("{}", entry);
 }

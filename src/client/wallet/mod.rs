@@ -60,7 +60,7 @@ where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "key_type: {:?}\n", self.key_type)?;
+        write!(f, "key_type: {}\n", self.key_type.as_str())?;
         write!(f, "http_rpcs: {:?}\n", self.http_rpcs)?;
         write!(f, "network_id: {}\n", self.network_id)?;
         write!(f, "network_name: {}\n", self.network_name)?;

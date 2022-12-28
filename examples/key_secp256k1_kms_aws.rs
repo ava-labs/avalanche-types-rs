@@ -30,7 +30,7 @@ fn main() {
     .unwrap();
 
     let cmk_info = cmk.to_info(1).unwrap();
-    println!("cmk_info: {}", cmk_info);
+    println!("cmk_info:\n{}", cmk_info);
 
     let cmk2 = ab!(key::secp256k1::kms::aws::Cmk::from_arn(
         kms_manager,
@@ -38,14 +38,14 @@ fn main() {
     ))
     .unwrap();
     let cmk_info2 = cmk2.to_info(1).unwrap();
-    println!("cmk_info2: {}", cmk_info2);
+    println!("cmk_info2:\n{}", cmk_info2);
 
     let digest = [0u8; ring::digest::SHA256_OUTPUT_LEN];
     match ab!(cmk.sign_digest(&digest)) {
         Ok(sig) => {
             log::info!(
                 "successfully signed with signature output {} bytes",
-                sig.to_bytes().len()
+                sig.as_ref().len()
             );
         }
         Err(e) => {

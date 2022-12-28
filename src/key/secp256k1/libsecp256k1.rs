@@ -189,15 +189,10 @@ impl PublicKey {
     /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
     /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
     pub fn to_eth_address(&self) -> String {
-        let h160_addr = self.to_h160();
-        let addr_hex = hex::encode(h160_addr);
-
-        // make EIP-55 compliant
-        let addr_eip55 = address::eth_checksum(&addr_hex);
-        prefix_manager::prepend_0x(&addr_eip55)
+        address::h160_to_eth_address(&self.to_h160(), None)
     }
 
-    pub fn to_avax_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         let hrp = match constants::NETWORK_ID_TO_HRP.get(&network_id) {
             Some(v) => v,
             None => constants::FALLBACK_HRP,
@@ -238,7 +233,7 @@ impl key::secp256k1::ReadOnly for PublicKey {
     }
 
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.to_avax_address(network_id, chain_id_alias)
+        self.to_hrp_address(network_id, chain_id_alias)
     }
 
     fn short_address(&self) -> io::Result<short::Id> {
