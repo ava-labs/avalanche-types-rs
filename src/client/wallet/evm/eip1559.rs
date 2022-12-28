@@ -202,7 +202,7 @@ where
     pub async fn submit(&self) -> io::Result<H256> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
-            "issuing ethers transaction [chain Id {}, value {:?}, from {}, to {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {:?}, max_fee_per_gas {:?}, gas_limit {:?}]",
+            "submitting transaction [chain Id {}, value {:?}, from {}, to {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {:?}, max_fee_per_gas {:?}, gas_limit {:?}]",
             self.inner.chain_id,
             self.value,
             self.inner.inner.h160_address,

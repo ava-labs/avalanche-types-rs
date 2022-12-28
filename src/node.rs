@@ -1,6 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 /// Defines the node type.
 /// MUST BE either "anchor" or "non-anchor"
 #[derive(
+    Deserialize,
+    Serialize,
     std::clone::Clone,
     std::cmp::Eq,
     std::cmp::Ord,
@@ -10,7 +14,9 @@
     std::hash::Hash,
 )]
 pub enum Kind {
+    #[serde(rename = "anchor")]
     Anchor,
+    #[serde(rename = "non-anchor")]
     NonAnchor,
     Unknown(String),
 }

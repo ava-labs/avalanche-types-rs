@@ -248,7 +248,7 @@ fn test_serialize() {
     let pk = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let pubkey = pk.to_public_key();
     let short_addr = pubkey.to_short_id().unwrap();
-    let p_addr = pubkey.hrp_address(1, "P").unwrap();
+    let p_addr = pubkey.to_hrp_address(1, "P").unwrap();
 
     let d1: Data = serde_json::from_str(
         format!(

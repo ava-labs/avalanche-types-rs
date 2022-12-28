@@ -1,5 +1,6 @@
 use std::io;
 
+use crate::key;
 use async_trait::async_trait;
 
 #[derive(Clone, Debug)]
@@ -11,8 +12,7 @@ pub struct Signer {
 
 impl Signer {
     pub fn new(inner: super::Cmk, chain_id: primitive_types::U256) -> io::Result<Self> {
-        let short_bytes = inner.to_public_key().to_short_bytes()?;
-        let address = ethers_core::types::Address::from_slice(&short_bytes);
+        let address: ethers_core::types::Address = inner.to_public_key().to_h160().into();
         Ok(Self {
             inner,
             chain_id,
@@ -27,9 +27,8 @@ impl Signer {
     ) -> Result<ethers_core::types::Signature, aws_manager::errors::Error> {
         let sig = self.inner.sign_digest(digest.as_ref()).await?;
 
-        let mut sig = rsig_to_ethsig(&sig.into());
-        apply_eip155(&mut sig, chain_id);
-
+        let mut sig = key::secp256k1::signature::rsig_to_ethsig(&sig);
+        key::secp256k1::signature::apply_eip155(&mut sig, chain_id);
         Ok(sig)
     }
 }
@@ -60,7 +59,7 @@ impl<'a> ethers_signers::Signer for Signer {
             .unwrap_or(self.chain_id.as_u64());
         tx_with_chain.set_chain_id(chain_id);
 
-        let sighash = tx.sighash();
+        let sighash = tx_with_chain.sighash();
         self.sign_digest_with_eip155(sighash, chain_id).await
     }
 
@@ -74,8 +73,7 @@ impl<'a> ethers_signers::Signer for Signer {
         })?;
 
         let sig = self.inner.sign_digest(digest.as_ref()).await?;
-        let sig = rsig_to_ethsig(&sig.into());
-
+        let sig = key::secp256k1::signature::rsig_to_ethsig(&sig);
         Ok(sig)
     }
 
@@ -92,28 +90,4 @@ impl<'a> ethers_signers::Signer for Signer {
         self.chain_id = primitive_types::U256::from(chain_id);
         self
     }
-}
-
-/// Converts a recoverable signature to an ethers signature
-/// ref. "ethers-signers::aws::utils::rsig_to_ethsig"
-fn rsig_to_ethsig(
-    sig: &ethers_core::k256::ecdsa::recoverable::Signature,
-) -> ethers_core::types::Signature {
-    let v: u8 = sig.recovery_id().into();
-    let v = (v + 27) as u64;
-
-    let r_bytes: ethers_core::k256::FieldBytes = sig.r().into();
-    let s_bytes: ethers_core::k256::FieldBytes = sig.s().into();
-
-    let r = ethers_core::types::U256::from_big_endian(r_bytes.as_slice());
-    let s = ethers_core::types::U256::from_big_endian(s_bytes.as_slice());
-
-    ethers_core::types::Signature { r, s, v }
-}
-
-/// Modify the v value of a signature to conform to eip155
-/// ref. "ethers-signers::aws::utils::apply_eip155"
-fn apply_eip155(sig: &mut ethers_core::types::Signature, chain_id: u64) {
-    let v = (chain_id * 2 + 35) + ((sig.v - 1) % 2);
-    sig.v = v;
 }

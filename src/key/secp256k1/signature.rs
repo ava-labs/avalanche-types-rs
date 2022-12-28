@@ -1,5 +1,9 @@
 use std::io::{self, Error, ErrorKind};
 
+use ethers_core::k256::ecdsa::{
+    recoverable::{Id as RId, Signature as RSig},
+    Signature as KSig,
+};
 use hmac::digest::generic_array::GenericArray;
 
 /// The length of recoverable ECDSA signature.
@@ -31,27 +35,6 @@ impl Sig {
             )
         })?;
         Ok(Self(sig))
-    }
-
-    /// Loads the recoverable signature from the DER-encoded bytes,
-    /// as defined by ANS X9.62–2005 and RFC 3279 Section 2.2.3.
-    /// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
-    pub fn from_der(
-        raw_sig: &[u8],
-        digest: &[u8],
-        vkey: &k256::ecdsa::VerifyingKey,
-    ) -> io::Result<Self> {
-        // decode DER-encoded signature to "k256::ecdsa::Signature" object
-        let sig = k256::ecdsa::Signature::from_der(raw_sig).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to load recoverable signature from DER ({})", e),
-            )
-        })?;
-        let normalized_sig = sig.normalize_s().unwrap_or(sig);
-
-        let rsig = rsig_from_normalized_sig_and_digest_bytes(&normalized_sig, digest, vkey)?;
-        Ok(Self::from(rsig))
     }
 
     /// Converts the signature to bytes.
@@ -113,71 +96,6 @@ fn recover_pubkeys(
     Ok((vkey.into(), vkey))
 }
 
-/// Checks whether the specified recoverable signature can derive
-/// the expected verifying key from the digest bytes.
-fn check_recoverable_signature(
-    rsig: &k256::ecdsa::recoverable::Signature,
-    digest: &[u8],
-    vkey: &k256::ecdsa::VerifyingKey,
-) -> bool {
-    match recover_pubkeys(rsig, digest) {
-        Ok(rs) => {
-            let recovered_vkey = rs.1;
-            recovered_vkey == *vkey
-        }
-        Err(e) => {
-            log::debug!("failed recover_pubkeys {}", e);
-            false
-        }
-    }
-}
-
-/// ref. "ethers-signers::aws::util::rsig_from_digest_bytes_trial_recovery"
-pub fn rsig_from_normalized_sig_and_digest_bytes(
-    normalized_sig: &k256::ecdsa::Signature,
-    digest: &[u8],
-    vkey: &k256::ecdsa::VerifyingKey,
-) -> io::Result<k256::ecdsa::recoverable::Signature> {
-    let rid0 = k256::ecdsa::recoverable::Id::new(0).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed to create recoverable::Id 0 {}", e),
-        )
-    })?;
-    let rsig0 = k256::ecdsa::recoverable::Signature::new(normalized_sig, rid0).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed to create recoverable::Signature 0 {}", e),
-        )
-    })?;
-
-    if check_recoverable_signature(&rsig0, digest, vkey) {
-        return Ok(rsig0);
-    }
-
-    let rid1 = k256::ecdsa::recoverable::Id::new(1).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed to create recoverable::Id 1 {}", e),
-        )
-    })?;
-    let rsig1 = k256::ecdsa::recoverable::Signature::new(normalized_sig, rid1).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed to create recoverable::Signature 1 {}", e),
-        )
-    })?;
-
-    if check_recoverable_signature(&rsig1, digest, vkey) {
-        return Ok(rsig1);
-    }
-
-    Err(Error::new(
-        ErrorKind::Other,
-        "failed to recover recoverable signature",
-    ))
-}
-
 impl From<k256::ecdsa::recoverable::Signature> for Sig {
     fn from(sig: k256::ecdsa::recoverable::Signature) -> Self {
         Self(sig)
@@ -214,6 +132,77 @@ fn test_signature() {
     assert_eq!(sig.to_bytes().len(), crate::key::secp256k1::signature::LEN);
 
     let (recovered_pubkey, _) = sig.recover_public_key(&hashed).unwrap();
-    assert_eq!(pubkey.eth_address(), recovered_pubkey.eth_address());
+    assert_eq!(pubkey.to_eth_address(), recovered_pubkey.to_eth_address());
     assert_eq!(pubkey, recovered_pubkey);
+}
+
+/// Loads the recoverable signature from the DER-encoded bytes,
+/// as defined by ANS X9.62–2005 and RFC 3279 Section 2.2.3.
+/// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "decode_signature"
+pub fn decode_signature(b: &[u8]) -> io::Result<KSig> {
+    let sig = KSig::from_der(b)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed KSig::from_der {}", e)))?;
+
+    // EIP-2, not all elliptic curve signatures are accepted
+    // "s" needs to be smaller than half of the curve
+    // flip "s" if it's greater than half of the curve
+    Ok(sig.normalize_s().unwrap_or(sig))
+}
+
+/// Converts to recoverable signature of 65-byte.
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "rsig_from_digest_bytes_trial_recovery"
+pub fn rsig_from_digest_bytes_trial_recovery(
+    sig: &KSig,
+    digest: [u8; 32],
+    verifying_key: &ethers_core::k256::ecdsa::VerifyingKey,
+) -> RSig {
+    let sig_0 = RSig::new(sig, RId::new(0).unwrap()).unwrap();
+    let sig_1 = RSig::new(sig, RId::new(1).unwrap()).unwrap();
+
+    if check_candidate(&sig_0, digest, verifying_key) {
+        sig_0
+    } else if check_candidate(&sig_1, digest, verifying_key) {
+        sig_1
+    } else {
+        panic!("bad sig");
+    }
+}
+
+/// Checks whether the specified recoverable signature can derive
+/// the expected verifying key from the digest bytes.
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "check_candidate"
+fn check_candidate(
+    sig: &RSig,
+    digest: [u8; 32],
+    vk: &ethers_core::k256::ecdsa::VerifyingKey,
+) -> bool {
+    if let Ok(key) = sig.recover_verifying_key_from_digest_bytes(digest.as_ref().into()) {
+        key == *vk
+    } else {
+        false
+    }
+}
+
+/// Converts a recoverable signature to an ethers signature.
+/// Combine signature with recovery ID to recover the public key of the signer later.
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "rsig_to_ethsig"
+pub fn rsig_to_ethsig(sig: &RSig) -> ethers_core::types::Signature {
+    let v: u8 = sig.recovery_id().into();
+    let v = (v + 27) as u64;
+
+    let r_bytes: ethers_core::k256::FieldBytes = sig.r().into();
+    let s_bytes: ethers_core::k256::FieldBytes = sig.s().into();
+
+    let r = ethers_core::types::U256::from_big_endian(r_bytes.as_slice());
+    let s = ethers_core::types::U256::from_big_endian(s_bytes.as_slice());
+
+    ethers_core::types::Signature { r, s, v }
+}
+
+/// Modify the v value of a signature to conform to eip155
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "apply_eip155"
+pub fn apply_eip155(sig: &mut ethers_core::types::Signature, chain_id: u64) {
+    let v = (chain_id * 2 + 35) + ((sig.v - 1) % 2);
+    sig.v = v;
 }

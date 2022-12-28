@@ -56,6 +56,11 @@ impl Key {
         Ok(pubkey)
     }
 
+    pub fn from_verifying_key(verifying_key: &k256::ecdsa::VerifyingKey) -> Self {
+        let pubkey: k256::PublicKey = verifying_key.into();
+        Self(pubkey)
+    }
+
     pub fn to_verifying_key(&self) -> k256::ecdsa::VerifyingKey {
         self.0.into()
     }
@@ -121,7 +126,15 @@ impl Key {
         primitive_types::H160::from_slice(digest_h256)
     }
 
-    pub fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    /// Encodes the public key in ETH address format.
+    /// Make sure to not double-hash.
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
+    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
+    pub fn to_eth_address(&self) -> String {
+        address::h160_to_eth_address(&self.to_h160(), None)
+    }
+
+    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
         let hrp = match constants::NETWORK_ID_TO_HRP.get(&network_id) {
             Some(v) => v,
             None => constants::FALLBACK_HRP,
@@ -132,15 +145,6 @@ impl Key {
 
         // ref. "formatting.FormatAddress(chainIDAlias, hrp, pubBytes)"
         formatting::address(chain_id_alias, hrp, &short_address_bytes)
-    }
-
-    /// Encodes the public key in ETH address format.
-    ///
-    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
-    ///
-    /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
-    pub fn eth_address(&self) -> String {
-        address::h160_to_eth_address(self.to_h160())
     }
 }
 
@@ -186,7 +190,7 @@ impl key::secp256k1::ReadOnly for Key {
     }
 
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.hrp_address(network_id, chain_id_alias)
+        self.to_hrp_address(network_id, chain_id_alias)
     }
 
     fn short_address(&self) -> io::Result<short::Id> {
@@ -198,7 +202,7 @@ impl key::secp256k1::ReadOnly for Key {
     }
 
     fn eth_address(&self) -> String {
-        self.eth_address()
+        self.to_eth_address()
     }
 
     fn h160_address(&self) -> primitive_types::H160 {
@@ -243,12 +247,32 @@ fn test_public_key() {
     log::info!("public key: {}", pubkey1);
     log::info!("to_short_id: {}", pubkey1.to_short_id().unwrap());
     log::info!("to_h160: {}", pubkey1.to_h160());
-    log::info!("eth_address: {}", pubkey1.eth_address());
+    log::info!("eth_address: {}", pubkey1.to_eth_address());
 
-    let x_avax_addr = pubkey1.hrp_address(1, "X").unwrap();
-    let p_avax_addr = pubkey1.hrp_address(1, "P").unwrap();
-    let c_avax_addr = pubkey1.hrp_address(1, "C").unwrap();
+    let x_avax_addr = pubkey1.to_hrp_address(1, "X").unwrap();
+    let p_avax_addr = pubkey1.to_hrp_address(1, "P").unwrap();
+    let c_avax_addr = pubkey1.to_hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
     log::info!("AVAX C address: {}", c_avax_addr);
+}
+
+/// Same as "from_public_key_der".
+/// ref. <https://github.com/gakonst/ethers-rs/tree/master/ethers-signers/src/aws> "decode_pubkey"
+pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<k256::ecdsa::VerifyingKey> {
+    let spk = spki::SubjectPublicKeyInfo::try_from(b).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidInput,
+            format!("failed to load spki::SubjectPublicKeyInfo {}", e),
+        )
+    })?;
+    k256::ecdsa::VerifyingKey::from_sec1_bytes(spk.subject_public_key).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidInput,
+            format!(
+                "failed to load k256::ecdsa::VerifyingKey::from_sec1_bytes {}",
+                e
+            ),
+        )
+    })
 }

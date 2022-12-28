@@ -186,6 +186,9 @@ pub struct Config {
     pub network_minimum_timeout: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_require_validator_to_connect: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tracing_enabled: Option<bool>,
 }
 
 /// Default "config-file" path on the remote linux machines.
@@ -346,6 +349,8 @@ impl Config {
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            tracing_enabled: None,
         }
     }
 
@@ -427,6 +432,8 @@ impl Config {
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            tracing_enabled: None,
         }
     }
 
@@ -508,6 +515,8 @@ impl Config {
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            tracing_enabled: None,
         }
     }
 

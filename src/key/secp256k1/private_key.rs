@@ -139,13 +139,13 @@ impl Key {
 
         let pubkey = self.to_public_key();
         let short_addr = pubkey.to_short_id()?;
-        let eth_addr = pubkey.eth_address();
+        let eth_addr = pubkey.to_eth_address();
         let h160_addr = pubkey.to_h160();
 
         let mut addresses = HashMap::new();
-        let x_address = pubkey.hrp_address(network_id, "X")?;
-        let p_address = pubkey.hrp_address(network_id, "P")?;
-        let c_address = pubkey.hrp_address(network_id, "C")?;
+        let x_address = pubkey.to_hrp_address(network_id, "X")?;
+        let p_address = pubkey.to_hrp_address(network_id, "P")?;
+        let c_address = pubkey.to_hrp_address(network_id, "C")?;
         addresses.insert(
             network_id,
             secp256k1::ChainAddresses {
@@ -243,7 +243,8 @@ impl key::secp256k1::ReadOnly for Key {
     }
 
     fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
-        self.to_public_key().hrp_address(network_id, chain_id_alias)
+        self.to_public_key()
+            .to_hrp_address(network_id, chain_id_alias)
     }
 
     fn short_address(&self) -> io::Result<short::Id> {
@@ -255,7 +256,7 @@ impl key::secp256k1::ReadOnly for Key {
     }
 
     fn eth_address(&self) -> String {
-        self.to_public_key().eth_address()
+        self.to_public_key().to_eth_address()
     }
 
     fn h160_address(&self) -> primitive_types::H160 {
