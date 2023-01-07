@@ -1,9 +1,10 @@
 use std::env::args;
 
-use avalanche_types::client::x;
+use avalanche_types::jsonrpc::client::x;
 use tokio::runtime::Runtime;
 
-/// cargo run --example client_x -- [HTTP RPC ENDPOINT] X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
+/// cargo run --example jsonrpc_client_x -- [HTTP RPC ENDPOINT] X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
+/// cargo run --example jsonrpc_client_x -- http://54.180.73.56:9650 X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
 fn main() {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
     env_logger::init_from_env(

@@ -1,9 +1,10 @@
 use std::env::args;
 
-use avalanche_types::client::p;
+use avalanche_types::jsonrpc::client::p;
 use tokio::runtime::Runtime;
 
-/// cargo run --example client_p -- [HTTP RPC ENDPOINT] P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
+/// cargo run --example jsonrpc_client_p -- [HTTP RPC ENDPOINT] P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
+/// cargo run --example jsonrpc_client_p -- http://54.180.73.56:9650 P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
 ///
 /// ```
 /// # or run this

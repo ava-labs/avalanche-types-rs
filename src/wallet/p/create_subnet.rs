@@ -1,22 +1,17 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{client::p as client_p, formatting, ids, key, platformvm, txs};
+use crate::{formatting, ids, jsonrpc::client::p as client_p, key, platformvm, txs};
 use tokio::time::{sleep, Duration, Instant};
 
-/// Represents P-chain "CreateChain" transaction.
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L459-L498> "NewCreateChainTx"
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L345> "NewCreateChainTx"
+/// Represents P-chain "CreateSubnet" transaction.
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go#L500-L525> "NewCreateSubnetTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go#L392> "NewCreateSubnetTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::p::P<T>,
-
-    pub subnet_id: ids::Id,
-    pub genesis_data: Vec<u8>,
-    pub vm_id: ids::Id,
-    pub chain_name: String,
+    pub inner: crate::wallet::p::P<T>,
 
     /// Set "true" to poll transaction status after issuance for its acceptance.
     pub check_acceptance: bool,
@@ -36,47 +31,15 @@ impl<T> Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub fn new(p: &crate::client::wallet::p::P<T>) -> Self {
+    pub fn new(p: &crate::wallet::p::P<T>) -> Self {
         Self {
             inner: p.clone(),
-            subnet_id: ids::Id::empty(),
-            genesis_data: Vec::new(),
-            vm_id: ids::Id::empty(),
-            chain_name: String::new(),
             check_acceptance: false,
             poll_initial_wait: Duration::from_millis(1500),
             poll_interval: Duration::from_secs(1),
             poll_timeout: Duration::from_secs(300),
             dry_mode: false,
         }
-    }
-
-    /// Sets the subnet Id.
-    #[must_use]
-    pub fn subnet_id(mut self, subnet_id: ids::Id) -> Self {
-        self.subnet_id = subnet_id;
-        self
-    }
-
-    /// Sets the genesis.
-    #[must_use]
-    pub fn genesis_data(mut self, genesis_data: Vec<u8>) -> Self {
-        self.genesis_data = genesis_data;
-        self
-    }
-
-    /// Sets the Vm Id.
-    #[must_use]
-    pub fn vm_id(mut self, vm_id: ids::Id) -> Self {
-        self.vm_id = vm_id;
-        self
-    }
-
-    /// Sets the chain name.
-    #[must_use]
-    pub fn chain_name(mut self, chain_name: String) -> Self {
-        self.chain_name = chain_name;
-        self
     }
 
     /// Sets the check acceptance boolean flag.
@@ -114,24 +77,17 @@ where
         self
     }
 
-    /// Issues the create chain transaction and returns the transaction Id.
+    /// Issues the create subnet transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
-        log::info!(
-            "creating a new chain for subnet {}, vm id {}, chain name {}, via {}",
-            self.subnet_id,
-            self.vm_id,
-            self.chain_name,
-            picked_http_rpc.1
-        );
+        log::info!("creating a new subnet via {}", picked_http_rpc.1);
 
         let (ins, unstaked_outs, _, signers) = self
             .inner
-            .spend(0, self.inner.inner.create_blockchain_tx_fee)
+            .spend(0, self.inner.inner.create_subnet_tx_fee)
             .await?;
-        let (subnet_auth, subnet_signers) = self.inner.authorize(self.subnet_id).await?;
 
-        let mut tx = platformvm::txs::create_chain::Tx {
+        let mut tx = platformvm::txs::create_subnet::Tx {
             base_tx: txs::Tx {
                 network_id: self.inner.inner.network_id,
                 blockchain_id: self.inner.inner.blockchain_id_p,
@@ -139,14 +95,14 @@ where
                 transferable_inputs: Some(ins),
                 ..Default::default()
             },
-            subnet_id: self.subnet_id,
-            chain_name: self.chain_name.clone(),
-            vm_id: self.vm_id,
-            genesis_data: self.genesis_data.clone(),
-            subnet_auth,
+            owner: key::secp256k1::txs::OutputOwners {
+                locktime: 0,
+                threshold: 1,
+                addresses: vec![self.inner.inner.short_address.clone()],
+            },
             ..Default::default()
         };
-        tx.sign(vec![signers, subnet_signers].concat()).await?;
+        tx.sign(signers).await?;
 
         if self.dry_mode {
             return Ok(tx.base_tx.metadata.unwrap().id);
@@ -159,7 +115,7 @@ where
         if let Some(e) = resp.error {
             return Err(Error::new(
                 ErrorKind::Other,
-                format!("failed to issue create chain transaction {:?}", e),
+                format!("failed to issue create subnet transaction {:?}", e),
             ));
         }
 
@@ -175,7 +131,7 @@ where
         log::info!("initial waiting {:?}", self.poll_initial_wait);
         sleep(self.poll_initial_wait).await;
 
-        log::info!("polling to confirm create chain transaction");
+        log::info!("polling to confirm create subnet transaction");
         let (start, mut success) = (Instant::now(), false);
         loop {
             let elapsed = start.elapsed();

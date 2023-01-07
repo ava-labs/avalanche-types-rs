@@ -4,20 +4,25 @@ use std::{
     time::SystemTime,
 };
 
-use crate::{avm, choices::status::Status, client::x as client_x, formatting, ids, key, txs};
+use crate::{
+    avm,
+    choices::status::Status,
+    formatting,
+    ids::{self, short},
+    jsonrpc::client::x as client_x,
+    key, txs,
+};
 use tokio::time::{sleep, Duration, Instant};
 
-/// Represents X-chain "Export" transaction.
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/x/builder.go> "NewExportTx".
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::x::X<T>,
+    pub inner: crate::wallet::x::X<T>,
 
-    /// Export destination blockchain id.
-    pub destination_blockchain_id: ids::Id,
+    /// Transfer fund receiver address.
+    pub receiver: short::Id,
 
     /// Transfer amount.
     pub amount: u64,
@@ -40,10 +45,10 @@ impl<T> Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub fn new(x: &crate::client::wallet::x::X<T>) -> Self {
+    pub fn new(x: &crate::wallet::x::X<T>) -> Self {
         Self {
             inner: x.clone(),
-            destination_blockchain_id: ids::Id::empty(),
+            receiver: short::Id::empty(),
             amount: 0,
             check_acceptance: false,
             poll_initial_wait: Duration::from_millis(500),
@@ -53,10 +58,10 @@ where
         }
     }
 
-    /// Sets the destination blockchain Id.
+    /// Sets the transfer fund receiver address.
     #[must_use]
-    pub fn destination_blockchain_id(mut self, blockchain_id: ids::Id) -> Self {
-        self.destination_blockchain_id = blockchain_id;
+    pub fn receiver(mut self, receiver: short::Id) -> Self {
+        self.receiver = receiver;
         self
     }
 
@@ -102,17 +107,22 @@ where
         self
     }
 
-    /// Issues the export transaction and returns the transaction Id.
+    /// Issues the transfer transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
-            "exporting {} AVAX from {} to {} via {}",
+            "transferring {} AVAX from {} to {} via {}",
             self.amount,
             self.inner.inner.short_address,
-            self.destination_blockchain_id,
+            self.receiver,
             picked_http_rpc.1
         );
 
+        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/wallet/chain/p/builder.go
+        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/add_validator_tx.go#L263
+        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/spend.go#L39 "stake"
+        // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L355 "AddValidator"
+        // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L614 "stake"
         // TODO: paginate next results
         let utxos = client_x::get_utxos(&picked_http_rpc.1, &self.inner.inner.x_address).await?;
         let utxos_result = utxos.result.unwrap();
@@ -125,7 +135,7 @@ where
         );
 
         let mut inputs: Vec<txs::transferable::Input> = Vec::new();
-        let outputs: Vec<txs::transferable::Output> = vec![
+        let mut outputs: Vec<txs::transferable::Output> = vec![
             // receiver
             txs::transferable::Output {
                 asset_id: self.inner.inner.avax_asset_id.clone(),
@@ -134,14 +144,12 @@ where
                     output_owners: key::secp256k1::txs::OutputOwners {
                         locktime: 0,
                         threshold: 1,
-                        addresses: vec![self.inner.inner.short_address.clone()],
+                        addresses: vec![self.receiver.clone()],
                     },
                 }),
                 ..Default::default()
             },
         ];
-
-        let mut change_outputs: Vec<txs::transferable::Output> = Vec::new();
 
         // ref. "avalanchego/wallet/chain/x"
         // "math.Add64(toBurn[assetID], out.Out.Amount())"
@@ -183,7 +191,7 @@ where
                 let remaining_amount = out.amount - amount_to_burn;
                 if remaining_amount > 0 {
                     // this input had extra value, so some must be returned
-                    change_outputs.push(txs::transferable::Output {
+                    outputs.push(txs::transferable::Output {
                         asset_id: self.inner.inner.avax_asset_id.clone(),
                         transfer_output: Some(key::secp256k1::txs::transfer::Output {
                             amount: remaining_amount,
@@ -199,7 +207,7 @@ where
             }
         }
         inputs.sort();
-        change_outputs.sort();
+        outputs.sort();
 
         // make sure it does not incur "tx has 1 credentials but 2 inputs. Should be same" error
         let mut signers: Vec<Vec<T>> = Vec::new();
@@ -213,20 +221,15 @@ where
         log::debug!(
             "baseTx has {} inputs and {} outputs",
             inputs.len(),
-            change_outputs.len()
+            outputs.len()
         );
-        let mut tx = avm::txs::export::Tx {
-            base_tx: txs::Tx {
-                network_id: self.inner.inner.network_id,
-                blockchain_id: self.inner.inner.blockchain_id_x.clone(),
-                transferable_outputs: Some(change_outputs),
-                transferable_inputs: Some(inputs.clone()),
-                ..Default::default()
-            },
-            destination_chain_id: self.destination_blockchain_id.clone(),
-            destination_chain_transferable_outputs: Some(outputs),
+        let mut tx = avm::txs::Tx::new(txs::Tx {
+            network_id: self.inner.inner.network_id,
+            blockchain_id: self.inner.inner.blockchain_id_x.clone(),
+            transferable_outputs: Some(outputs),
+            transferable_inputs: Some(inputs.clone()),
             ..Default::default()
-        };
+        });
         tx.sign(signers).await?;
 
         if self.dry_mode {

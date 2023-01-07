@@ -712,9 +712,11 @@ where
     ) -> std::result::Result<Response<vm::GatherResponse>, tonic::Status> {
         log::debug!("gather called");
 
+        #[cfg(not(feature = "subnet_metrics"))]
         let metric_families = vec![MetricFamily::default()];
+
+        // ref. <https://prometheus.io/docs/instrumenting/writing_clientlibs/#process-metrics>
         #[cfg(feature = "subnet_metrics")]
-        // ref. https://prometheus.io/docs/instrumenting/writing_clientlibs/#process-metrics
         let metric_families = crate::subnet::rpc::metrics::MetricsFamilies::from(
             &self.process_metrics.read().await.gather(),
         )

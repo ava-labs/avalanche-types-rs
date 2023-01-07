@@ -31,11 +31,8 @@ pub mod xsvm;
 #[cfg(feature = "message")]
 pub mod message;
 
-#[cfg(feature = "client")]
-pub mod client;
-
-#[cfg(feature = "evm")]
-pub mod evm;
+#[cfg(feature = "wallet")]
+pub mod wallet;
 
 #[cfg(feature = "proto")]
 pub mod proto;

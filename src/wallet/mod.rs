@@ -1,18 +1,17 @@
 pub mod p;
 pub mod x;
 
-#[cfg(feature = "evm")]
+#[cfg(feature = "wallet_evm")]
 pub mod evm;
 
 use std::{
-    fmt,
-    io::{self, Error, ErrorKind},
+    fmt, io,
     sync::{Arc, Mutex},
 };
 
 use crate::{
-    client::{evm as api_evm, info as api_info, x as api_x},
     ids::{self, short},
+    jsonrpc::client::{info as api_info, x as api_x},
     key, units,
 };
 
@@ -37,8 +36,6 @@ pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone
     pub blockchain_id_x: ids::Id,
     pub blockchain_id_p: ids::Id,
     pub blockchain_id_c: ids::Id,
-
-    pub chain_id_c: primitive_types::U256,
 
     pub avax_asset_id: ids::Id,
 
@@ -76,8 +73,6 @@ where
         write!(f, "blockchain_id_p: {}\n", self.blockchain_id_p)?;
         write!(f, "blockchain_id_c: {}\n", self.blockchain_id_c)?;
 
-        write!(f, "chain_id_c: {}\n", self.chain_id_c)?;
-
         write!(f, "avax_asset_id: {}\n", self.avax_asset_id)?;
 
         write!(f, "tx_fee: {}\n", self.tx_fee)?;
@@ -110,58 +105,6 @@ where
 
         log::debug!("picked http rpc {} at index {}", http_rpc, picked);
         (picked, http_rpc)
-    }
-
-    #[must_use]
-    pub fn x(&self) -> x::X<T> {
-        x::X {
-            inner: self.clone(),
-        }
-    }
-
-    #[must_use]
-    pub fn p(&self) -> p::P<T> {
-        p::P {
-            inner: self.clone(),
-        }
-    }
-
-    /// Set "chain_id_alias" to either "C" or subnet_evm chain Id.
-    /// e.g., "/ext/bc/C/rpc"
-    #[cfg(feature = "evm")]
-    #[must_use]
-    pub fn evm<'a, S>(
-        &self,
-        eth_signer: &'a S,
-        chain_id_alias: String,
-        chain_id: primitive_types::U256,
-    ) -> io::Result<evm::Evm<'a, T, S>>
-    where
-        S: ethers_signers::Signer + Clone,
-        S::Error: 'static,
-    {
-        let chain_rpc_url_path = format!("/ext/bc/{}/rpc", chain_id_alias).to_string();
-        let mut providers = Vec::new();
-        for http_rpc in self.http_rpcs.iter() {
-            let provider = ethers_providers::Provider::<ethers_providers::Http>::try_from(
-                format!("{http_rpc}{chain_rpc_url_path}").as_str(),
-            )
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("failed to create provider '{}'", e),
-                )
-            })?;
-            providers.push(provider);
-        }
-        Ok(evm::Evm::<'a, T, S> {
-            inner: self.clone(),
-            eth_signer,
-            providers,
-            chain_id,
-            chain_id_alias,
-            chain_rpc_url_path,
-        })
     }
 }
 
@@ -220,16 +163,6 @@ where
         let resp = api_info::get_blockchain_id(&self.http_rpcs[0], "C").await?;
         let blockchain_id_c = resp.result.unwrap().blockchain_id;
 
-        let resp = api_evm::chain_id(&self.http_rpcs[0], "C")
-            .await
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("failed to get chainId for C-chain '{}'", e),
-                )
-            })?;
-        let chain_id_c = resp.result;
-
         let resp = api_x::get_asset_description(&self.http_rpcs[0], "AVAX").await?;
         let resp = resp
             .result
@@ -268,8 +201,6 @@ where
             blockchain_id_x,
             blockchain_id_p,
             blockchain_id_c,
-
-            chain_id_c,
 
             avax_asset_id,
 

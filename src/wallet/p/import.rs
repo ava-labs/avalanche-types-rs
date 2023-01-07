@@ -1,23 +1,23 @@
-use std::io::{self, Error, ErrorKind};
+use std::{
+    io::{self, Error, ErrorKind},
+    time::SystemTime,
+};
 
-use crate::{client::p as client_p, formatting, ids, key, platformvm, txs};
+use crate::{formatting, ids, jsonrpc::client::p as client_p, key, platformvm, txs};
 use tokio::time::{sleep, Duration, Instant};
 
-/// Represents P-chain "Export" transaction.
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go> "NewExportTx"
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go> "NewExportTx"
+/// Represents P-chain "Import" transaction.
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go> "NewImportTx"
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/vms/platformvm/txs/builder/builder.go> "NewImportTx"
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::p::P<T>,
+    pub inner: crate::wallet::p::P<T>,
 
-    /// Export destination blockchain id.
-    pub destination_blockchain_id: ids::Id,
-
-    /// Transfer amount.
-    pub amount: u64,
+    /// Import source blockchain id.
+    pub source_blockchain_id: ids::Id,
 
     /// Set "true" to poll transaction status after issuance for its acceptance.
     pub check_acceptance: bool,
@@ -37,11 +37,10 @@ impl<T> Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub fn new(p: &crate::client::wallet::p::P<T>) -> Self {
+    pub fn new(p: &crate::wallet::p::P<T>) -> Self {
         Self {
             inner: p.clone(),
-            destination_blockchain_id: ids::Id::empty(),
-            amount: 0,
+            source_blockchain_id: ids::Id::empty(),
             check_acceptance: false,
             poll_initial_wait: Duration::from_millis(1500),
             poll_interval: Duration::from_secs(1),
@@ -50,17 +49,10 @@ where
         }
     }
 
-    /// Sets the destination blockchain Id.
+    /// Sets the source blockchain Id.
     #[must_use]
-    pub fn destination_blockchain_id(mut self, blockchain_id: ids::Id) -> Self {
-        self.destination_blockchain_id = blockchain_id;
-        self
-    }
-
-    /// Sets the transfer amount.
-    #[must_use]
-    pub fn amount(mut self, amount: u64) -> Self {
-        self.amount = amount;
+    pub fn source_blockchain_id(mut self, blockchain_id: ids::Id) -> Self {
+        self.source_blockchain_id = blockchain_id;
         self
     }
 
@@ -99,32 +91,85 @@ where
         self
     }
 
-    /// Issues the export transaction and returns the transaction Id.
+    /// Issues the import transaction and returns the transaction Id.
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go> "NewImportTx"
+    /// TODO: not working... cache exported Utxos
     pub async fn issue(&self) -> io::Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
-            "exporting {} AVAX from {} to {} via {}",
-            self.amount,
-            self.inner.inner.short_address,
-            self.destination_blockchain_id,
+            "importing from {} via {}",
+            self.source_blockchain_id,
             picked_http_rpc.1
         );
 
-        let (ins, unstaked_outs, _, signers) = self.inner.spend(0, self.inner.inner.tx_fee).await?;
+        let utxos = client_p::get_utxos(&picked_http_rpc.1, &self.inner.inner.p_address).await?;
+        let utxos_result = utxos.result.unwrap();
+        let utxos = utxos_result.utxos.unwrap();
+        log::debug!(
+            "fetched UTXOs for inputs: numFetched {:?}, endIndex {:?} and {} UTXOs",
+            utxos_result.num_fetched,
+            utxos_result.end_index,
+            utxos.len()
+        );
 
-        let mut tx = platformvm::txs::export::Tx {
-            base_tx: txs::Tx {
-                network_id: self.inner.inner.network_id,
-                blockchain_id: self.inner.inner.blockchain_id_p,
-                transferable_outputs: Some(unstaked_outs),
-                transferable_inputs: Some(ins),
-                ..Default::default()
-            },
-            destination_chain_id: self.destination_blockchain_id.clone(),
-            destination_chain_transferable_outputs: Some(vec![txs::transferable::Output {
+        // ref. "avalanchego/vms/avm#Service.SendMultiple"
+        let now_unix = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("unexpected None duration_since")
+            .as_secs();
+
+        let mut import_amount = 0u64;
+        let mut import_inputs: Vec<txs::transferable::Input> = Vec::new();
+        let mut signers: Vec<Vec<T>> = Vec::new();
+
+        for utxo in utxos.iter() {
+            if utxo.asset_id != self.inner.inner.avax_asset_id {
+                continue;
+            }
+
+            if let Some(out) = &utxo.transfer_output {
+                let res = self.inner.inner.keychain.spend(out, now_unix);
+                if res.is_none() {
+                    // cannot spend the output, move onto next
+                    continue;
+                }
+                let (transfer_input, in_signers) = res.unwrap();
+
+                // TODO: check overflow
+                import_amount += transfer_input.amount;
+
+                // add input to the consumed inputs
+                import_inputs.push(txs::transferable::Input {
+                    utxo_id: utxo.utxo_id.clone(),
+                    asset_id: utxo.asset_id,
+                    transfer_input: Some(transfer_input),
+                    ..txs::transferable::Input::default()
+                });
+                signers.push(in_signers);
+            }
+        }
+
+        if import_inputs.is_empty() {
+            return Err(Error::new(
+                ErrorKind::Other,
+                "no spendable funds were found",
+            ));
+        }
+
+        // TODO: check import amount with tx fee
+        log::info!(
+            "importing total {} AVAX with tx fee {}",
+            import_amount,
+            self.inner.inner.tx_fee
+        );
+        import_amount -= self.inner.inner.tx_fee;
+
+        let outputs: Vec<txs::transferable::Output> = vec![
+            // receiver
+            txs::transferable::Output {
                 asset_id: self.inner.inner.avax_asset_id.clone(),
                 transfer_output: Some(key::secp256k1::txs::transfer::Output {
-                    amount: self.amount,
+                    amount: import_amount,
                     output_owners: key::secp256k1::txs::OutputOwners {
                         locktime: 0,
                         threshold: 1,
@@ -132,7 +177,23 @@ where
                     },
                 }),
                 ..Default::default()
-            }]),
+            },
+        ];
+
+        log::debug!(
+            "baseTx has {} inputs and {} outputs",
+            import_inputs.len(),
+            outputs.len()
+        );
+        let mut tx = platformvm::txs::import::Tx {
+            base_tx: txs::Tx {
+                network_id: self.inner.inner.network_id,
+                blockchain_id: self.inner.inner.blockchain_id_p.clone(),
+                transferable_outputs: Some(outputs),
+                ..Default::default()
+            },
+            source_chain_id: self.source_blockchain_id.clone(),
+            source_chain_transferable_inputs: Some(import_inputs),
             ..Default::default()
         };
         tx.sign(signers).await?;

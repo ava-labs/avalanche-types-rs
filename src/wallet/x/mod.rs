@@ -4,14 +4,26 @@ pub mod transfer;
 
 use std::io;
 
-use crate::{client::x as client_x, key, txs};
+use crate::{jsonrpc::client::x as client_x, key, txs, wallet};
+
+impl<T> wallet::Wallet<T>
+where
+    T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+{
+    #[must_use]
+    pub fn x(&self) -> X<T> {
+        X {
+            inner: self.clone(),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct X<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::Wallet<T>,
+    pub inner: crate::wallet::Wallet<T>,
 }
 
 impl<T> X<T>

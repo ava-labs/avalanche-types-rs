@@ -1,8 +1,12 @@
 pub mod avm;
+pub mod common;
 pub mod evm;
 pub mod health;
 pub mod info;
 pub mod platformvm;
+
+#[cfg(feature = "jsonrpc_client")]
+pub mod client;
 
 use std::{
     collections::HashMap,

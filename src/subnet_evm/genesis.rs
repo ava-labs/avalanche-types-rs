@@ -92,7 +92,7 @@ impl Genesis {
 
             // ref. https://www.rapidtables.com/convert/number/decimal-to-hex.html
             // ref. https://www.rapidtables.com/convert/number/hex-to-decimal.html
-            gas_limit: primitive_types::U256::from_str_radix("0x7A1200", 16).unwrap(),
+            gas_limit: primitive_types::U256::from_str_radix("0x1312D00", 16).unwrap(),
 
             difficulty: primitive_types::U256::default(),
             mix_hash: Some(String::from(
@@ -239,8 +239,8 @@ impl ChainConfig {
     pub fn default() -> Self {
         Self {
             // don't use local ID "43112" to avoid config override
-            // ref. https://github.com/ava-labs/coreth/blob/v0.8.6/plugin/evm/vm.go#L326-L328
-            // ref. https://github.com/ava-labs/avalanche-ops/issues/8
+            // ref. <https://github.com/ava-labs/coreth/blob/v0.8.6/plugin/evm/vm.go#L326-L328>
+            // ref. <https://github.com/ava-labs/avalanche-ops/issues/8>
             chain_id: Some(2000777),
 
             fee_config: Some(FeeConfig::default()),
@@ -312,33 +312,25 @@ impl Default for FeeConfig {
     }
 }
 
-/// C-chain is 8-million
-/// ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
-/// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
-/// ref. <https://github.com/ava-labs/public-chain-assets/blob/main/chains/53935/genesis.json>
-/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
-pub const DEFAULT_GAS_LIMIT: u64 = 8_000_000;
-pub const DEFAULT_TARGET_BLOCK_RATE: u64 = 2;
-pub const DEFAULT_MIN_BASE_FEE: u64 = 25_000_000_000;
-pub const DEFAULT_TARGET_GAS: u64 = 15_000_000;
-pub const DEFAULT_BASE_FEE_CHANGE_DENOMINATOR: u64 = 36;
-pub const DEFAULT_MIN_BLOCK_GAS_COST: u64 = 0;
-pub const DEFAULT_MAX_BLOCK_GAS_COST: u64 = 1_000_000;
-pub const DEFAULT_BLOCK_GAS_COST_STEP: u64 = 200_000;
-
 impl FeeConfig {
+    /// ref. <https://github.com/ava-labs/public-chain-assets/blob/main/chains/53935/genesis.json>
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
+    /// ref. <https://github.com/ava-labs/subnet-evm/blob/master/scripts/run.sh>
+    /// ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
+    /// ref. <https://www.rapidtables.com/convert/number/hex-to-decimal.html>
     pub fn default() -> Self {
         Self {
-            gas_limit: Some(DEFAULT_GAS_LIMIT),
-            target_block_rate: Some(DEFAULT_TARGET_BLOCK_RATE),
+            // ref. <https://github.com/ava-labs/subnet-evm/blob/master/scripts/run.sh>
+            gas_limit: Some(20_000_000),
+            target_block_rate: Some(2),
 
-            min_base_fee: Some(DEFAULT_MIN_BASE_FEE),
-            target_gas: Some(DEFAULT_TARGET_GAS),
-            base_fee_change_denominator: Some(DEFAULT_BASE_FEE_CHANGE_DENOMINATOR),
+            min_base_fee: Some(1_000_000_000),
+            target_gas: Some(100_000_000),
+            base_fee_change_denominator: Some(48),
 
-            min_block_gas_cost: Some(DEFAULT_MIN_BLOCK_GAS_COST),
-            max_block_gas_cost: Some(DEFAULT_MAX_BLOCK_GAS_COST),
-            block_gas_cost_step: Some(DEFAULT_BLOCK_GAS_COST_STEP),
+            min_block_gas_cost: Some(0),
+            max_block_gas_cost: Some(10_000_000),
+            block_gas_cost_step: Some(500_000),
         }
     }
 }
@@ -540,14 +532,14 @@ fn test_parse() {
             "muirGlacierBlock": 0,
             "subnetEVMTimestamp": 0,
             "feeConfig": {
-                "gasLimit": 8000000,
-                "minBaseFee": 25000000000,
-                "targetGas": 15000000,
-                "baseFeeChangeDenominator": 36,
+                "gasLimit": 20000000,
+                "minBaseFee": 1000000000,
+                "targetGas": 100000000,
+                "baseFeeChangeDenominator": 48,
                 "minBlockGasCost": 0,
-                "maxBlockGasCost": 1000000,
+                "maxBlockGasCost": 10000000,
                 "targetBlockRate": 2,
-                "blockGasCostStep": 200000
+                "blockGasCostStep": 500000
             }
         },
         "alloc": {
@@ -558,7 +550,7 @@ fn test_parse() {
         "nonce": "0x0",
         "timestamp": "0x0",
         "extraData": "0x00",
-        "gasLimit": "0x7A1200",
+        "gasLimit": "0x1312D00",
         "difficulty": "0x0",
         "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "coinbase": "0x0000000000000000000000000000000000000000",

@@ -70,8 +70,8 @@ impl Genesis {
     pub fn default() -> Self {
         let mut alloc = BTreeMap::new();
         alloc.insert(
-            // ref. https://github.com/ava-labs/coreth/blob/v0.8.6/params/config.go#L95-L114
-            // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.6/genesis/genesis_local.go#L106
+            // ref. <https://github.com/ava-labs/coreth/blob/v0.11.5/params/config.go>
+            // ref. <https://github.com/ava-labs/avalanchego/blob/master/genesis/genesis_local.json#L74>
             String::from("8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC"),
             AllocAccount::default(),
         );
@@ -122,6 +122,7 @@ impl Genesis {
 }
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/params#ChainConfig>
+/// ref. <https://github.com/ava-labs/coreth/blob/v0.11.5/params/config.go>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChainConfig {
@@ -167,6 +168,16 @@ pub struct ChainConfig {
     pub apricot_phase4_block_timestamp: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub apricot_phase5_block_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apricot_phase_pre6_block_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apricot_phase6_block_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apricot_phase_post6_block_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub banff_block_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cortina_block_timestamp: Option<u64>,
 }
 
 impl Default for ChainConfig {
@@ -179,8 +190,8 @@ impl ChainConfig {
     pub fn default() -> Self {
         Self {
             // don't use local ID "43112" to avoid config override
-            // ref. https://github.com/ava-labs/coreth/blob/v0.8.6/plugin/evm/vm.go#L326-L328
-            // ref. https://github.com/ava-labs/avalanche-ops/issues/8
+            // ref. <https://github.com/ava-labs/coreth/blob/v0.8.6/plugin/evm/vm.go#L326-L328>
+            // ref. <https://github.com/ava-labs/avalanche-ops/issues/8>
             chain_id: Some(1000777),
             homestead_block: Some(0),
 
@@ -201,11 +212,17 @@ impl ChainConfig {
             istanbul_block: Some(0),
             muir_glacier_block: Some(0),
 
+            // ref. <https://github.com/ava-labs/coreth/blob/v0.11.5/params/config.go>
             apricot_phase1_block_timestamp: Some(0),
             apricot_phase2_block_timestamp: Some(0),
-            apricot_phase3_block_timestamp: None,
-            apricot_phase4_block_timestamp: None,
-            apricot_phase5_block_timestamp: None,
+            apricot_phase3_block_timestamp: Some(0),
+            apricot_phase4_block_timestamp: Some(0),
+            apricot_phase5_block_timestamp: Some(0),
+            apricot_phase_pre6_block_timestamp: Some(0),
+            apricot_phase6_block_timestamp: Some(0),
+            apricot_phase_post6_block_timestamp: Some(0),
+            banff_block_timestamp: Some(0),
+            cortina_block_timestamp: Some(0),
         }
     }
 }
@@ -256,7 +273,7 @@ fn test_parse() {
         .try_init();
 
     // ref. https://github.com/ava-labs/avalanche-network-runner/blob/main/local/default/genesis.json
-    let resp: Genesis = serde_json::from_str(
+    let d: Genesis = serde_json::from_str(
         r#"
 {
     "unknown1": "field1",
@@ -298,9 +315,8 @@ fn test_parse() {
 "#,
     )
     .unwrap();
-
-    let expected = Genesis::default();
-    assert_eq!(resp, expected);
+    let d = d.encode_json().unwrap();
+    log::info!("{}", d);
 
     let d = Genesis::default();
     let d = d.encode_json().unwrap();

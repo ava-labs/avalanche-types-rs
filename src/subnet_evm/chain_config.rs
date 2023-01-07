@@ -8,12 +8,16 @@ use serde::{Deserialize, Serialize};
 
 /// To be persisted in "chain_config_dir".
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/plugin/evm#Config>
-/// ref. <https://github.com/ava-labs/subnet-evm/blob/v0.2.9/plugin/evm/config.go>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/plugin/evm#Config.SetDefaults>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/v0.4.7/plugin/evm/config.go>
 /// ref. <https://serde.rs/container-attrs.html>
 ///
 /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
 /// the config file for this chain is located at {chain-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json
 /// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
+///
+/// For instance, "2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt" chain config can be found at:
+/// $ vi /data/avalanche-configs/chains/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json
 ///
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -42,25 +46,67 @@ pub struct Config {
     pub rpc_tx_fee_cap: Option<f64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub trie_clean_cache: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trie_clean_journal: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trie_clean_rejournal: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trie_dirty_cache: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trie_dirty_commit_target: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshot_cache: Option<i64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub preimages_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub snapshot_async: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub snapshot_verification_enabled: Option<bool>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pruning_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepted_queue_limit: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_interval: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_missing_tries: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub populate_missing_tries: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub populate_missing_tries_parallelism: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metrics_expensive_enabled: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub local_txs_enabled: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_journal: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_rejournal: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_price_limit: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_price_bump: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_account_slots: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_global_slots: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_account_queue: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_global_queue: Option<u64>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_max_duration: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ws_cpu_refill_rate: Option<String>,
+    pub ws_cpu_refill_rate: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ws_cpu_max_stored: Option<String>,
+    pub ws_cpu_max_stored: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_max_blocks_per_request: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -84,7 +130,7 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub regossip_txs_per_address: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub priority_regossip_frequency: Option<String>,
+    pub priority_regossip_frequency: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority_regossip_max_txs: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -109,6 +155,24 @@ pub struct Config {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_outbound_active_requests: Option<i64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_skip_resume: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_server_trie_cache: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_ids: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_commit_interval: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_min_blocks: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skip_upgrade_check: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepted_cache_size: Option<i64>,
 }
 
 pub const DEFAULT_ADMIN_API_ENABLED: bool = true;
@@ -136,41 +200,68 @@ impl Config {
             admin_api_enabled: Some(DEFAULT_ADMIN_API_ENABLED),
             admin_api_dir: None,
 
-            // "subnet-evm" will adopt the changes from "coreth"
-            // that removes "public-*" to be consistent with geth
-            // TODO: once "subnet-evm" updates, follow the same
+            // ref. plugin/evm/vm.go "legacyApiNames"
             eth_apis: Some(vec![
-                "public-eth".to_string(),
-                "public-eth-filter".to_string(),
+                "eth".to_string(),
+                "eth-filter".to_string(),
                 "net".to_string(),
                 "web3".to_string(),
-                "internal-public-eth".to_string(),
-                "internal-public-blockchain".to_string(),
-                "internal-public-transaction-pool".to_string(),
-                "internal-public-tx-pool".to_string(),
+                "internal-eth".to_string(),
+                "internal-blockchain".to_string(),
+                "internal-transaction".to_string(),
+                "internal-tx-pool".to_string(),
                 "debug-tracer".to_string(),
-                // "internal-public-debug".to_string(),
+                // "internal-debug".to_string(),
+                // "internal-account".to_string(),
+                // "internal-personal".to_string(),
+                // "admin".to_string(),
+                // "debug".to_string(),
             ]),
 
             continuous_profiler_dir: None,
-            continuous_profiler_frequency: None,
-            continuous_profiler_max_files: None,
+            continuous_profiler_frequency: Some(900000000000), // 15-minute
+            continuous_profiler_max_files: Some(5),
 
-            rpc_gas_cap: None,
-            rpc_tx_fee_cap: None,
+            rpc_gas_cap: Some(50_000_000), // default to 50M gas limit
+            rpc_tx_fee_cap: Some(100f64),  // 100 AVAX
+
+            trie_clean_cache: Some(512),
+            trie_clean_journal: None,
+            trie_clean_rejournal: None,
+            trie_dirty_cache: Some(256),
+            trie_dirty_commit_target: Some(20),
+            snapshot_cache: Some(256),
 
             preimages_enabled: None,
-            snapshot_async: None,
+            snapshot_async: Some(true),
             snapshot_verification_enabled: None,
+
             pruning_enabled: Some(true),
+            accepted_queue_limit: Some(64),
+            commit_interval: Some(4096),
+            allow_missing_tries: None,
+            // cannot enable populate missing tries while offline pruning
+            populate_missing_tries: None,
+            populate_missing_tries_parallelism: Some(1024),
 
-            metrics_expensive_enabled: None,
+            metrics_expensive_enabled: Some(true),
 
-            local_txs_enabled: None,
-            api_max_duration: None,
-            ws_cpu_refill_rate: None,
-            ws_cpu_max_stored: None,
-            api_max_blocks_per_request: None,
+            local_txs_enabled: Some(false),
+
+            // ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#DefaultTxPoolConfig>
+            tx_pool_journal: Some(String::from("transactions.rlp")),
+            tx_pool_rejournal: Some(3600000000000), // 1-hour
+            tx_pool_price_limit: Some(1),
+            tx_pool_price_bump: Some(10),
+            tx_pool_account_slots: Some(16),
+            tx_pool_global_slots: Some(4096 + 1024),
+            tx_pool_account_queue: Some(64),
+            tx_pool_global_queue: Some(1024),
+
+            api_max_duration: Some(0),
+            ws_cpu_refill_rate: Some(0),
+            ws_cpu_max_stored: Some(0),
+            api_max_blocks_per_request: Some(0),
             allow_unfinalized_queries: None,
             allow_unprotected_txs: None,
 
@@ -179,12 +270,12 @@ impl Config {
             keystore_insecure_unlock_allowed: None,
 
             remote_gossip_only_enabled: None,
-            regossip_frequency: None,
-            regossip_max_txs: None,
-            regossip_txs_per_address: None,
-            priority_regossip_frequency: Some("1s".to_string()),
-            priority_regossip_max_txs: Some(32),
-            priority_regossip_txs_per_address: Some(16),
+            regossip_frequency: Some(60000000000), // 1-minute
+            regossip_max_txs: Some(16),
+            regossip_txs_per_address: Some(1),
+            priority_regossip_frequency: Some(60000000000), // 1-minute
+            priority_regossip_max_txs: Some(16),
+            priority_regossip_txs_per_address: Some(1),
             priority_regossip_addresses: Some(vec![
                 "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC".to_string(), // ewoq key address
             ]),
@@ -194,11 +285,22 @@ impl Config {
 
             fee_recipient: None,
 
+            // cannot run offline pruning while pruning is disabled
             offline_pruning_enabled: None,
-            offline_pruning_bloom_filter_size: None,
+            offline_pruning_bloom_filter_size: Some(512),
             offline_pruning_data_directory: None,
 
-            max_outbound_active_requests: None,
+            max_outbound_active_requests: Some(16),
+
+            state_sync_enabled: None,
+            state_sync_skip_resume: None,
+            state_sync_server_trie_cache: Some(64),
+            state_sync_ids: None,
+            state_sync_commit_interval: Some(4096 * 4), // defaultCommitInterval * 4
+            state_sync_min_blocks: Some(300_000),
+
+            skip_upgrade_check: None,
+            accepted_cache_size: Some(32),
         }
     }
 
@@ -225,12 +327,16 @@ impl Config {
     }
 }
 
-/// RUST_LOG=debug cargo test --package subnet-evm --lib -- chain_config::test_config --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- subnet_evm::chain_config::test_config --exact --show-output
 #[test]
 fn test_config() {
     let _ = env_logger::builder().is_test(true).try_init();
 
     let tmp_path = random_manager::tmp_path(10, Some(".json")).unwrap();
     let cfg = Config::default();
+    log::info!("{}", cfg.encode_json().unwrap());
+
     cfg.sync(&tmp_path).unwrap();
+
+    fs::remove_file(tmp_path).unwrap();
 }

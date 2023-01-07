@@ -8,12 +8,15 @@ use serde::{Deserialize, Serialize};
 
 /// To be persisted in "chain_config_dir".
 /// ref. <https://pkg.go.dev/github.com/ava-labs/coreth/plugin/evm#Config>
-/// ref. <https://github.com/ava-labs/coreth/blob/v0.8.16/plugin/evm/config.go>
+/// ref. <https://github.com/ava-labs/coreth/blob/v0.11.5/plugin/evm/config.go>
 /// ref. <https://serde.rs/container-attrs.html>
 ///
 /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
 /// the config file for this chain is located at {chain-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json
 /// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
+///
+/// For instance, "C" chain config can be found at:
+/// $ vi /data/avalanche-configs/chains/C/config.json
 ///
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -51,12 +54,28 @@ pub struct Config {
     pub snapshot_verification_enabled: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metrics_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub metrics_expensive_enabled: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub local_txs_enabled: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_journal: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_rejournal: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_price_limit: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_price_bump: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_account_slots: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_global_slots: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_account_queue: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_pool_global_queue: Option<u64>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_max_duration: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -98,15 +117,30 @@ pub struct Config {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_outbound_active_requests: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_outbound_active_cross_chain_requests: Option<i64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state_sync_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub state_sync_metrics_enabled: Option<bool>,
+    pub state_sync_skip_resume: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub state_sync_server_trie_cache: Option<i32>,
+    pub state_sync_server_trie_cache: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state_sync_ids: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_commit_interval: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state_sync_min_blocks: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inspect_database: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skip_upgrade_check: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepted_cache_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_lookup_limit: Option<u64>,
 }
 
 pub const DEFAULT_CORETH_ADMIN_API_ENABLED: bool = true;
@@ -116,7 +150,6 @@ pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanche-profile/coreth";
 pub const DEFAULT_PROFILE_FREQUENCY: i64 = 15 * 60 * 1000 * 1000 * 1000; // 15-min
 pub const DEFAULT_PROFILE_MAX_FILES: i64 = 5;
 
-pub const DEFAULT_METRICS_ENABLED: bool = true;
 pub const DEFAULT_LOG_LEVEL: &str = "info";
 pub const DEFAULT_LOG_JSON_FORMAT: bool = true;
 
@@ -138,6 +171,7 @@ impl Config {
             coreth_admin_api_enabled: Some(DEFAULT_CORETH_ADMIN_API_ENABLED),
             coreth_admin_api_dir: None,
 
+            // ref. plugin/evm/vm.go "legacyApiNames"
             eth_apis: Some(vec![
                 "eth".to_string(),
                 "eth-filter".to_string(),
@@ -146,6 +180,13 @@ impl Config {
                 "internal-eth".to_string(),
                 "internal-blockchain".to_string(),
                 "internal-transaction".to_string(),
+                "internal-tx-pool".to_string(),
+                "debug-tracer".to_string(),
+                // "internal-debug".to_string(),
+                // "internal-account".to_string(),
+                // "internal-personal".to_string(),
+                // "admin".to_string(),
+                // "debug".to_string(),
             ]),
 
             continuous_profiler_dir: None,
@@ -160,14 +201,24 @@ impl Config {
             snapshot_async: None,
             snapshot_verification_enabled: None,
 
-            metrics_enabled: Some(DEFAULT_METRICS_ENABLED),
-            metrics_expensive_enabled: None,
+            metrics_expensive_enabled: Some(true),
 
-            local_txs_enabled: None,
-            api_max_duration: None,
-            ws_cpu_refill_rate: None,
-            ws_cpu_max_stored: None,
-            api_max_blocks_per_request: None,
+            local_txs_enabled: Some(false),
+
+            // ref. <https://pkg.go.dev/github.com/ava-labs/coreth/core#DefaultTxPoolConfig>
+            tx_pool_journal: Some(String::from("transactions.rlp")),
+            tx_pool_rejournal: Some(3600000000000), // 1-hour
+            tx_pool_price_limit: Some(1),
+            tx_pool_price_bump: Some(10),
+            tx_pool_account_slots: Some(16),
+            tx_pool_global_slots: Some(4096 + 1024),
+            tx_pool_account_queue: Some(64),
+            tx_pool_global_queue: Some(1024),
+
+            api_max_duration: Some(0),
+            ws_cpu_refill_rate: Some(0),
+            ws_cpu_max_stored: Some(0),
+            api_max_blocks_per_request: Some(0),
             allow_unfinalized_queries: None,
             allow_unprotected_txs: None,
 
@@ -187,11 +238,19 @@ impl Config {
             offline_pruning_data_directory: Some(String::from(DEFAULT_OFFLINE_PRUNING_DATA_DIR)),
 
             max_outbound_active_requests: None,
+            max_outbound_active_cross_chain_requests: None,
 
-            state_sync_enabled: Some(true),
-            state_sync_metrics_enabled: None,
-            state_sync_server_trie_cache: None,
+            state_sync_enabled: Some(true), // faster mainnet sync!
+            state_sync_skip_resume: None,
+            state_sync_server_trie_cache: Some(64),
             state_sync_ids: None,
+            state_sync_commit_interval: Some(4096 * 4), // defaultCommitInterval * 4
+            state_sync_min_blocks: Some(300_000),
+
+            inspect_database: None,
+            skip_upgrade_check: None,
+            accepted_cache_size: Some(32),
+            tx_lookup_limit: None,
         }
     }
 
@@ -236,4 +295,18 @@ impl Config {
         serde_json::from_reader(f)
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("invalid JSON: {}", e)))
     }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- coreth::chain_config::test_config --exact --show-output
+#[test]
+fn test_config() {
+    let _ = env_logger::builder().is_test(true).try_init();
+
+    let tmp_path = random_manager::tmp_path(10, Some(".json")).unwrap();
+    let cfg = Config::default();
+    log::info!("{}", cfg.encode_json().unwrap());
+
+    cfg.sync(&tmp_path).unwrap();
+
+    fs::remove_file(tmp_path).unwrap();
 }

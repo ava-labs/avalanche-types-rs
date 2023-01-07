@@ -1,31 +1,24 @@
 use std::{
-    cmp,
     io::{self, Error, ErrorKind},
     time::SystemTime,
 };
 
 use crate::{
-    avm,
-    choices::status::Status,
-    client::x as client_x,
-    formatting,
-    ids::{self, short},
-    key, txs,
+    avm, choices::status::Status, formatting, ids, jsonrpc::client::x as client_x, key, txs,
 };
 use tokio::time::{sleep, Duration, Instant};
 
+/// Represents X-chain "Import" transaction.
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/x/builder.go> "NewImportTx".
 #[derive(Clone, Debug)]
 pub struct Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::x::X<T>,
+    pub inner: crate::wallet::x::X<T>,
 
-    /// Transfer fund receiver address.
-    pub receiver: short::Id,
-
-    /// Transfer amount.
-    pub amount: u64,
+    /// Import source blockchain id.
+    pub source_blockchain_id: ids::Id,
 
     /// Set "true" to poll transfer status after issuance for its acceptance.
     pub check_acceptance: bool,
@@ -45,11 +38,10 @@ impl<T> Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub fn new(x: &crate::client::wallet::x::X<T>) -> Self {
+    pub fn new(x: &crate::wallet::x::X<T>) -> Self {
         Self {
             inner: x.clone(),
-            receiver: short::Id::empty(),
-            amount: 0,
+            source_blockchain_id: ids::Id::empty(),
             check_acceptance: false,
             poll_initial_wait: Duration::from_millis(500),
             poll_interval: Duration::from_millis(700),
@@ -58,17 +50,10 @@ where
         }
     }
 
-    /// Sets the transfer fund receiver address.
+    /// Sets the source blockchain Id.
     #[must_use]
-    pub fn receiver(mut self, receiver: short::Id) -> Self {
-        self.receiver = receiver;
-        self
-    }
-
-    /// Sets the transfer amount.
-    #[must_use]
-    pub fn amount(mut self, amount: u64) -> Self {
-        self.amount = amount;
+    pub fn source_blockchain_id(mut self, blockchain_id: ids::Id) -> Self {
+        self.source_blockchain_id = blockchain_id;
         self
     }
 
@@ -107,22 +92,15 @@ where
         self
     }
 
-    /// Issues the transfer transaction and returns the transaction Id.
+    /// Issues the import transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_http_rpc();
         log::info!(
-            "transferring {} AVAX from {} to {} via {}",
-            self.amount,
-            self.inner.inner.short_address,
-            self.receiver,
+            "importing from {} via {}",
+            self.source_blockchain_id,
             picked_http_rpc.1
         );
 
-        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/wallet/chain/p/builder.go
-        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/add_validator_tx.go#L263
-        // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/spend.go#L39 "stake"
-        // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L355 "AddValidator"
-        // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L614 "stake"
         // TODO: paginate next results
         let utxos = client_x::get_utxos(&picked_http_rpc.1, &self.inner.inner.x_address).await?;
         let utxos_result = utxos.result.unwrap();
@@ -134,102 +112,90 @@ where
             utxos.len()
         );
 
-        let mut inputs: Vec<txs::transferable::Input> = Vec::new();
-        let mut outputs: Vec<txs::transferable::Output> = vec![
-            // receiver
-            txs::transferable::Output {
-                asset_id: self.inner.inner.avax_asset_id.clone(),
-                transfer_output: Some(key::secp256k1::txs::transfer::Output {
-                    amount: self.amount,
-                    output_owners: key::secp256k1::txs::OutputOwners {
-                        locktime: 0,
-                        threshold: 1,
-                        addresses: vec![self.receiver.clone()],
-                    },
-                }),
-                ..Default::default()
-            },
-        ];
-
-        // ref. "avalanchego/wallet/chain/x"
-        // "math.Add64(toBurn[assetID], out.Out.Amount())"
-        let mut remaining_amount_to_burn = self.amount + self.inner.inner.tx_fee;
-
         // ref. "avalanchego/vms/avm#Service.SendMultiple"
         let now_unix = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("unexpected None duration_since")
             .as_secs();
 
+        let mut import_amount = 0u64;
+        let mut import_inputs: Vec<txs::transferable::Input> = Vec::new();
+        let mut signers: Vec<Vec<T>> = Vec::new();
+
         for utxo in utxos.iter() {
             if utxo.asset_id != self.inner.inner.avax_asset_id {
                 continue;
             }
 
-            // consumed enough, no need to burn more
-            if remaining_amount_to_burn == 0 {
-                continue;
-            }
-
             if let Some(out) = &utxo.transfer_output {
-                let (input, _) = self.inner.inner.keychain.spend(out, now_unix).unwrap();
-
-                inputs.push(txs::transferable::Input {
-                    utxo_id: utxo.utxo_id.clone(),
-                    asset_id: utxo.asset_id.clone(),
-                    transfer_input: Some(input),
-                    ..Default::default()
-                });
-
-                // burn any value that should be burned
-                let amount_to_burn = cmp::min(
-                    remaining_amount_to_burn, // amount we still need to burn
-                    out.amount,               // amount available to burn
-                );
-                remaining_amount_to_burn -= amount_to_burn;
-
-                let remaining_amount = out.amount - amount_to_burn;
-                if remaining_amount > 0 {
-                    // this input had extra value, so some must be returned
-                    outputs.push(txs::transferable::Output {
-                        asset_id: self.inner.inner.avax_asset_id.clone(),
-                        transfer_output: Some(key::secp256k1::txs::transfer::Output {
-                            amount: remaining_amount,
-                            output_owners: key::secp256k1::txs::OutputOwners {
-                                locktime: 0,
-                                threshold: 1,
-                                addresses: vec![self.inner.inner.short_address.clone()],
-                            },
-                        }),
-                        ..Default::default()
-                    })
+                let res = self.inner.inner.keychain.spend(out, now_unix);
+                if res.is_none() {
+                    // cannot spend the output, move onto next
+                    continue;
                 }
+                let (transfer_input, in_signers) = res.unwrap();
+
+                // TODO: check overflow
+                import_amount += transfer_input.amount;
+
+                // add input to the consumed inputs
+                import_inputs.push(txs::transferable::Input {
+                    utxo_id: utxo.utxo_id.clone(),
+                    asset_id: utxo.asset_id,
+                    transfer_input: Some(transfer_input),
+                    ..txs::transferable::Input::default()
+                });
+                signers.push(in_signers);
             }
         }
-        inputs.sort();
-        outputs.sort();
 
-        // make sure it does not incur "tx has 1 credentials but 2 inputs. Should be same" error
-        let mut signers: Vec<Vec<T>> = Vec::new();
-        for _ in 0..inputs.len() {
-            signers.push(vec![self.inner.inner.keychain.keys[0].clone()]);
+        if import_inputs.is_empty() {
+            return Err(Error::new(
+                ErrorKind::Other,
+                "no spendable funds were found",
+            ));
         }
-        if inputs.len() > 1 {
-            log::debug!("signing for multiple inputs ({} inputs)", inputs.len());
-        }
+
+        // TODO: check import amount with tx fee
+        log::info!(
+            "importing total {} AVAX with tx fee {}",
+            import_amount,
+            self.inner.inner.tx_fee
+        );
+        import_amount -= self.inner.inner.tx_fee;
+
+        let outputs: Vec<txs::transferable::Output> = vec![
+            // receiver
+            txs::transferable::Output {
+                asset_id: self.inner.inner.avax_asset_id.clone(),
+                transfer_output: Some(key::secp256k1::txs::transfer::Output {
+                    amount: import_amount,
+                    output_owners: key::secp256k1::txs::OutputOwners {
+                        locktime: 0,
+                        threshold: 1,
+                        addresses: vec![self.inner.inner.short_address.clone()],
+                    },
+                }),
+                ..Default::default()
+            },
+        ];
 
         log::debug!(
             "baseTx has {} inputs and {} outputs",
-            inputs.len(),
+            import_inputs.len(),
             outputs.len()
         );
-        let mut tx = avm::txs::Tx::new(txs::Tx {
-            network_id: self.inner.inner.network_id,
-            blockchain_id: self.inner.inner.blockchain_id_x.clone(),
-            transferable_outputs: Some(outputs),
-            transferable_inputs: Some(inputs.clone()),
+        let mut tx = avm::txs::import::Tx {
+            base_tx: txs::Tx {
+                network_id: self.inner.inner.network_id,
+                blockchain_id: self.inner.inner.blockchain_id_p.clone(),
+                transferable_outputs: Some(outputs),
+                ..Default::default()
+            },
+            source_chain_id: self.source_blockchain_id.clone(),
+            source_chain_transferable_inputs: Some(import_inputs),
             ..Default::default()
-        });
+        };
         tx.sign(signers).await?;
 
         if self.dry_mode {

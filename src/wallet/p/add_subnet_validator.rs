@@ -4,9 +4,9 @@ use std::{
 };
 
 use crate::{
-    client::p as client_p,
     formatting,
     ids::{self, node},
+    jsonrpc::client::p as client_p,
     key, platformvm, txs,
 };
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -20,7 +20,7 @@ pub struct Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::p::P<T>,
+    pub inner: crate::wallet::p::P<T>,
 
     pub node_id: node::Id,
     pub subnet_id: ids::Id,
@@ -47,7 +47,7 @@ impl<T> Tx<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub fn new(p: &crate::client::wallet::p::P<T>) -> Self {
+    pub fn new(p: &crate::wallet::p::P<T>) -> Self {
         let now_unix = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("unexpected None duration_since")

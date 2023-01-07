@@ -12,17 +12,29 @@ use std::{
 };
 
 use crate::{
-    client::p as client_p,
     ids::{self, node},
-    key, platformvm, txs,
+    jsonrpc::client::p as client_p,
+    key, platformvm, txs, wallet,
 };
+
+impl<T> wallet::Wallet<T>
+where
+    T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
+{
+    #[must_use]
+    pub fn p(&self) -> P<T> {
+        P {
+            inner: self.clone(),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct P<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
-    pub inner: crate::client::wallet::Wallet<T>,
+    pub inner: crate::wallet::Wallet<T>,
 }
 
 impl<T> P<T>
