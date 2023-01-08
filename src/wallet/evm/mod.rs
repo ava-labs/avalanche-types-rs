@@ -123,13 +123,12 @@ where
 {
     /// Fetches the current balance of the wallet owner from the specified HTTP endpoint.
     pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<primitive_types::U256> {
-        let resp = jsonrpc_client_evm::get_balance(
+        let cur_balance = jsonrpc_client_evm::get_balance(
             http_rpc,
             &self.chain_id_alias,
-            &self.inner.eth_address,
+            self.inner.h160_address,
         )
         .await?;
-        let cur_balance = resp.result;
         Ok(cur_balance)
     }
 
@@ -148,16 +147,5 @@ where
     pub async fn balance(&self) -> io::Result<primitive_types::U256> {
         self.balance_with_endpoint(&self.inner.pick_http_rpc().1)
             .await
-    }
-
-    /// Fetches the current balance of the wallet owner.
-    pub async fn latest_nonce(&self) -> io::Result<primitive_types::U256> {
-        let resp = jsonrpc_client_evm::get_latest_transaction_count(
-            &self.inner.pick_http_rpc().1,
-            &self.chain_id_alias,
-            &self.inner.eth_address,
-        )
-        .await?;
-        Ok(resp.result)
     }
 }

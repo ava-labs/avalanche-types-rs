@@ -1,4 +1,4 @@
-use std::env::args;
+use std::{env::args, str::FromStr};
 
 use avalanche_types::jsonrpc::client::evm;
 use tokio::runtime::Runtime;
@@ -17,7 +17,11 @@ fn main() {
     let caddr = args().nth(2).expect("no C-chain address given");
 
     let resp = rt
-        .block_on(evm::get_balance(&url, "C", &caddr))
+        .block_on(evm::get_balance(
+            &url,
+            "C",
+            primitive_types::H160::from_str(caddr.trim_start_matches("0x")).unwrap(),
+        ))
         .expect("failed to get balance");
     log::info!("response: {:?}", resp);
 }
