@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.198" # https://crates.io/crates/avalanche-types
+version = "0.0.200" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.66"
 publish = true
@@ -45,7 +45,7 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.25.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.22.20", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.22.21", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.22.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.52.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
@@ -62,7 +62,7 @@ bip32 = { version = "0.4.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "jsonrpc_client", "tokio"
-http-manager = { version = "0.0.6", optional = true }
+http-manager = { version = "0.0.7", optional = true }
 tokio = { version = "1.24.1", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "wallet_evm"
@@ -91,7 +91,7 @@ tower-service = { version = "0.3.2", optional = true }
 prometheus = { version = "0.13.3", default-features = false, features = ["process"], optional = true }
 
 # [OPTIONAL] for "codec"
-base64 = { version = "0.20.0", optional = true }
+base64 = { version = "0.21.0", optional = true } # https://github.com/marshallpierce/rust-base64
 num-bigint = { version = "0.4.3", optional = true }
 
 [build-dependencies]

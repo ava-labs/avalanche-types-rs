@@ -76,10 +76,10 @@ where
     /// cost up to 5 * "gas_price".
     pub gas_limit: Option<U256>,
 
-    /// If an externally-owned account, the transaction will transfer value.
-    /// If a contract account, the transaction will execute the contract code.
-    /// None means contract creation.
-    /// The contract address is created from signer address and transaction nonce.
+    /// If the recipient is an externally-owned account, the transaction will transfer the "value".
+    /// If the recipient is a contract account/address, the transaction will execute the contract code.
+    /// If the recipient is None, the transaction is for contract creation.
+    /// The contract address is created based on the signer address and transaction nonce.
     pub recipient: Option<H160>,
 
     /// Transfer amount value.
@@ -339,8 +339,13 @@ pub struct Transaction {
     pub max_priority_fee_per_gas: Option<U256>,
     pub max_fee_per_gas: Option<U256>,
     pub gas_limit: Option<U256>,
+
+    // "from" itself is not RLP-encoded field
+    // "from" can be simply derived from signature and transaction hash
+    // when the RPC decodes the raw transaction
     pub from: H160,
     pub recipient: Option<H160>,
+
     pub value: Option<U256>,
     pub data: Option<Vec<u8>>,
 }
