@@ -5,6 +5,7 @@ use ethers_providers::{Http, Middleware, Provider};
 use primitive_types::U256;
 
 /// cargo run --example wallet_evm_send_raw_transaction_hot_key -- [HTTP RPC ENDPOINT]
+/// cargo run --example wallet_evm_send_raw_transaction_hot_key -- http://localhost:9876/rpc
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47

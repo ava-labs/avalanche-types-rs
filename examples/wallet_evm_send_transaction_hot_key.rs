@@ -1,12 +1,13 @@
 use std::{env::args, io, ops::Div};
 
-use avalanche_types::{key, wallet};
+use avalanche_types::{jsonrpc::client::evm as json_client_evm, key, wallet};
+use ethers::utils::format_units;
 use ethers_providers::Middleware;
 use primitive_types::U256;
 
 /// cargo run --example wallet_evm_send_transaction_hot_key -- [HTTP RPC ENDPOINT] [CHAIN ALIAS] [PRIVATE KEY]
-/// cargo run --example wallet_evm_send_transaction_hot_key -- http://54.180.73.56:9650 C 1000777 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
-/// cargo run --example wallet_evm_send_transaction_hot_key -- http://54.180.73.56:9650 2BsVz9yXyJAZ2EAGiNSZNWJnfEWkN2DuCFHGECkw676S84EgM2 2000777 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
+/// cargo run --example wallet_evm_send_transaction_hot_key -- http://3.38.7.243:9650 C 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
+/// cargo run --example wallet_evm_send_transaction_hot_key -- http://3.38.7.243:9650 jyMffWvvB6Jd6C3ZqSuz67dMQUsMSmvZyLKLu26MrgFhjinst 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
@@ -14,12 +15,14 @@ async fn main() -> io::Result<()> {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let url = args().nth(1).expect("no url given");
-    let chain_alias = args().nth(2).expect("no chain_alias given");
-    let chain_id: u64 = args().nth(3).expect("no chain_id given").parse().unwrap();
-    log::info!("running against {url} {chain_alias} {chain_id}");
+    let http_rpc = args().nth(1).expect("no url given");
+    let chain_id_alias = args().nth(2).expect("no chain_alias given");
+    let private_key = args().nth(3).expect("no private_key given");
 
-    let private_key = args().nth(4).expect("no private_key given");
+    let chain_id = json_client_evm::chain_id(&http_rpc, &chain_id_alias)
+        .await
+        .unwrap();
+    log::info!("running against {http_rpc}, {chain_id_alias}, {chain_id}");
 
     let k1 = key::secp256k1::private_key::Key::from_hex(private_key).unwrap();
     let key_info1 = k1.to_info(1).unwrap();
@@ -32,10 +35,10 @@ async fn main() -> io::Result<()> {
     log::info!("created hot key:\n\n{}\n", key_info2);
 
     let w = wallet::Builder::new(&k1)
-        .http_rpc(url.clone())
+        .http_rpc(http_rpc.clone())
         .build()
         .await?;
-    let evm_wallet = w.evm(&k1_eth_signer, chain_alias, U256::from(chain_id))?;
+    let evm_wallet = w.evm(&k1_eth_signer, chain_id_alias, U256::from(chain_id))?;
 
     let c_bal = evm_wallet.balance().await?;
     let transfer_amount = c_bal.div(U256::from(10));
@@ -45,18 +48,21 @@ async fn main() -> io::Result<()> {
         .estimate_eip1559_fees(None)
         .await
         .unwrap();
-    log::info!("max_fee_per_gas: {}", max_fee_per_gas);
-    log::info!("max_priority_fee_per_gas: {}", max_priority_fee_per_gas);
+    let max_fee_per_gas_in_gwei = wallet::evm::wei_to_gwei(max_fee_per_gas);
+    let max_fee_per_gas_in_avax = format_units(max_fee_per_gas, "ether").unwrap();
+    let max_priority_fee_per_gas_in_gwei = wallet::evm::wei_to_gwei(max_priority_fee_per_gas);
+    let max_priority_fee_per_gas_in_avax = format_units(max_priority_fee_per_gas, "ether").unwrap();
 
-    // TODO: make gas configurable
-    // ref. <https://www.rapidtables.com/convert/number/decimal-to-hex.html>
+    log::info!(
+        "[estimated] max_fee_per_gas: {max_fee_per_gas_in_gwei} GWEI, {max_fee_per_gas_in_avax} AVAX"
+    );
+    log::info!("[estimated] max_priority_fee_per_gas: {max_priority_fee_per_gas_in_gwei} GWEI, {max_priority_fee_per_gas_in_avax} AVAX");
+
     let tx_id = evm_wallet
         .eip1559()
         .recipient(key_info2.h160_address)
         .value(transfer_amount)
-        // .max_priority_fee_per_gas(U256::from_str_radix("3EDD410C00", 16).unwrap()) // 270000000000
-        // .max_fee_per_gas(U256::from_str_radix("60DB88400", 16).unwrap()) // 26000000000
-        // .gas_limit(21000)
+        .urgent()
         .check_acceptance(true)
         .submit()
         .await?;

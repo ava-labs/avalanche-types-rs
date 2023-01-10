@@ -1,29 +1,30 @@
 use std::str::FromStr;
 
+use primitive_types::H160;
 use serde::{self, Deserialize, Deserializer, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 
-pub fn serialize<S>(x: &primitive_types::H160, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(x: &H160, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     serializer.serialize_str(&format!("0x{:x}", *x))
 }
 
-pub fn deserialize<'de, D>(deserializer: D) -> Result<primitive_types::H160, D::Error>
+pub fn deserialize<'de, D>(deserializer: D) -> Result<H160, D::Error>
 where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
     let s = s.trim_start_matches("0x");
 
-    primitive_types::H160::from_str(s).map_err(serde::de::Error::custom)
+    H160::from_str(s).map_err(serde::de::Error::custom)
 }
 
-pub struct Hex0xH160(primitive_types::H160);
+pub struct Hex0xH160(H160);
 
-impl SerializeAs<primitive_types::H160> for Hex0xH160 {
-    fn serialize_as<S>(x: &primitive_types::H160, serializer: S) -> Result<S::Ok, S::Error>
+impl SerializeAs<H160> for Hex0xH160 {
+    fn serialize_as<S>(x: &H160, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -31,15 +32,15 @@ impl SerializeAs<primitive_types::H160> for Hex0xH160 {
     }
 }
 
-impl<'de> DeserializeAs<'de, primitive_types::H160> for Hex0xH160 {
-    fn deserialize_as<D>(deserializer: D) -> Result<primitive_types::H160, D::Error>
+impl<'de> DeserializeAs<'de, H160> for Hex0xH160 {
+    fn deserialize_as<D>(deserializer: D) -> Result<H160, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         let s = s.trim_start_matches("0x");
 
-        primitive_types::H160::from_str(s).map_err(serde::de::Error::custom)
+        H160::from_str(s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -53,13 +54,13 @@ fn test_custom_de_serializer() {
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
     struct Data {
         #[serde_as(as = "Vec<Hex0xH160>")]
-        data: Vec<primitive_types::H160>,
+        data: Vec<H160>,
     }
 
     let d = Data {
         data: vec![
-            primitive_types::H160::from_str("0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC").unwrap(),
-            primitive_types::H160::from_str("0xeF14C4Ee608e5C79BcE97e3113401a360df809FB").unwrap(),
+            H160::from_str("0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC").unwrap(),
+            H160::from_str("0xeF14C4Ee608e5C79BcE97e3113401a360df809FB").unwrap(),
         ],
     };
 

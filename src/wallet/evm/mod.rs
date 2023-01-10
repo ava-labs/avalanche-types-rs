@@ -2,16 +2,26 @@ pub mod eip1559;
 
 use std::{
     io::{self, Error, ErrorKind},
+    ops::Div,
     sync::Arc,
     time::Duration,
 };
 
 use crate::{jsonrpc::client::evm as jsonrpc_client_evm, key, wallet};
-use ethers::prelude::{
-    gas_escalator::{Frequency, GasEscalatorMiddleware, GeometricGasPrice},
-    NonceManagerMiddleware, SignerMiddleware,
+use ethers::{
+    prelude::{
+        gas_escalator::{Frequency, GasEscalatorMiddleware, GeometricGasPrice},
+        NonceManagerMiddleware, SignerMiddleware,
+    },
+    utils::Units::Gwei,
 };
 use ethers_providers::{Http, Provider};
+use lazy_static::lazy_static;
+use primitive_types::U256;
+
+lazy_static! {
+    pub static ref GWEI: U256 = U256::from(10).checked_pow(Gwei.as_num().into()).unwrap();
+}
 
 impl<T> wallet::Wallet<T>
 where
@@ -24,7 +34,7 @@ where
         &self,
         eth_signer: &'a S,
         chain_id_alias: String,
-        chain_id: primitive_types::U256,
+        chain_id: U256,
     ) -> io::Result<Evm<'a, T, S>>
     where
         S: ethers_signers::Signer + Clone,
@@ -108,7 +118,7 @@ where
         >,
     >,
 
-    pub chain_id: primitive_types::U256,
+    pub chain_id: U256,
 
     /// Either "C" or subnet_evm chain Id.
     pub chain_id_alias: String,
@@ -122,7 +132,7 @@ where
     S::Error: 'static,
 {
     /// Fetches the current balance of the wallet owner from the specified HTTP endpoint.
-    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<primitive_types::U256> {
+    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<U256> {
         let cur_balance = jsonrpc_client_evm::get_balance(
             http_rpc,
             &self.chain_id_alias,
@@ -134,7 +144,7 @@ where
 
     /// Fetches the current balance of the wallet owner from all endpoints
     /// in the same order of "self.http_rpcs".
-    pub async fn balances(&self) -> io::Result<Vec<primitive_types::U256>> {
+    pub async fn balances(&self) -> io::Result<Vec<U256>> {
         let mut balances = Vec::new();
         for http_rpc in self.inner.http_rpcs.iter() {
             let balance = self.balance_with_endpoint(http_rpc).await?;
@@ -144,8 +154,18 @@ where
     }
 
     /// Fetches the current balance of the wallet owner.
-    pub async fn balance(&self) -> io::Result<primitive_types::U256> {
+    pub async fn balance(&self) -> io::Result<U256> {
         self.balance_with_endpoint(&self.inner.pick_http_rpc().1)
             .await
+    }
+}
+
+/// Converts WEI to GWEI.
+pub fn wei_to_gwei(wei: impl Into<U256>) -> U256 {
+    let wei: U256 = wei.into();
+    if wei.is_zero() {
+        U256::zero()
+    } else {
+        wei.div(*GWEI)
     }
 }

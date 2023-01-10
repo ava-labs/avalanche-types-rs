@@ -1,14 +1,38 @@
-use std::io::{self, Error, ErrorKind};
+use std::{
+    io::{self, Error, ErrorKind},
+    ops::Mul,
+};
 
 use crate::{
     key,
     wallet::{self, evm},
 };
-use ethers::prelude::Eip1559TransactionRequest;
+use ethers::{prelude::Eip1559TransactionRequest, utils::Units::Gwei};
 use ethers_core::types::{transaction::eip2718::TypedTransaction, RecoveryMessage, Signature};
 use ethers_providers::Middleware;
+use lazy_static::lazy_static;
 use primitive_types::{H160, H256, U256};
 use tokio::time::Duration;
+
+// With EIP-1559, the fees are: units of gas used * (base fee + priority fee).
+// The expensive but highly guaranteed way of getting transaction in is:
+// set very high "max_fee_per_gas" and very low "max_priority_fee_per_gas".
+// For example, set "max_fee_per_gas" 500 GWEI and "max_priority_fee_per_gas" 10 GWEI.
+// If the base fee is 25 GWEI, it will only cost: units of gas used * (25 + 10).
+// If the base fee is 200 GWEI, it will only cost: units of gas used * (200 + 10).
+// Therefore, we can set the "max_fee_per_gas" to the actual maximum
+// we are willing to pay without manual intervention.
+// ref. <https://docs.avax.network/quickstart/adjusting-gas-price-during-high-network-activity>
+lazy_static! {
+    pub static ref URGENT_MAX_FEE_PER_GAS: U256 = {
+        let gwei = U256::from(10).checked_pow(Gwei.as_num().into()).unwrap();
+        U256::from(700).mul(gwei) // 700 GWEI
+    };
+    pub static ref URGENT_MAX_PRIORITY_FEE_PER_GAS: U256 = {
+        let gwei = U256::from(10).checked_pow(Gwei.as_num().into()).unwrap();
+        U256::from(10).mul(gwei) // 10 GWEI
+    };
+}
 
 impl<'a, T, S> evm::Evm<'a, T, S>
 where
@@ -21,24 +45,12 @@ where
         Tx::new(self)
     }
 }
-
 /// Represents an EIP-1559 Ethereum transaction (dynamic fee transaction in coreth/subnet-evm).
 /// ref. <https://ethereum.org/en/developers/docs/transactions>
 /// ref. <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md>
-/// ref. "ethers-core::types::transaction::eip1559::Eip1559TransactionRequest"
-/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction>
-/// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendtransaction>
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/types/transaction/eip1559.rs>
 /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx>
-///
-/// The transaction cost is "value" + "gas" * "gas_price" in coreth (ref. "types.Transaction.Cost").
-/// Which is, "value" + "gas_limit" * "max_fee_per_gas".
-/// The transaction cost must be smaller than the originator's balance.
-/// Otherwise, fails with "insufficient funds for gas * price + value: address ... have (0) want (x)".
-///
-/// "max_fee_per_gas" cannot be lower than the pool's minimum fee.
-/// And the pool's minimum fee is set
-/// Otherwise, fails with "transaction underpriced: address ... have gas fee cap (0) < pool minimum fee cap (25000000000)".
 #[derive(Clone, Debug)]
 pub struct Tx<'a, T, S>
 where
@@ -64,16 +76,51 @@ where
 
     /// Maximum transaction fee as a premium.
     /// Maps to subnet-evm DynamicFeeTx "GasTipCap".
+    /// ref. <https://ethereum.org/en/developers/docs/gas/>
     pub max_priority_fee_per_gas: Option<U256>,
 
     /// Maximum amount that the originator is willing to pay for this transaction.
     /// Maps to subnet-evm DynamicFeeTx "GasFeeCap".
+    /// ref. <https://ethereum.org/en/developers/docs/gas/>
+    ///
+    /// With EIP-1559, the fees are: units of gas used * (base fee + priority fee).
+    /// The expensive but highly guaranteed way of getting transaction in is:
+    /// set very high "max_fee_per_gas" and very low "max_priority_fee_per_gas".
+    /// For example, set "max_fee_per_gas" 500 GWEI and "max_priority_fee_per_gas" 10 GWEI.
+    /// If the base fee is 25 GWEI, it will only cost: units of gas used * (25 + 10).
+    /// If the base fee is 200 GWEI, it will only cost: units of gas used * (200 + 10).
+    /// Therefore, we can set the "max_fee_per_gas" to the actual maximum
+    /// we are willing to pay without manual intervention.
+    /// ref. <https://docs.avax.network/quickstart/adjusting-gas-price-during-high-network-activity>
     pub max_fee_per_gas: Option<U256>,
 
-    /// "gas_limit" is the maximum amount of gas that the originator is willing
-    /// to buy for this transaction (e.g., fuel tank capacity).
-    /// For instance, if a transaction requires 5 gas units, the transaction can
-    /// cost up to 5 * "gas_price".
+    /// Maximum amount of gas that the originator is willing to buy.
+    /// Maximum amount of gas that can be consumed by this transaction.
+    /// Think of it as a fuel tank capacity for this specific transaction.
+    /// The standard gas limit on Ethereum is 21,000 units (e.g., ETH transfer).
+    /// If a user puts a gas limit of 30,000 for a simple ETH transfer,
+    /// the EVM would only consume 21,000 units, and the user would get back the
+    /// remaining 10,000. If the user puts too low gas limit, the EVM would revert
+    /// the change (execution failure).
+    ///
+    /// Before EIP-1559, if a transaction used up all gas units and the current
+    /// gas price is 200 GWEI, this transaction fee can cost up to 21,000 * 200
+    /// which is 4,200,000 gwei or 0.0042 ETH.
+    /// That is, the fees are: Gas units (limit) * Gas price per unit.
+    ///
+    /// With EIP-1559, the fees are: units of gas used * (base fee + priority fee).
+    /// The base fee is set by the protocol (via chain fee configuration).
+    /// The priority fee is set by the user (via "max_priority_fee_per_gas").
+    ///
+    /// In addition, the user can also set "max_fee_per_gas" for the transaction.
+    /// The surplus from the max fee and the actual fee is refunded to the user.
+    /// For instance, the refunds are: max fee - (base fee + priority fee).
+    /// The "max_fee_per_gas" can limit the maximum amount to pay for the transaction.
+    /// ref. <https://ethereum.org/en/developers/docs/gas/>
+    ///
+    /// This is different than "gas limit" in the chain fee configuration.
+    /// Which is the maximum amount of gas that can be consumed per block (e.g., 8-million GWEI).
+    /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/params#pkg-variables>
     pub gas_limit: Option<U256>,
 
     /// If the recipient is an externally-owned account, the transaction will transfer the "value".
@@ -158,6 +205,14 @@ where
         self
     }
 
+    /// Overwrites all gas and fee parameters to mark this transaction as urgent.
+    #[must_use]
+    pub fn urgent(mut self) -> Self {
+        self.max_priority_fee_per_gas = Some(*URGENT_MAX_PRIORITY_FEE_PER_GAS);
+        self.max_fee_per_gas = Some(*URGENT_MAX_FEE_PER_GAS);
+        self
+    }
+
     #[must_use]
     pub fn recipient(mut self, to: impl Into<H160>) -> Self {
         self.recipient = Some(to.into());
@@ -214,16 +269,25 @@ where
     /// Issues the transaction and returns the transaction Id.
     /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
     pub async fn submit(&self) -> io::Result<H256> {
+        let max_priority_fee_per_gas = if let Some(v) = self.max_priority_fee_per_gas {
+            format!("{} GWEI", super::wei_to_gwei(v))
+        } else {
+            "default".to_string()
+        };
+        let max_fee_per_gas = if let Some(v) = self.max_fee_per_gas {
+            format!("{} GWEI", super::wei_to_gwei(v))
+        } else {
+            "default".to_string()
+        };
+
         log::info!(
-            "submitting transaction [chain Id {}, value {:?}, from {}, recipient {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {:?}, max_fee_per_gas {:?}, gas_limit {:?}]",
+            "submitting transaction [chain Id {}, value {:?}, from {}, recipient {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {max_priority_fee_per_gas}, max_fee_per_gas {max_fee_per_gas}, gas_limit {:?}]",
             self.inner.chain_id,
             self.value,
             self.inner.inner.h160_address,
             self.recipient,
             self.inner.picked_http_rpc.1,
             self.inner.chain_rpc_url_path,
-            self.max_priority_fee_per_gas,
-            self.max_fee_per_gas,
             self.gas_limit,
         );
 
