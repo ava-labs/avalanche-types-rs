@@ -79,7 +79,7 @@ where
 
     /// Issues the create subnet transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!("creating a new subnet via {}", picked_http_rpc.1);
 
         let (ins, unstaked_outs, _, signers) = self

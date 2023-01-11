@@ -55,7 +55,7 @@ where
     /// in the same order of "self.http_rpcs".
     pub async fn balances(&self) -> io::Result<Vec<u64>> {
         let mut balances = Vec::new();
-        for http_rpc in self.inner.http_rpcs.iter() {
+        for http_rpc in self.inner.base_http_urls.iter() {
             let balance = self.balance_with_endpoint(http_rpc).await?;
             balances.push(balance);
         }
@@ -64,7 +64,7 @@ where
 
     /// Fetches the current balance of the wallet owner.
     pub async fn balance(&self) -> io::Result<u64> {
-        self.balance_with_endpoint(&self.inner.pick_http_rpc().1)
+        self.balance_with_endpoint(&self.inner.pick_base_http_url().1)
             .await
     }
 
@@ -72,7 +72,7 @@ where
     /// TODO: cache this like avalanchego
     pub async fn utxos(&self) -> io::Result<Vec<txs::utxo::Utxo>> {
         let resp =
-            client_p::get_utxos(&self.inner.pick_http_rpc().1, &self.inner.p_address).await?;
+            client_p::get_utxos(&self.inner.pick_base_http_url().1, &self.inner.p_address).await?;
         let utxos = resp
             .result
             .expect("unexpected None GetUtxosResult")
@@ -83,7 +83,8 @@ where
 
     /// Returns "true" if the node_id is a current primary network validator.
     pub async fn is_primary_network_validator(&self, node_id: &node::Id) -> io::Result<bool> {
-        let resp = client_p::get_primary_network_validators(&self.inner.pick_http_rpc().1).await?;
+        let resp =
+            client_p::get_primary_network_validators(&self.inner.pick_base_http_url().1).await?;
         let resp = resp
             .result
             .expect("unexpected None GetCurrentValidatorResult");
@@ -103,9 +104,11 @@ where
         node_id: &node::Id,
         subnet_id: &ids::Id,
     ) -> io::Result<bool> {
-        let resp =
-            client_p::get_subnet_validators(&self.inner.pick_http_rpc().1, &subnet_id.to_string())
-                .await?;
+        let resp = client_p::get_subnet_validators(
+            &self.inner.pick_base_http_url().1,
+            &subnet_id.to_string(),
+        )
+        .await?;
         let resp = resp
             .result
             .expect("unexpected None GetCurrentValidatorResult");
@@ -371,7 +374,8 @@ where
     ) -> io::Result<(key::secp256k1::txs::Input, Vec<Vec<T>>)> {
         log::info!("authorizing subnet {}", subnet_id);
 
-        let tx = client_p::get_tx(&self.inner.pick_http_rpc().1, &subnet_id.to_string()).await?;
+        let tx =
+            client_p::get_tx(&self.inner.pick_base_http_url().1, &subnet_id.to_string()).await?;
         if let Some(tx_result) = tx.result {
             let output_owners = tx_result.tx.unsigned_tx.output_owners;
 

@@ -44,7 +44,7 @@ where
     /// in the same order of "self.http_rpcs".
     pub async fn balances(&self) -> io::Result<Vec<u64>> {
         let mut balances = Vec::new();
-        for http_rpc in self.inner.http_rpcs.iter() {
+        for http_rpc in self.inner.base_http_urls.iter() {
             let balance = self.balance_with_endpoint(http_rpc).await?;
             balances.push(balance);
         }
@@ -53,7 +53,7 @@ where
 
     /// Fetches the current balance of the wallet owner.
     pub async fn balance(&self) -> io::Result<u64> {
-        self.balance_with_endpoint(&self.inner.pick_http_rpc().1)
+        self.balance_with_endpoint(&self.inner.pick_base_http_url().1)
             .await
     }
 
@@ -66,7 +66,7 @@ where
         // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L355 "AddValidator"
         // ref. https://github.com/ava-labs/subnet-cli/blob/6bbe9f4aff353b812822af99c08133af35dbc6bd/client/p.go#L614 "stake"
         let resp =
-            client_x::get_utxos(&self.inner.pick_http_rpc().1, &self.inner.p_address).await?;
+            client_x::get_utxos(&self.inner.pick_base_http_url().1, &self.inner.p_address).await?;
         let utxos = resp
             .result
             .expect("unexpected None GetUtxosResult")

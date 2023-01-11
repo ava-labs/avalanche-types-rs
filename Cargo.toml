@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.202" # https://crates.io/crates/avalanche-types
+version = "0.0.204" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.66"
 publish = true
@@ -64,6 +64,9 @@ rand_core = { version = "0.6.4", features = ["std"], optional = true }
 # [OPTIONAL] for "jsonrpc_client", "tokio"
 http-manager = { version = "0.0.7", optional = true }
 tokio = { version = "1.24.1", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
+
+# [OPTIONAL] for "wallet"
+url = { version = "2.3.1", optional = true }
 
 # [OPTIONAL] for "wallet_evm"
 rlp = { version = "0.5.2", default-features = false, features = ["std"], optional = true }
@@ -133,7 +136,7 @@ default = [
 avalanchego = []
 cert = ["rcgen", "rsa", "rustls"]
 jsonrpc_client = ["http-manager", "ethers-providers", "tokio"]
-wallet = ["http-manager", "tokio"]
+wallet = ["http-manager", "tokio", "url"]
 wallet_evm = ["rlp", "ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client"]
 codec_base64 = ["base64"]
 codec_big_int = ["num-bigint"]

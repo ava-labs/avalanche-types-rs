@@ -95,7 +95,7 @@ where
     /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.4/wallet/chain/p/builder.go> "NewImportTx"
     /// TODO: not working... cache exported Utxos
     pub async fn issue(&self) -> io::Result<ids::Id> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "importing from {} via {}",
             self.source_blockchain_id,

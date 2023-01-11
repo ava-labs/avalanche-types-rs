@@ -14,18 +14,17 @@ fn main() {
 
     let rt = Runtime::new().unwrap();
 
-    let url = args().nth(1).expect("no url given");
+    let http_rpc = args().nth(1).expect("no http_rpc given");
     let caddr = args().nth(2).expect("no C-chain address given");
 
     let chain_id = rt
-        .block_on(evm::chain_id(&url, "C"))
+        .block_on(evm::chain_id(format!("{http_rpc}/ext/bc/C/rpc").as_str()))
         .expect("failed to get chain_id");
     log::info!("chain_id: {:?}", chain_id);
 
     let balance = rt
         .block_on(evm::get_balance(
-            &url,
-            "C",
+            format!("{http_rpc}/ext/bc/C/rpc").as_str(),
             primitive_types::H160::from_str(caddr.trim_start_matches("0x")).unwrap(),
         ))
         .expect("failed to get balance");

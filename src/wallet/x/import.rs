@@ -94,7 +94,7 @@ where
 
     /// Issues the import transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "importing from {} via {}",
             self.source_blockchain_id,

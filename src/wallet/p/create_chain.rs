@@ -116,7 +116,7 @@ where
 
     /// Issues the create chain transaction and returns the transaction Id.
     pub async fn issue(&self) -> io::Result<ids::Id> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "creating a new chain for subnet {}, vm id {}, chain name {}, via {}",
             self.subnet_id,

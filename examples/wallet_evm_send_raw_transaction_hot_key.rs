@@ -30,7 +30,7 @@ async fn main() -> io::Result<()> {
     let key_info1 = k1.to_info(1).unwrap();
     log::info!("created hot key:\n\n{}\n", key_info1);
 
-    let k1_eth_signer: ethers_signers::LocalWallet = k1.signing_key().into();
+    let k1_signer: ethers_signers::LocalWallet = k1.signing_key().into();
 
     let k2 = key::secp256k1::private_key::Key::generate().unwrap();
     let key_info2 = k2.to_info(1).unwrap();
@@ -45,7 +45,7 @@ async fn main() -> io::Result<()> {
         .gas_limit(gas_limit)
         .value(value);
 
-    let signed_bytes = tx.sign_as_typed_transaction(k1_eth_signer).await.unwrap();
+    let signed_bytes = tx.sign_as_typed_transaction(k1_signer).await.unwrap();
     log::info!("signed_bytes: {}", signed_bytes);
 
     let pending = provider.send_raw_transaction(signed_bytes).await.unwrap();

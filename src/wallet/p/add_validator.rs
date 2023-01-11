@@ -162,7 +162,7 @@ where
     /// successfully issued or not (regardless of its acceptance).
     /// If the validator is already a validator, it returns an empty Id and false.
     pub async fn issue(&self) -> io::Result<(ids::Id, bool)> {
-        let picked_http_rpc = self.inner.inner.pick_http_rpc();
+        let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "adding primary network validator {} with stake amount {} AVAX ({} nAVAX) via {}",
             self.node_id,

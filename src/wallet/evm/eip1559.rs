@@ -281,13 +281,12 @@ where
         };
 
         log::info!(
-            "submitting transaction [chain Id {}, value {:?}, from {}, recipient {:?}, http rpc {}, chain RPC {}, max_priority_fee_per_gas {max_priority_fee_per_gas}, max_fee_per_gas {max_fee_per_gas}, gas_limit {:?}]",
+            "submitting transaction [chain Id {}, value {:?}, from {}, recipient {:?}, chain RPC URL {}, max_priority_fee_per_gas {max_priority_fee_per_gas}, max_fee_per_gas {max_fee_per_gas}, gas_limit {:?}]",
             self.inner.chain_id,
             self.value,
             self.inner.inner.h160_address,
             self.recipient,
-            self.inner.picked_http_rpc.1,
-            self.inner.chain_rpc_url_path,
+            self.inner.chain_rpc_url,
             self.gas_limit,
         );
 
@@ -296,7 +295,7 @@ where
         } else {
             log::info!("nonce not specified -- fetching latest");
             self.inner
-                .picked_middleware
+                .middleware
                 .initialize_nonce(None)
                 .await
                 .map_err(|e| {
@@ -349,7 +348,7 @@ where
 
         let pending_tx = self
             .inner
-            .picked_middleware
+            .middleware
             .send_transaction(tx_request, None)
             .await
             .map_err(|e| {
@@ -373,7 +372,7 @@ where
 
         let tx = self
             .inner
-            .picked_middleware
+            .middleware
             .get_transaction(tx_receipt.transaction_hash)
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed get_transaction '{}'", e)))?;

@@ -42,7 +42,7 @@ async fn main() -> io::Result<()> {
     let key_info1 = k1.to_info(1).unwrap();
     log::info!("loaded CMK\n\n{}\n(network Id 1)\n", key_info1);
 
-    let k1_eth_signer = KmsAwsSigner::new(k1, U256::from(chain_id)).unwrap();
+    let k1_signer = KmsAwsSigner::new(k1, U256::from(chain_id)).unwrap();
 
     let k2 = key::secp256k1::private_key::Key::generate().unwrap();
     let key_info2 = k2.to_info(1).unwrap();
@@ -57,7 +57,7 @@ async fn main() -> io::Result<()> {
         .gas_limit(gas_limit)
         .value(value);
 
-    let signed_bytes = tx.sign_as_typed_transaction(k1_eth_signer).await.unwrap();
+    let signed_bytes = tx.sign_as_typed_transaction(k1_signer).await.unwrap();
     log::info!("signed_bytes: {}", signed_bytes);
 
     let pending = provider.send_raw_transaction(signed_bytes).await.unwrap();

@@ -6,10 +6,10 @@ use std::{
 use ethers_providers::{Http, Middleware, Provider};
 use primitive_types::{H160, U256};
 
-pub async fn chain_id(http_rpc: &str, chain_id_alias: &str) -> io::Result<U256> {
-    let chain_rpc_url_path = format!("/ext/bc/{}/rpc", chain_id_alias);
-    let rpc_ep = format!("{http_rpc}{chain_rpc_url_path}");
-    let provider = Provider::<Http>::try_from(&rpc_ep)
+/// Fetches the chain Id from "{http_rpc}/ext/bc/{chain_id_alias}/rpc".
+/// "chain_id_alias" is "C" for C-chain, and blockchain Id for subnet-evm.
+pub async fn chain_id(rpc_ep: &str) -> io::Result<U256> {
+    let provider = Provider::<Http>::try_from(rpc_ep)
         .map_err(|e| {
             Error::new(
                 ErrorKind::Other,
@@ -18,21 +18,18 @@ pub async fn chain_id(http_rpc: &str, chain_id_alias: &str) -> io::Result<U256> 
         })?
         .interval(Duration::from_millis(2000u64));
 
-    log::info!("getting chain id via {} {}", http_rpc, chain_id_alias,);
+    log::info!("getting chain id via {rpc_ep}");
     provider
         .get_chainid()
         .await
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed get_chainid '{}'", e)))
 }
 
-/// Fetches the balance.
+/// Fetches the balance from "{http_rpc}/ext/bc/{chain_id_alias}/rpc".
 /// "chain_id_alias" is "C" for C-chain, and blockchain Id for subnet-evm.
-/// e.g., "eth_getBalance" on "http://[ADDR]:9650" and "/ext/bc/C/rpc" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/c-chain#eth_getassetbalance>
-pub async fn get_balance(http_rpc: &str, chain_id_alias: &str, eth_addr: H160) -> io::Result<U256> {
-    let chain_rpc_url_path = format!("/ext/bc/{}/rpc", chain_id_alias);
-    let rpc_ep = format!("{http_rpc}{chain_rpc_url_path}");
-    let provider = Provider::<Http>::try_from(&rpc_ep)
+pub async fn get_balance(rpc_ep: &str, eth_addr: H160) -> io::Result<U256> {
+    let provider = Provider::<Http>::try_from(rpc_ep)
         .map_err(|e| {
             Error::new(
                 ErrorKind::Other,
@@ -41,12 +38,7 @@ pub async fn get_balance(http_rpc: &str, chain_id_alias: &str, eth_addr: H160) -
         })?
         .interval(Duration::from_millis(2000u64));
 
-    log::info!(
-        "getting balances for {} via {} {}",
-        eth_addr,
-        http_rpc,
-        chain_rpc_url_path
-    );
+    log::info!("getting balances for {} via {rpc_ep}", eth_addr);
     provider
         .get_balance(eth_addr, None)
         .await
