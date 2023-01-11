@@ -1,4 +1,4 @@
-use std::{thread, time};
+use std::{collections::HashMap, thread, time};
 
 use avalanche_types::key;
 use aws_manager::{self, kms};
@@ -22,10 +22,12 @@ fn main() {
 
     let mut key_name = id_manager::time::with_prefix("test");
     key_name.push_str("-cmk");
+    let mut tags = HashMap::new();
+    tags.insert(String::from("Name"), key_name);
 
     let cmk = ab!(key::secp256k1::kms::aws::Cmk::create(
         kms_manager.clone(),
-        &key_name
+        tags
     ))
     .unwrap();
 

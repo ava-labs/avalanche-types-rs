@@ -31,9 +31,12 @@ pub struct Cmk {
 
 impl Cmk {
     /// Generates a new CMK.
-    pub async fn create(kms_manager: kms::Manager, name: &str) -> io::Result<Self> {
+    pub async fn create(
+        kms_manager: kms::Manager,
+        tags: HashMap<String, String>,
+    ) -> io::Result<Self> {
         let cmk = kms_manager
-            .create_key(name, KeySpec::EccSecgP256K1, KeyUsageType::SignVerify)
+            .create_key(KeySpec::EccSecgP256K1, KeyUsageType::SignVerify, Some(tags))
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.create_key {}", e)))?;
 
