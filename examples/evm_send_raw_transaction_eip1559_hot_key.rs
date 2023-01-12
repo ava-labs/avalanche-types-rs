@@ -1,14 +1,10 @@
 use std::{convert::TryFrom, env::args, io};
 
-use avalanche_types::{
-    key::{self, secp256k1::kms::aws::eth_signer::Signer as KmsAwsSigner},
-    wallet::evm::eip1559,
-};
-use aws_manager::kms;
+use avalanche_types::{evm::eip1559, key};
 use ethers_providers::{Http, Middleware, Provider};
-use primitive_types::U256;
 
-/// cargo run --example wallet_evm_send_raw_transaction_kms_aws -- [HTTP RPC ENDPOINT] [KMS_CMK_ARN]
+/// cargo run --example evm_send_raw_transaction_eip1559_hot_key -- [HTTP RPC ENDPOINT]
+/// cargo run --example evm_send_raw_transaction_eip1559_hot_key -- http://localhost:9876/rpc
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
@@ -19,30 +15,21 @@ async fn main() -> io::Result<()> {
     let url = args().nth(1).expect("no url given");
     log::info!("running against {url}");
 
-    let kms_cmk_arn = args().nth(2).expect("no KMS CMK ARN given");
-    log::info!("running with {kms_cmk_arn}");
-
     let provider =
         Provider::<Http>::try_from(url.clone()).expect("could not instantiate HTTP Provider");
     log::info!("created provider for {url}");
 
     let chain_id = random_manager::u64() % 3000;
-    let signer_nonce = U256::from(random_manager::u64() % 10);
-    let gas_limit = U256::from(random_manager::u64() % 10000);
-    let max_fee_per_gas = U256::from(random_manager::u64() % 10000);
-    let value = U256::from(random_manager::u64() % 100000);
+    let signer_nonce = primitive_types::U256::from(random_manager::u64() % 10);
+    let gas_limit = primitive_types::U256::from(random_manager::u64() % 10000);
+    let max_fee_per_gas = primitive_types::U256::from(random_manager::u64() % 10000);
+    let value = primitive_types::U256::from(random_manager::u64() % 100000);
 
-    let shared_config = aws_manager::load_config(None).await?;
-    let kms_manager = kms::Manager::new(&shared_config);
-    let k1 =
-        avalanche_types::key::secp256k1::kms::aws::Cmk::from_arn(kms_manager.clone(), &kms_cmk_arn)
-            .await
-            .unwrap();
-
+    let k1 = key::secp256k1::TEST_KEYS[0].clone();
     let key_info1 = k1.to_info(1).unwrap();
-    log::info!("loaded CMK\n\n{}\n(network Id 1)\n", key_info1);
+    log::info!("created hot key:\n\n{}\n", key_info1);
 
-    let k1_signer = KmsAwsSigner::new(k1, U256::from(chain_id)).unwrap();
+    let k1_signer: ethers_signers::LocalWallet = k1.signing_key().into();
 
     let k2 = key::secp256k1::private_key::Key::generate().unwrap();
     let key_info2 = k2.to_info(1).unwrap();

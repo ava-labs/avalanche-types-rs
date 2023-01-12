@@ -139,6 +139,11 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub whitelisted_subnets: Option<String>,
 
+    /// Plugin directory.
+    /// Default to "/usr/local/bin/plugin".
+    #[serde(default)]
+    pub plugin_dir: String,
+
     /// Chain configuration directory (e.g., /data/avalanche-configs/chains/C/config.json).
     /// Default to "/data/avalanche-configs/chains".
     #[serde(default)]
@@ -242,12 +247,15 @@ pub const DEFAULT_SNOW_QUORUM_SIZE: u32 = 15;
 pub const DEFAULT_INDEX_ENABLED: bool = false;
 pub const DEFAULT_INDEX_ALLOW_INCOMPLETE: bool = false;
 
-pub const DEFAULT_API_ADMIN_ENABLED: bool = true;
+pub const DEFAULT_API_ADMIN_ENABLED: bool = false;
 pub const DEFAULT_API_INFO_ENABLED: bool = true;
-pub const DEFAULT_API_KEYSTORE_ENABLED: bool = true;
+pub const DEFAULT_API_KEYSTORE_ENABLED: bool = false;
 pub const DEFAULT_API_METRICS_ENABLED: bool = true;
 pub const DEFAULT_API_HEALTH_ENABLED: bool = true;
 pub const DEFAULT_API_IPCS_ENABLED: bool = true;
+
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.7/config/flags.go>
+pub const DEFAULT_PLUGIN_DIR: &str = "/usr/local/bin/plugin";
 
 /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.18/config/flags.go#L35-L52>
 /// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
@@ -324,6 +332,7 @@ impl Config {
 
             whitelisted_subnets: None,
 
+            plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 
@@ -407,6 +416,7 @@ impl Config {
 
             whitelisted_subnets: None,
 
+            plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 
@@ -490,6 +500,7 @@ impl Config {
 
             whitelisted_subnets: None,
 
+            plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
 

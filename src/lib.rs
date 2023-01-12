@@ -28,6 +28,9 @@ pub mod subnet_evm;
 #[cfg(feature = "xsvm")]
 pub mod xsvm;
 
+#[cfg(feature = "evm")]
+pub mod evm;
+
 #[cfg(feature = "message")]
 pub mod message;
 

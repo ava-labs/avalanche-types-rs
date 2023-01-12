@@ -111,13 +111,11 @@ impl Cmk {
         let mut addresses = HashMap::new();
         let x_address = self.public_key.to_hrp_address(network_id, "X")?;
         let p_address = self.public_key.to_hrp_address(network_id, "P")?;
-        let c_address = self.public_key.to_hrp_address(network_id, "C")?;
         addresses.insert(
             network_id,
             key::secp256k1::ChainAddresses {
                 x_address,
                 p_address,
-                c_address,
             },
         );
 

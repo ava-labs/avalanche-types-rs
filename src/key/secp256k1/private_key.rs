@@ -145,13 +145,11 @@ impl Key {
         let mut addresses = HashMap::new();
         let x_address = pubkey.to_hrp_address(network_id, "X")?;
         let p_address = pubkey.to_hrp_address(network_id, "P")?;
-        let c_address = pubkey.to_hrp_address(network_id, "C")?;
         addresses.insert(
             network_id,
             secp256k1::ChainAddresses {
                 x_address,
                 p_address,
-                c_address,
             },
         );
 

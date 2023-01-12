@@ -29,10 +29,6 @@ fn main() {
         entry.addresses.get(&network_id).unwrap().p_address,
         pubkey.to_hrp_address(network_id, "P").unwrap()
     );
-    assert_eq!(
-        entry.addresses.get(&network_id).unwrap().c_address,
-        pubkey.to_hrp_address(network_id, "C").unwrap()
-    );
     assert_eq!(entry.short_address, pubkey.to_short_id().unwrap());
     assert_eq!(entry.eth_address, pubkey.to_eth_address());
 

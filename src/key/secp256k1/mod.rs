@@ -304,7 +304,6 @@ impl AsRef<str> for KeyType {
 pub struct ChainAddresses {
     pub x_address: String,
     pub p_address: String,
-    pub c_address: String,
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::test_keys_address --exact --show-output
@@ -350,10 +349,6 @@ fn test_keys_address() {
                 pubkey.to_hrp_address(1, "P").unwrap(),
                 ki.addresses.get(&1).unwrap().p_address
             );
-            assert_eq!(
-                pubkey.to_hrp_address(1, "C").unwrap(),
-                ki.addresses.get(&1).unwrap().c_address
-            );
 
             assert_eq!(
                 pubkey.to_hrp_address(9999, "X").unwrap(),
@@ -362,10 +357,6 @@ fn test_keys_address() {
             assert_eq!(
                 pubkey.to_hrp_address(9999, "P").unwrap(),
                 ki.addresses.get(&9999).unwrap().p_address
-            );
-            assert_eq!(
-                pubkey.to_hrp_address(9999, "C").unwrap(),
-                ki.addresses.get(&9999).unwrap().c_address
             );
 
             assert_eq!(pubkey.to_short_id().unwrap(), ki.short_address);
