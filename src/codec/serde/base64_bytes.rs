@@ -1,3 +1,4 @@
+use base64::Engine;
 use serde::{self, Deserialize, Deserializer, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 
@@ -5,7 +6,7 @@ pub fn serialize<S>(x: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(&base64::encode(x))
+    serializer.serialize_str(&base64::engine::general_purpose::STANDARD.encode(x))
 }
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -13,7 +14,9 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    base64::decode(&s).map_err(serde::de::Error::custom)
+    base64::engine::general_purpose::STANDARD
+        .decode(&s)
+        .map_err(serde::de::Error::custom)
 }
 
 pub struct Base64Bytes(Vec<u8>);
@@ -23,7 +26,7 @@ impl SerializeAs<Vec<u8>> for Base64Bytes {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&base64::encode(x))
+        serializer.serialize_str(&base64::engine::general_purpose::STANDARD.encode(x))
     }
 }
 
@@ -33,7 +36,9 @@ impl<'de> DeserializeAs<'de, Vec<u8>> for Base64Bytes {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        base64::decode(&s).map_err(serde::de::Error::custom)
+        base64::engine::general_purpose::STANDARD
+            .decode(&s)
+            .map_err(serde::de::Error::custom)
     }
 }
 
