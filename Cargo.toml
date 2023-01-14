@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.209" # https://crates.io/crates/avalanche-types
+version = "0.0.210" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.66"
 publish = true
@@ -45,9 +45,9 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.25.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.22.22", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
-aws-sdk-kms = { version = "0.22.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
-aws-smithy-types = { version = "0.52.0", optional = true } # https://github.com/awslabs/smithy-rs/releases
+aws-manager = { version = "0.23.0", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-sdk-kms = { version = "0.23.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
+aws-smithy-types = { version = "0.53.1", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen

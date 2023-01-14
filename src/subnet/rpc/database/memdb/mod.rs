@@ -9,6 +9,8 @@
 //! assert_eq!(resp.unwrap(), true);
 //! ```
 
+pub mod iterator;
+
 use std::{
     collections::HashMap,
     io,
@@ -16,35 +18,34 @@ use std::{
     sync::Arc,
 };
 
-use super::errors;
+use super::{errors, iterator::BoxedIterator, BoxedDatabase};
 use tokio::sync::RwLock;
 
+/// Database is an ephemeral key-value store that implements the Database interface.
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/memdb#Database>
 #[derive(Clone)]
 pub struct Database {
-    inner: Arc<RwLock<HashMap<Vec<u8>, Vec<u8>>>>,
+    /// Hashmap guarded by mutex which stores the memdb state.
+    state: Arc<RwLock<HashMap<Vec<u8>, Vec<u8>>>>,
+    /// True if the database is closed
     closed: Arc<AtomicBool>,
 }
 
 impl Database {
-    pub fn new() -> Box<dyn crate::subnet::rpc::database::Database + Send + Sync> {
-        let state: HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
-        Box::new(Database {
-            inner: Arc::new(RwLock::new(state)),
+    pub fn new() -> BoxedDatabase {
+        Box::new(Self {
+            state: Arc::new(RwLock::new(HashMap::new())),
             closed: Arc::new(AtomicBool::new(false)),
         })
     }
 }
 
-/// Database is an ephemeral key-value store that implements the Database interface.
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/memdb#Database>
-impl crate::subnet::rpc::database::Database for Database {}
-
 #[tonic::async_trait]
-impl crate::subnet::rpc::database::KeyValueReaderWriterDeleter for Database {
+impl super::KeyValueReaderWriterDeleter for Database {
     /// Attempts to return if the database has a key with the provided value.
     async fn has(&self, key: &[u8]) -> io::Result<bool> {
-        let db = self.inner.read().await;
-        match db.get(key) {
+        let db = self.state.read().await;
+        match db.get(&key.to_vec()) {
             Some(_) => Ok(true),
             None => Ok(false),
         }
@@ -56,8 +57,8 @@ impl crate::subnet::rpc::database::KeyValueReaderWriterDeleter for Database {
             return Err(errors::database_closed());
         }
 
-        let db = self.inner.read().await;
-        match db.get(key) {
+        let db = self.state.read().await;
+        match db.get(&key.to_vec()) {
             Some(key) => Ok(key.to_vec()),
             None => Err(errors::not_found()),
         }
@@ -69,7 +70,7 @@ impl crate::subnet::rpc::database::KeyValueReaderWriterDeleter for Database {
             return Err(errors::database_closed());
         }
 
-        let mut db = self.inner.write().await;
+        let mut db = self.state.write().await;
         db.insert(key.to_vec(), value.to_vec());
         Ok(())
     }
@@ -80,14 +81,14 @@ impl crate::subnet::rpc::database::KeyValueReaderWriterDeleter for Database {
             return Err(errors::database_closed());
         }
 
-        let mut db = self.inner.write().await;
-        db.remove(key);
+        let mut db = self.state.write().await;
+        db.remove(&key.to_vec());
         Ok(())
     }
 }
 
 #[tonic::async_trait]
-impl crate::subnet::rpc::database::Closer for Database {
+impl super::Closer for Database {
     /// Attempts to close the database.
     async fn close(&self) -> io::Result<()> {
         if self.closed.load(Ordering::Relaxed) {
@@ -109,6 +110,60 @@ impl crate::subnet::rpc::health::Checkable for Database {
         Ok(vec![])
     }
 }
+
+#[tonic::async_trait]
+impl super::iterator::Iteratee for Database {
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator(&self) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(&[], &[]).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_start(&self, start: &[u8]) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(start, &[]).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_prefix(&self, prefix: &[u8]) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(&[], prefix).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_start_and_prefix(
+        &self,
+        start: &[u8],
+        prefix: &[u8],
+    ) -> io::Result<BoxedIterator> {
+        if self.closed.load(Ordering::Relaxed) {
+            return Err(errors::database_closed());
+        }
+
+        let db = self.state.read().await;
+        let mut keys: Vec<Vec<u8>> = Vec::with_capacity(db.len());
+        for (k, _v) in db.iter() {
+            if k.starts_with(&prefix) && k >= &start.to_vec() {
+                keys.push(k.to_owned());
+            }
+        }
+        // keys need to be in sorted order
+        keys.sort();
+
+        let mut values: Vec<Vec<u8>> = Vec::with_capacity(keys.len());
+        for key in keys.iter() {
+            if let Some(v) = db.get(key) {
+                values.push(v.to_owned());
+            }
+        }
+
+        Ok(iterator::Iterator::new(
+            keys,
+            values,
+            Arc::clone(&self.closed),
+        ))
+    }
+}
+
+impl crate::subnet::rpc::database::Database for Database {}
 
 #[tokio::test]
 async fn test_memdb() {

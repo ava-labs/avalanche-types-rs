@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use super::errors;
+use super::{errors, iterator::BoxedIterator, BoxedDatabase};
 use tokio::sync::RwLock;
 
 /// Database wrapper which blocks further calls to the database at first sign of corruption.
@@ -15,24 +15,20 @@ use tokio::sync::RwLock;
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/corruptabledb#Database>
 #[derive(Clone)]
 pub struct Database {
-    db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,
+    db: BoxedDatabase,
     corrupted: Arc<AtomicBool>,
     corrupted_error: Arc<RwLock<String>>,
 }
 
 impl Database {
-    pub fn new(
-        db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,
-    ) -> Box<dyn crate::subnet::rpc::database::Database + Send + Sync> {
-        Box::new(Database {
+    pub fn new(db: BoxedDatabase) -> BoxedDatabase {
+        Box::new(Self {
             db,
             corrupted: Arc::new(AtomicBool::new(false)),
-            corrupted_error: Arc::new(RwLock::new("".into())),
+            corrupted_error: Arc::new(RwLock::new(String::new())),
         })
     }
 }
-
-impl crate::subnet::rpc::database::Database for Database {}
 
 #[tonic::async_trait]
 impl crate::subnet::rpc::database::KeyValueReaderWriterDeleter for Database {
@@ -195,3 +191,40 @@ impl crate::subnet::rpc::health::Checkable for Database {
         }
     }
 }
+
+#[tonic::async_trait]
+impl crate::subnet::rpc::database::iterator::Iteratee for Database {
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator(&self) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(&[], &[]).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_start(&self, start: &[u8]) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(start, &[]).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_prefix(&self, prefix: &[u8]) -> io::Result<BoxedIterator> {
+        self.new_iterator_with_start_and_prefix(&[], prefix).await
+    }
+
+    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    async fn new_iterator_with_start_and_prefix(
+        &self,
+        start: &[u8],
+        prefix: &[u8],
+    ) -> io::Result<BoxedIterator> {
+        if self.corrupted.load(Ordering::Relaxed) {
+            return Err(errors::from_string(
+                self.corrupted_error.read().await.to_string(),
+            ));
+        }
+
+        self.db
+            .new_iterator_with_start_and_prefix(start, prefix)
+            .await
+    }
+}
+
+impl crate::subnet::rpc::database::Database for Database {}

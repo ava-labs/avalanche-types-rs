@@ -18,8 +18,11 @@ use crate::{
     },
     subnet::rpc::{
         context::Context,
-        database::manager::{versioned_database, DatabaseManager},
         database::rpcdb::{client::DatabaseClient, error_to_error_code},
+        database::{
+            corruptabledb,
+            manager::{versioned_database, DatabaseManager},
+        },
         http::server::Server as HttpServer,
         snow::{
             engine::common::{appsender, message::Message},
@@ -103,8 +106,7 @@ where
             chain_data_dir: req.chain_data_dir,
         });
 
-        let mut versioned_dbs: Vec<versioned_database::VersionedDatabase> =
-            Vec::with_capacity(req.db_servers.len());
+        let mut versioned_dbs = Vec::with_capacity(req.db_servers.len());
         for db_server in req.db_servers.iter() {
             let semver = db_server.version.trim_start_matches('v');
             let version =
@@ -119,12 +121,12 @@ where
                 .map_err(|e| tonic::Status::unknown(e.to_string()))?;
 
             let vdb = versioned_database::VersionedDatabase::new(
-                DatabaseClient::new(client_conn),
+                corruptabledb::Database::new(DatabaseClient::new(client_conn)),
                 version,
             );
-            versioned_dbs.push(vdb)
+            versioned_dbs.push(vdb);
         }
-        let db_manager = DatabaseManager::new_from_databases(versioned_dbs);
+        let db_manager = DatabaseManager::from_databases(versioned_dbs);
 
         let (tx_engine, mut rx_engine): (mpsc::Sender<Message>, mpsc::Receiver<Message>) =
             mpsc::channel(100);

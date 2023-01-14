@@ -6,8 +6,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::subnet::rpc::database::manager::versioned_database::VersionedDatabase;
 use tokio::sync::RwLock;
+
+use crate::subnet::rpc::database::manager::versioned_database::VersionedDatabase;
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database/manager#Manager>
 #[tonic::async_trait]
@@ -24,9 +25,9 @@ pub struct DatabaseManager {
 
 impl DatabaseManager {
     /// Returns a database manager from a Vec of versioned database.
-    pub fn new_from_databases(databases: Vec<VersionedDatabase>) -> Box<dyn Manager + Send + Sync> {
-        Box::new(DatabaseManager {
-            inner: Arc::new(RwLock::new(databases)),
+    pub fn from_databases(dbs: Vec<VersionedDatabase>) -> Box<dyn Manager + Send + Sync> {
+        Box::new(Self {
+            inner: Arc::new(RwLock::new(dbs)),
         })
     }
 }
@@ -35,19 +36,19 @@ impl DatabaseManager {
 impl Manager for DatabaseManager {
     /// Returns the database with the current database version.
     async fn current(&self) -> io::Result<VersionedDatabase> {
-        let databases = self.inner.read().await;
-        return Ok(databases[0].clone());
+        let dbs = self.inner.read().await;
+        Ok(dbs[0].clone())
     }
 
     /// Returns the database prior to the current database and true if a
     // previous database exists.
     async fn previous(&self) -> Option<VersionedDatabase> {
-        let databases = self.inner.read().await;
+        let dbs = self.inner.read().await;
 
-        if databases.len() < 2 {
+        if dbs.len() < 2 {
             return None;
         }
-        return Some(databases[1].clone());
+        Some(dbs[1].clone())
     }
 
     /// Close all of the databases controlled by the manager.

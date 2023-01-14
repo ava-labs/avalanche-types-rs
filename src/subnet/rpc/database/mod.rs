@@ -1,14 +1,18 @@
 pub mod corruptabledb;
 pub mod errors;
+pub mod iterator;
 pub mod manager;
 pub mod memdb;
+pub mod nodb;
 pub mod rpcdb;
 
 use std::io::Result;
 
+use crate::subnet::rpc::health::Checkable;
+
 use num_derive::{FromPrimitive, ToPrimitive};
 
-use crate::subnet::rpc::health::Checkable;
+pub const MAX_BATCH_SIZE: usize = 128 * 1000;
 
 #[tonic::async_trait]
 pub trait Closer {
@@ -16,7 +20,13 @@ pub trait Closer {
 }
 
 #[tonic::async_trait]
-pub trait Database: CloneBox + KeyValueReaderWriterDeleter + Closer + Checkable {}
+pub trait Database:
+    CloneBox + KeyValueReaderWriterDeleter + Closer + Checkable + iterator::Iteratee
+{
+}
+
+/// Helper type which defines a thread safe boxed Database interface.
+pub type BoxedDatabase = Box<dyn Database + Send + Sync + 'static>;
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#KeyValueReaderWriterDeleter>
 #[tonic::async_trait]
@@ -29,20 +39,20 @@ pub trait KeyValueReaderWriterDeleter {
 
 pub trait CloneBox {
     /// Returns a Boxed clone of the underlying Database.
-    fn clone_box(&self) -> Box<dyn Database + Send + Sync>;
+    fn clone_box(&self) -> BoxedDatabase;
 }
 
 impl<T> CloneBox for T
 where
     T: 'static + Database + Clone + Send + Sync,
 {
-    fn clone_box(&self) -> Box<dyn Database + Send + Sync> {
+    fn clone_box(&self) -> BoxedDatabase {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<dyn Database + Send + Sync> {
-    fn clone(&self) -> Box<dyn Database + Send + Sync> {
+impl Clone for BoxedDatabase {
+    fn clone(&self) -> BoxedDatabase {
         self.clone_box()
     }
 }

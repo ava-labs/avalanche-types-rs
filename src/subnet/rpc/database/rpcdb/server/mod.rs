@@ -1,5 +1,12 @@
 //! Database Server
-use std::sync::Arc;
+
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+};
 
 use crate::{
     proto::pb::{
@@ -14,8 +21,12 @@ use crate::{
             WriteBatchResponse,
         },
     },
-    subnet::rpc::database::{rpcdb::error_to_error_code, DatabaseError},
+    subnet::rpc::database::{
+        iterator::BoxedIterator, rpcdb::error_to_error_code, BoxedDatabase, DatabaseError,
+        MAX_BATCH_SIZE,
+    },
 };
+
 use prost::bytes::Bytes;
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
@@ -23,19 +34,20 @@ use zerocopy::AsBytes;
 
 /// Serves a [`crate::subnet::rpc::database::Database`] over over RPC.
 pub struct Server {
-    pub inner: Arc<RwLock<Box<dyn crate::subnet::rpc::database::Database + Send + Sync>>>,
+    inner: Arc<RwLock<BoxedDatabase>>,
+    iterators: Arc<RwLock<HashMap<u64, BoxedIterator>>>,
+    next_iterator_id: AtomicU64,
 }
 
 impl Server {
-    pub fn new(
-        db: Box<dyn crate::subnet::rpc::database::Database + Send + Sync>,
-    ) -> impl pb::rpcdb::database_server::Database {
-        Server {
+    pub fn new(db: BoxedDatabase) -> impl pb::rpcdb::database_server::Database {
+        Self {
             inner: Arc::new(RwLock::new(db)),
+            iterators: Arc::new(RwLock::new(HashMap::new())),
+            next_iterator_id: AtomicU64::new(0),
         }
     }
 }
-
 #[tonic::async_trait]
 impl pb::rpcdb::database_server::Database for Server {
     async fn has(&self, request: Request<HasRequest>) -> Result<Response<HasResponse>, Status> {
@@ -150,16 +162,51 @@ impl pb::rpcdb::database_server::Database for Server {
 
     async fn new_iterator_with_start_and_prefix(
         &self,
-        _request: Request<NewIteratorWithStartAndPrefixRequest>,
+        req: Request<NewIteratorWithStartAndPrefixRequest>,
     ) -> Result<Response<NewIteratorWithStartAndPrefixResponse>, Status> {
-        Err(Status::unimplemented("new iterator with start and prefix"))
+        let req = req.into_inner();
+        let db = self.inner.read().await;
+        let it = db
+            .new_iterator_with_start_and_prefix(&req.start, &req.prefix)
+            .await?;
+
+        let mut iterators = self.iterators.write().await;
+        let id = self.next_iterator_id.fetch_add(1, Ordering::SeqCst);
+        iterators.insert(id, it);
+
+        Ok(Response::new(NewIteratorWithStartAndPrefixResponse {
+            id: id.clone(),
+        }))
     }
 
     async fn iterator_next(
         &self,
-        _request: Request<IteratorNextRequest>,
+        request: Request<IteratorNextRequest>,
     ) -> Result<Response<IteratorNextResponse>, Status> {
-        Err(Status::unimplemented("iterator next"))
+        let req = request.into_inner();
+
+        let mut iterators = self.iterators.write().await;
+
+        match iterators.get_mut(&req.id) {
+            Some(it) => {
+                let mut size: usize = 0;
+                let mut data: Vec<PutRequest> = Vec::new();
+
+                while (size < MAX_BATCH_SIZE) && it.next().await? {
+                    let key = it.key().await?.to_owned();
+                    let value = it.value().await?.to_owned();
+                    size += key.len() + value.len();
+
+                    data.push(PutRequest {
+                        key: Bytes::from(key),
+                        value: Bytes::from(value),
+                    });
+                }
+
+                Ok(Response::new(IteratorNextResponse { data }))
+            }
+            None => Err(tonic::Status::unknown("unknown iterator")),
+        }
     }
 
     async fn iterator_error(

@@ -19,6 +19,9 @@ use tokio::sync::mpsc::Sender;
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Vm>
 #[tonic::async_trait]
 pub trait Vm: AppHandler + Connector + Checkable {
+    // type Manager;
+    // type AppSender;
+
     async fn initialize(
         &mut self,
         ctx: Option<Context>,

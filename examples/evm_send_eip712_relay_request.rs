@@ -1,7 +1,10 @@
 use std::{convert::TryFrom, env::args, io};
 
-use avalanche_types::{evm::eip712::gsn::RelayTransactionRequest, key};
-use ethers_core::types::transaction::eip712::TypedData;
+use avalanche_types::{
+    evm::eip712::gsn::{RelayTransactionRequest, RelayTransactionRequestBuilder},
+    key,
+};
+use ethers_core::types::{H160, U256};
 use ethers_providers::{Http, Middleware, Provider};
 
 /// cargo run --example evm_send_eip712_relay_request --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT]
@@ -18,99 +21,26 @@ async fn main() -> io::Result<()> {
     log::info!("created hot key:\n\n{}\n", key_info);
     let signer: ethers_signers::LocalWallet = k.signing_key().into();
 
-    let json = serde_json::json!(
-        {
-            "types": {
-                "EIP712Domain": [
-                    {
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "name": "version",
-                        "type": "string"
-                    },
-                    {
-                        "name": "chainId",
-                        "type": "uint256"
-                    },
-                    {
-                        "name": "verifyingContract",
-                        "type": "address"
-                    }
-                ],
-                "Message": [
-                    {
-                        "name": "from",
-                        "type": "address"
-                    },
-                    {
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "name": "value",
-                        "type": "uint256"
-                    },
-                    {
-                        "name": "gas",
-                        "type": "uint256"
-                    },
-                    {
-                        "name": "nonce",
-                        "type": "uint256"
-                    },
-                    {
-                        "name": "data",
-                        "type": "bytes"
-                    },
-                    {
-                        "name": "nonce",
-                        "type": "uint256"
-                    },
-                    {
-                        "name": "validUntilTime",
-                        "type": "uint256"
-                    }
-                ]
-            },
-            "primaryType": "Message",
-            "domain": {
-                "name": "example.metamask.io",
-                "version": "1",
-                "chainId": "1",
-                "verifyingContract": "0x0000000000000000000000000000000000000000"
-            },
-            "message": {
-                "from": "0xA604060890923Ff400e8c6f5290461A83AEDACec",
-                "to": "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
-                "value": "1658645591",
-                "gas": "0",
-                "nonce": "0",
-                "data": "232cd3ec058eb935a709f093e3536ce26cc9e8e193584b0881992525f6236eef",
-                "validUntilTime": "1658645591"
-            }
-        }
-    );
-    let forward_request: TypedData = serde_json::from_value(json).unwrap();
-
-    let (relay_tx_request, signed_bytes) = RelayTransactionRequest::sign(signer, forward_request)
+    let typed_data = RelayTransactionRequestBuilder::new()
+        .domain_name("example.com")
+        .domain_version("1")
+        .domain_chain_id(U256::from(1))
+        .domain_verifying_contract(H160::random())
+        .from(H160::random())
+        .to(H160::random())
+        .value(U256::zero())
+        .nonce(U256::from(1))
+        .data(vec![1, 2, 3])
+        .valid_until_time(U256::MAX)
+        .build_typed_data();
+    let relay_tx_request = RelayTransactionRequest::sign(signer, typed_data)
         .await
         .unwrap();
     println!("relay_tx_request: {:?}", relay_tx_request);
-    println!("signed_bytes: {}", signed_bytes);
 
-    // let forwarder = ForwardRequest {
-    //     from: Address::random(),
-    //     to: Address::random(),
-    //     value: 100.into(),
-    //     gas: 0.into(),
-    //     nonce: 0.into(),
-    //     data: vec![0, 1, 2],
-    //     valid_until_time: U256::MAX,
-    // };
-    // let forwarder_hash = forwarder.encode_eip712().unwrap();
-    // println!("hash {:?}", forwarder_hash);
+    let signed_bytes: ethers_core::types::Bytes =
+        serde_json::to_vec(&relay_tx_request).unwrap().into();
+    println!("signed_bytes: {}", signed_bytes);
 
     let url = args().nth(1).expect("no url given");
     log::info!("running against {url}");
