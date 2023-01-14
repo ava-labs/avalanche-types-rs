@@ -161,7 +161,7 @@ impl RelayTransactionRequestBuilder {
         eth_signer: impl ethers_signers::Signer + Clone,
     ) -> io::Result<RelayTransactionRequest> {
         let forward_request = self.build_typed_data();
-        RelayTransactionRequest::sign(eth_signer, forward_request).await
+        RelayTransactionRequest::sign(forward_request, eth_signer).await
     }
 }
 
@@ -254,8 +254,8 @@ impl RelayTransactionRequest {
     /// Use "serde_json::to_vec" to encode to "ethers_core::types::Bytes"
     /// and send the request via "eth_sendRawTransaction".
     pub async fn sign(
-        signer: impl ethers_signers::Signer + Clone,
         forward_request: TypedData,
+        signer: impl ethers_signers::Signer + Clone,
     ) -> io::Result<Self> {
         let sig = signer
             .sign_typed_data(&forward_request)
@@ -270,20 +270,18 @@ impl RelayTransactionRequest {
         })
     }
 
-    /// Decodes the EIP-712 encoded typed data and signature.
+    /// Decodes the EIP-712 encoded typed data and signature in the relay metadata.
     /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
-    pub fn decode_signed(b: impl AsRef<[u8]>) -> io::Result<(Self, Signature, H160)> {
-        let rr: Self = serde_json::from_slice(b.as_ref()).map_err(|e| {
+    pub fn decode_signed(b: impl AsRef<[u8]>) -> io::Result<Self> {
+        serde_json::from_slice(b.as_ref()).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
                 format!("failed serde_json::from_slice '{}'", e),
             )
-        })?;
-
-        let (sig, signer_address) = rr.recover_signature()?;
-        Ok((rr, sig, signer_address))
+        })
     }
 
+    /// Recovers the signature and signer address from its relay metadata signature field.
     pub fn recover_signature(&self) -> io::Result<(Signature, H160)> {
         if let Some(sig) = &self.relay_metadata.signature {
             let sig = Signature::try_from(sig.to_owned().as_bytes()).map_err(|e| {
@@ -338,7 +336,7 @@ fn test_relay_request() {
     log::info!("{:?}", key_info);
     let signer: LocalWallet = k.signing_key().into();
 
-    let typed_data = RelayTransactionRequestBuilder::new()
+    let rr = ab!(RelayTransactionRequestBuilder::new()
         .domain_name("hello")
         .domain_version("1")
         .domain_chain_id(U256::from(1))
@@ -349,8 +347,13 @@ fn test_relay_request() {
         .nonce(U256::from(1))
         .data(vec![1, 2, 3])
         .valid_until_time(U256::MAX)
-        .build_typed_data();
-    let s = serde_json::to_string_pretty(&typed_data).unwrap();
+        .build_and_sign(signer.clone()))
+    .unwrap();
+    let s = serde_json::to_string_pretty(&rr).unwrap();
     log::info!("typed data: {s}");
-    let _sig = ab!(signer.sign_typed_data(&typed_data)).unwrap();
+    let (sig1, signer_addr) = rr.recover_signature().unwrap();
+    assert_eq!(key_info.h160_address, signer_addr);
+
+    let sig2 = ab!(signer.sign_typed_data(&rr.forward_request)).unwrap();
+    assert_eq!(sig1, sig2);
 }
