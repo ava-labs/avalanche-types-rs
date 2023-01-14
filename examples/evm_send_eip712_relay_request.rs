@@ -33,7 +33,7 @@ async fn main() -> io::Result<()> {
         .data(vec![1, 2, 3])
         .valid_until_time(U256::MAX)
         .build_typed_data();
-    let relay_tx_request = RelayTransactionRequest::sign(signer, typed_data)
+    let relay_tx_request = RelayTransactionRequest::sign(typed_data, signer)
         .await
         .unwrap();
     println!("relay_tx_request: {:?}", relay_tx_request);
