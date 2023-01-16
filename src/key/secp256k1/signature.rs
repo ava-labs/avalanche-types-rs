@@ -90,7 +90,7 @@ fn recover_pubkeys(
         })?;
 
     // [optional]
-    // use ecdsa::signature::hazmat::PrehashVerifier;
+    // use k256::ecdsa::signature::hazmat::PrehashVerifier;
     // assert!(vkey.verify_prehash(digest, &self.0).is_ok());
 
     Ok((vkey.into(), vkey))

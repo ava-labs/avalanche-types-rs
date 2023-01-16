@@ -1,9 +1,6 @@
 use std::{convert::TryFrom, env::args, io};
 
-use avalanche_types::{
-    evm::eip712::gsn::{RelayTransactionRequest, RelayTransactionRequestBuilder},
-    key,
-};
+use avalanche_types::{evm::eip712::gsn::RelayTransactionRequestBuilder, key};
 use ethers_core::types::{H160, U256};
 use ethers_providers::{Http, Middleware, Provider};
 
@@ -21,7 +18,7 @@ async fn main() -> io::Result<()> {
     log::info!("created hot key:\n\n{}\n", key_info);
     let signer: ethers_signers::LocalWallet = k.signing_key().into();
 
-    let typed_data = RelayTransactionRequestBuilder::new()
+    let relay_tx_request = RelayTransactionRequestBuilder::new()
         .domain_name("example.com")
         .domain_version("1")
         .domain_chain_id(U256::from(1))
@@ -32,15 +29,29 @@ async fn main() -> io::Result<()> {
         .nonce(U256::from(1))
         .data(vec![1, 2, 3])
         .valid_until_time(U256::MAX)
-        .build_typed_data();
-    let relay_tx_request = RelayTransactionRequest::sign(typed_data, signer)
+        .build_and_sign(signer)
         .await
         .unwrap();
-    println!("relay_tx_request: {:?}", relay_tx_request);
+
+    let domain_separator = relay_tx_request.domain_separator();
+    log::info!(
+        "relay_tx_request domain_separator: {}, 0x{:x}",
+        domain_separator,
+        domain_separator
+    );
+
+    let request_type_hash = relay_tx_request.request_type_hash();
+    log::info!(
+        "relay_tx_request request_type_hash: {}, 0x{:x}",
+        request_type_hash,
+        request_type_hash
+    );
+
+    log::info!("relay_tx_request: {:?}", relay_tx_request);
 
     let signed_bytes: ethers_core::types::Bytes =
         serde_json::to_vec(&relay_tx_request).unwrap().into();
-    println!("signed_bytes: {}", signed_bytes);
+    log::info!("signed_bytes: {}", signed_bytes);
 
     let url = args().nth(1).expect("no url given");
     log::info!("running against {url}");

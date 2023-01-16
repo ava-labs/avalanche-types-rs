@@ -8,8 +8,10 @@ use crate::{
         secp256k1::{address, signature::Sig},
     },
 };
-use ecdsa::signature::hazmat::PrehashVerifier;
-use k256::{elliptic_curve::sec1::ToEncodedPoint, pkcs8::DecodePublicKey};
+use k256::{
+    ecdsa::signature::hazmat::PrehashVerifier, elliptic_curve::sec1::ToEncodedPoint,
+    pkcs8::DecodePublicKey,
+};
 
 /// The size (in bytes) of a public key.
 /// ref. "secp256k1::constants::PUBLIC_KEY_SIZE"
