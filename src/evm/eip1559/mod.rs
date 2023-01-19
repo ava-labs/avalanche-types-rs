@@ -199,7 +199,7 @@ pub fn decode_and_verify_signed_rlp(
     Ok((decoded_tx, tx_hash, signer_addr, sig))
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib --all-features -- evm::eip1559::test_transaction --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- evm::eip1559::test_transaction --exact --show-output
 #[test]
 fn test_transaction() {
     let _ = env_logger::builder()

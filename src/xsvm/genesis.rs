@@ -146,7 +146,7 @@ impl Allocation {
     }
 }
 
-/// RUST_LOG=debug cargo test --all-features --package avalanche-types --lib -- xsvm::genesis::test_encode_packer_bytes --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- xsvm::genesis::test_encode_packer_bytes --exact --show-output
 #[test]
 fn test_encode_packer_bytes() {
     let _ = env_logger::builder().is_test(true).try_init();

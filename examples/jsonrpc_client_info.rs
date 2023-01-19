@@ -4,6 +4,7 @@ use avalanche_types::jsonrpc::client::info;
 use tokio::runtime::Runtime;
 
 /// cargo run --example jsonrpc_client_info -- [HTTP RPC ENDPOINT]
+/// cargo run --example jsonrpc_client_info -- http://localhost:9650
 /// cargo run --example jsonrpc_client_info -- http://54.180.73.56:9650
 fn main() {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47

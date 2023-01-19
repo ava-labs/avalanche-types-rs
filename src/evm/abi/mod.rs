@@ -8,7 +8,27 @@ pub fn encode_calldata(func: Function, arg_tokens: &[Token]) -> io::Result<Vec<u
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed to encode_input {}", e)))
 }
 
-/// RUST_LOG=debug cargo test --all-features --package avalanche-types --lib -- evm::abi::test_encode_calldata_register_name --exact --show-output
+/// TODO: implement this with "foundry 4-byte decode"
+/// ref. <https://github.com/foundry-rs/foundry/blob/master/common/src/selectors.rs> "decode_calldata"
+/// ref. <sig.eth.samczsun.com>
+/// ref. <https://tools.deth.net/calldata-decoder>
+pub fn decode_calldata(calldata: &str) -> io::Result<(Function, Vec<Token>)> {
+    let calldata = calldata.strip_prefix("0x").unwrap_or(calldata);
+    if calldata.len() < 8 {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            format!(
+                "calldata too short: expected at least 8 characters (excluding 0x prefix), got {}.",
+                calldata.len()
+            ),
+        ));
+    }
+
+    // TODO
+    unimplemented!("not yet")
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- evm::abi::test_encode_calldata_register_name --exact --show-output
 #[test]
 fn test_encode_calldata_register_name() {
     use ethers_core::abi::{Function, Param, ParamType, StateMutability, Token};
@@ -35,7 +55,7 @@ fn test_encode_calldata_register_name() {
     log::info!("calldata: 0x{}", hex::encode(calldata));
 }
 
-/// RUST_LOG=debug cargo test --all-features --package avalanche-types --lib -- evm::abi::test_encode_calldata_register_mint --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- evm::abi::test_encode_calldata_register_mint --exact --show-output
 #[test]
 fn test_encode_calldata_register_mint() {
     use std::str::FromStr;
@@ -80,7 +100,7 @@ fn test_encode_calldata_register_mint() {
     log::info!("calldata: 0x{}", hex::encode(calldata));
 }
 
-/// RUST_LOG=debug cargo test --all-features --package avalanche-types --lib -- evm::abi::test_encode_calldata_send --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- evm::abi::test_encode_calldata_send --exact --show-output
 #[test]
 fn test_encode_calldata_send() {
     use std::str::FromStr;
@@ -125,7 +145,7 @@ fn test_encode_calldata_send() {
     log::info!("calldata: 0x{}", hex::encode(calldata));
 }
 
-/// RUST_LOG=debug cargo test --all-features --package avalanche-types --lib -- evm::abi::test_encode_calldata_forward_request --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="evm" -- evm::abi::test_encode_calldata_forward_request --exact --show-output
 #[test]
 fn test_encode_calldata_forward_request() {
     use ethers_core::{

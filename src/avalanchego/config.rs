@@ -135,9 +135,10 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_ipcs_enabled: Option<bool>,
 
-    /// A list of whitelisted subnet IDs (comma-separated).
+    /// A list of whitelisted/tracked subnet IDs (comma-separated).
+    /// From avalanchego v1.9.7, it's renamed to "tracked-subnets".
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub whitelisted_subnets: Option<String>,
+    pub tracked_subnets: Option<String>,
 
     /// Plugin directory.
     /// Default to "/usr/local/bin/plugin".
@@ -330,7 +331,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            whitelisted_subnets: None,
+            tracked_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
@@ -414,7 +415,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            whitelisted_subnets: None,
+            tracked_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
@@ -498,7 +499,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            whitelisted_subnets: None,
+            tracked_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
