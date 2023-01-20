@@ -14,7 +14,12 @@ use crate::{
         },
         rpcdb::NewIteratorWithStartAndPrefixRequest,
     },
-    subnet::rpc::database::{self, errors, iterator::BoxedIterator, BoxedDatabase, DatabaseError},
+    subnet::rpc::database::{
+        self,
+        errors::{self, DatabaseError},
+        iterator::BoxedIterator,
+        BoxedDatabase,
+    },
 };
 use num_traits::FromPrimitive;
 use prost::bytes::Bytes;
@@ -49,7 +54,7 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
             .map_err(|e| Error::new(ErrorKind::Other, format!("has request failed: {:?}", e)))?
             .into_inner();
 
-        let err = DatabaseError::from_u32(resp.err);
+        let err = DatabaseError::from_i32(resp.err);
         match err {
             Some(DatabaseError::Closed) => Err(errors::database_closed()),
             Some(DatabaseError::NotFound) => Ok(false),
@@ -70,7 +75,7 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
             .into_inner();
 
         log::debug!("get response: {:?}", resp);
-        let err = DatabaseError::from_u32(resp.err);
+        let err = DatabaseError::from_i32(resp.err);
         match err {
             Some(DatabaseError::None) => Ok(resp.value.to_vec()),
             Some(DatabaseError::Closed) => Err(errors::database_closed()),
@@ -91,7 +96,7 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
             .map_err(|e| Error::new(ErrorKind::Other, format!("put request failed: {:?}", e)))?
             .into_inner();
 
-        let err = DatabaseError::from_u32(resp.err);
+        let err = DatabaseError::from_i32(resp.err);
         match err {
             Some(DatabaseError::None) => Ok(()),
             Some(DatabaseError::Closed) => Err(errors::database_closed()),
@@ -110,7 +115,7 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("delete request failed: {:?}", e)))?
             .into_inner();
-        let err = DatabaseError::from_u32(resp.err);
+        let err = DatabaseError::from_i32(resp.err);
         match err {
             Some(DatabaseError::None) => Ok(()),
             Some(DatabaseError::Closed) => Err(errors::database_closed()),
@@ -131,7 +136,7 @@ impl database::Closer for DatabaseClient {
             .map_err(|e| Error::new(ErrorKind::Other, format!("close request failed: {:?}", e)))?
             .into_inner();
 
-        let err = DatabaseError::from_u32(resp.err);
+        let err = DatabaseError::from_i32(resp.err);
         match err {
             Some(DatabaseError::None) => Ok(()),
             Some(DatabaseError::Closed) => Err(errors::database_closed()),

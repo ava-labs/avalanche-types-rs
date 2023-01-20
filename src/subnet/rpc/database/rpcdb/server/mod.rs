@@ -22,8 +22,7 @@ use crate::{
         },
     },
     subnet::rpc::database::{
-        iterator::BoxedIterator, rpcdb::error_to_error_code, BoxedDatabase, DatabaseError,
-        MAX_BATCH_SIZE,
+        iterator::BoxedIterator, rpcdb::error_to_error_code, BoxedDatabase, MAX_BATCH_SIZE,
     },
 };
 
@@ -57,7 +56,7 @@ impl pb::rpcdb::database_server::Database for Server {
         match db.has(req.key.as_bytes()).await {
             Ok(has) => Ok(Response::new(HasResponse {
                 has,
-                err: DatabaseError::None as u32,
+                err: pb::rpcdb::Error::Unspecified.into(),
             })),
             Err(e) => Ok(Response::new(HasResponse {
                 has: false,
@@ -73,7 +72,7 @@ impl pb::rpcdb::database_server::Database for Server {
         match db.get(req.key.as_bytes()).await {
             Ok(resp) => Ok(Response::new(GetResponse {
                 value: Bytes::from(resp),
-                err: DatabaseError::None as u32,
+                err: pb::rpcdb::Error::Unspecified.into(),
             })),
             Err(e) => Ok(Response::new(GetResponse {
                 value: Bytes::from(""),
@@ -88,7 +87,7 @@ impl pb::rpcdb::database_server::Database for Server {
 
         match db.put(req.key.as_bytes(), req.value.as_bytes()).await {
             Ok(_) => Ok(Response::new(PutResponse {
-                err: DatabaseError::None as u32,
+                err: pb::rpcdb::Error::Unspecified.into(),
             })),
             Err(e) => Ok(Response::new(PutResponse {
                 err: error_to_error_code(&e.to_string()).unwrap(),
@@ -105,7 +104,7 @@ impl pb::rpcdb::database_server::Database for Server {
 
         match db.delete(req.key.as_bytes()).await {
             Ok(_) => Ok(Response::new(DeleteResponse {
-                err: DatabaseError::None as u32,
+                err: pb::rpcdb::Error::Unspecified.into(),
             })),
             Err(e) => Ok(Response::new(DeleteResponse {
                 err: error_to_error_code(&e.to_string()).unwrap(),
@@ -128,7 +127,7 @@ impl pb::rpcdb::database_server::Database for Server {
 
         match db.close().await {
             Ok(_) => Ok(Response::new(CloseResponse {
-                err: DatabaseError::None as u32,
+                err: pb::rpcdb::Error::Unspecified.into(),
             })),
             Err(e) => Ok(Response::new(CloseResponse {
                 err: error_to_error_code(&e.to_string()).unwrap(),

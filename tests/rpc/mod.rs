@@ -2,7 +2,7 @@ mod common;
 mod database;
 mod shutdown;
 
-use crate::rpcchainvm::common::*;
+use crate::rpc::common::*;
 use avalanche_types::subnet::rpc::http::{
     client::Client as HttpClient, server::Server as HttpServer,
 };

@@ -23,6 +23,7 @@ impl Message {
                 request_id: 0,
                 deadline: 0,
                 container: prost::bytes::Bytes::new(),
+                engine_type: p2p::EngineType::Unspecified.into(),
             },
             gzip_compress: false,
         }

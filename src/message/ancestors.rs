@@ -22,6 +22,7 @@ impl Message {
                 chain_id: prost::bytes::Bytes::new(),
                 request_id: 0,
                 containers: Vec::new(),
+                engine_type: p2p::EngineType::Unspecified.into(),
             },
             gzip_compress: false,
         }

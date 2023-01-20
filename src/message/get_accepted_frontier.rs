@@ -22,6 +22,7 @@ impl Message {
                 chain_id: prost::bytes::Bytes::new(),
                 request_id: 0,
                 deadline: 0,
+                engine_type: p2p::EngineType::Avalanche.into(),
             },
             gzip_compress: false,
         }

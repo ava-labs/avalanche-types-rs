@@ -13,10 +13,7 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 
-pub async fn serve_test_database<D: Database + 'static>(
-    database: D,
-    listener: TcpListener,
-) -> io::Result<()>
+pub async fn serve_test_database<D>(database: D, listener: TcpListener) -> io::Result<()>
 where
     D: Database,
 {

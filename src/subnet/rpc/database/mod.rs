@@ -10,8 +10,6 @@ use std::io::Result;
 
 use crate::subnet::rpc::health::Checkable;
 
-use num_derive::{FromPrimitive, ToPrimitive};
-
 pub const MAX_BATCH_SIZE: usize = 128 * 1000;
 
 #[tonic::async_trait]
@@ -60,14 +58,6 @@ impl Clone for BoxedDatabase {
 #[tonic::async_trait]
 pub trait VersionedDatabase {
     async fn close(&mut self) -> Result<()>;
-}
-
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#ErrClosed>
-#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive)]
-pub enum DatabaseError {
-    None = 0,
-    Closed,
-    NotFound,
 }
 
 #[tokio::test]

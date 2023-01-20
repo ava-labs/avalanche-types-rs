@@ -1,2 +1,2 @@
 #[cfg(any(test, feature = "subnet"))]
-mod rpcchainvm;
+mod rpc;

@@ -137,7 +137,7 @@ where
                         log::debug!("message received: {:?}", msg);
                         match message
                             .notify(NotifyRequest {
-                                message: msg as u32,
+                                message: msg as i32,
                             })
                             .await
                         {
@@ -360,7 +360,7 @@ where
         Ok(Response::new(vm::ParseBlockResponse {
             id: Bytes::from(block.id().await.to_vec()),
             parent_id: Bytes::from(block.parent().await.to_vec()),
-            status: block.status().await.to_u32(),
+            status: block.status().await.to_i32(),
             height: block.height().await,
             timestamp: Some(timestamp_from_time(
                 &Utc.timestamp_opt(block.timestamp().await as i64, 0)
@@ -396,7 +396,7 @@ where
             Ok(block) => Ok(Response::new(vm::GetBlockResponse {
                 parent_id: Bytes::from(block.parent().await.to_vec()),
                 bytes: Bytes::from(block.bytes().await.to_vec()),
-                status: block.status().await.to_u32(),
+                status: block.status().await.to_i32(),
                 height: block.height().await,
                 timestamp: Some(timestamp_from_time(
                     &Utc.timestamp_opt(block.timestamp().await as i64, 0)

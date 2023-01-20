@@ -36,6 +36,20 @@ impl TryFrom<u32> for State {
     }
 }
 
+impl TryFrom<i32> for State {
+    type Error = ();
+
+    fn try_from(kind: i32) -> std::result::Result<Self, Self::Error> {
+        match kind {
+            kind if kind == State::Initializing as i32 => Ok(State::Initializing),
+            kind if kind == State::StateSyncing as i32 => Ok(State::StateSyncing),
+            kind if kind == State::Bootstrapping as i32 => Ok(State::Bootstrapping),
+            kind if kind == State::NormalOp as i32 => Ok(State::NormalOp),
+            _ => Err(()),
+        }
+    }
+}
+
 #[test]
 fn test_state() {
     let s = State::try_from(0).unwrap();

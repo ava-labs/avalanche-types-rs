@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::rpcchainvm::common::*;
+use crate::rpc::common::*;
 use avalanche_types::subnet::rpc::database::{
     memdb::Database as MemDb,
     rpcdb::{client::DatabaseClient, server::Server as RpcDb},

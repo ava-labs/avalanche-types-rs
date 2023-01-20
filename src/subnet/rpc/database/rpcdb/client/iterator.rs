@@ -1,6 +1,6 @@
 use crate::{
     proto::rpcdb::{self, database_client::DatabaseClient},
-    subnet::rpc::database::{self, DatabaseError},
+    subnet::rpc::database::{self, errors::DatabaseError},
 };
 
 use std::io::{Error, ErrorKind, Result};
@@ -79,7 +79,7 @@ impl database::iterator::Iterator for Iterator {
                 format!("iterator next failed: {}", resp.unwrap_err()),
             ));
         } else {
-            let err = DatabaseError::from_u32(resp.unwrap().into_inner().err);
+            let err = DatabaseError::from_i32(resp.unwrap().into_inner().err);
             match err {
                 Some(DatabaseError::None) => {}
                 Some(DatabaseError::Closed) => {
@@ -126,7 +126,7 @@ impl database::iterator::Iterator for Iterator {
                 format!("iterator release failed: {}", resp.unwrap_err()),
             ));
         } else {
-            let err = DatabaseError::from_u32(resp.unwrap().into_inner().err);
+            let err = DatabaseError::from_i32(resp.unwrap().into_inner().err);
             match err {
                 Some(DatabaseError::None) => {}
                 Some(DatabaseError::Closed) => {

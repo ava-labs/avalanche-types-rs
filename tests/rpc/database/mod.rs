@@ -1,8 +1,9 @@
 mod concurrency;
+mod iterator;
 
 use std::{io::ErrorKind, time::Duration};
 
-use crate::rpcchainvm::common::*;
+use crate::rpc::common::*;
 use avalanche_types::subnet::rpc::database::{
     corruptabledb::Database as CorruptableDb,
     manager::{versioned_database::VersionedDatabase, DatabaseManager},
@@ -152,7 +153,7 @@ async fn test_db_manager() {
     let mut databases: Vec<VersionedDatabase> = Vec::new();
     databases.push(vdb);
 
-    let manager = DatabaseManager::new_from_databases(databases);
+    let manager = DatabaseManager::from_databases(databases);
     let current = manager.current().await.unwrap();
 
     let mut client = current.db;

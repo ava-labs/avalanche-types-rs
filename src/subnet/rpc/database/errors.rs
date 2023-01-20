@@ -1,6 +1,16 @@
 //! Custom database errors and helpers.
 use std::io::{Error, ErrorKind};
 
+use num_derive::{FromPrimitive, ToPrimitive};
+
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#ErrClosed>
+#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive)]
+pub enum DatabaseError {
+    None = 0,
+    Closed,
+    NotFound,
+}
+
 /// Accepts an error and returns a corruption error if the original error is not "database closed"
 /// or "not found".
 pub async fn is_corruptible(error: Error) -> (bool, Error) {

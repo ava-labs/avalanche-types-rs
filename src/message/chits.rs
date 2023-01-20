@@ -21,7 +21,9 @@ impl Message {
             msg: p2p::Chits {
                 chain_id: prost::bytes::Bytes::new(),
                 request_id: 0,
-                container_ids: Vec::new(),
+                preferred_container_ids: Vec::new(),
+                accepted_container_ids: Vec::new(),
+                engine_type: p2p::EngineType::Unspecified.into(),
             },
             gzip_compress: false,
         }
@@ -46,7 +48,7 @@ impl Message {
         for id in container_ids.iter() {
             container_ids_bytes.push(prost::bytes::Bytes::from(id.to_vec()));
         }
-        self.msg.container_ids = container_ids_bytes;
+        self.msg.preferred_container_ids = container_ids_bytes;
         self
     }
 
