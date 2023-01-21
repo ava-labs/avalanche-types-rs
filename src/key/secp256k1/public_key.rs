@@ -9,8 +9,10 @@ use crate::{
     },
 };
 use k256::{
-    ecdsa::signature::hazmat::PrehashVerifier, elliptic_curve::sec1::ToEncodedPoint,
+    ecdsa::{recoverable::Signature, signature::hazmat::PrehashVerifier, VerifyingKey},
+    elliptic_curve::sec1::ToEncodedPoint,
     pkcs8::DecodePublicKey,
+    PublicKey,
 };
 
 /// The size (in bytes) of a public key.
@@ -23,17 +25,17 @@ pub const UNCOMPRESSED_LEN: usize = 65;
 
 /// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Key(pub k256::PublicKey);
+pub struct Key(pub PublicKey);
 
 impl Key {
     /// Decodes compressed or uncompressed public key bytes with Elliptic-Curve-Point-to-Octet-String
     /// encoding described in SEC 1: Elliptic Curve Cryptography (Version 2.0) section 2.3.3 (page 10).
     /// ref. <http://www.secg.org/sec1-v2.pdf>
     pub fn from_sec1_bytes(b: &[u8]) -> io::Result<Self> {
-        let pubkey = k256::PublicKey::from_sec1_bytes(b).map_err(|e| {
+        let pubkey = PublicKey::from_sec1_bytes(b).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
-                format!("failed k256::PublicKey::from_sec1_bytes {}", e),
+                format!("failed PublicKey::from_sec1_bytes {}", e),
             )
         })?;
         Ok(Self(pubkey))
@@ -41,10 +43,10 @@ impl Key {
 
     /// Decodes ASN.1 DER-encoded public key bytes.
     pub fn from_public_key_der(b: &[u8]) -> io::Result<Self> {
-        let pubkey = k256::PublicKey::from_public_key_der(b).map_err(|e| {
+        let pubkey = PublicKey::from_public_key_der(b).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
-                format!("failed k256::PublicKey::from_public_key_der {}", e),
+                format!("failed PublicKey::from_public_key_der {}", e),
             )
         })?;
         Ok(Self(pubkey))
@@ -58,12 +60,12 @@ impl Key {
         Ok(pubkey)
     }
 
-    pub fn from_verifying_key(verifying_key: &k256::ecdsa::VerifyingKey) -> Self {
-        let pubkey: k256::PublicKey = verifying_key.into();
+    pub fn from_verifying_key(verifying_key: &VerifyingKey) -> Self {
+        let pubkey: PublicKey = verifying_key.into();
         Self(pubkey)
     }
 
-    pub fn to_verifying_key(&self) -> k256::ecdsa::VerifyingKey {
+    pub fn to_verifying_key(&self) -> VerifyingKey {
         self.0.into()
     }
 
@@ -72,7 +74,7 @@ impl Key {
         let sig = Sig::from_bytes(sig)?;
 
         let (recovered_pubkey, verifying_key) = sig.recover_public_key(digest)?;
-        let rsig = k256::ecdsa::recoverable::Signature::from(sig);
+        let rsig = Signature::from(sig);
         if verifying_key.verify_prehash(digest, &rsig).is_err() {
             return Ok(false);
         }
@@ -82,7 +84,13 @@ impl Key {
 
     /// Converts the public key to compressed bytes.
     pub fn to_compressed_bytes(&self) -> [u8; LEN] {
-        let vkey: k256::ecdsa::VerifyingKey = self.0.into();
+        let vkey: VerifyingKey = self.0.into();
+
+        // TODO: update to "k256" 0.12.0
+        // ref. <https://github.com/RustCrypto/elliptic-curves/commit/c87d391a107b5bc22f03acf0de4ded988797c4ec> "to_bytes"
+        // ref. <https://github.com/RustCrypto/signatures/blob/master/ecdsa/src/verifying.rs> "to_encoded_point"
+        // let ep = vkey.to_encoded_point(true);
+        // let bb = ep.as_bytes();
         let bb = vkey.to_bytes();
 
         let mut b = [0u8; LEN];
@@ -92,7 +100,7 @@ impl Key {
 
     /// Converts the public key to uncompressed bytes.
     pub fn to_uncompressed_bytes(&self) -> [u8; UNCOMPRESSED_LEN] {
-        let vkey: k256::ecdsa::VerifyingKey = self.0.into();
+        let vkey: VerifyingKey = self.0.into();
         let p = vkey.to_encoded_point(false);
 
         let mut b = [0u8; UNCOMPRESSED_LEN];
@@ -150,25 +158,25 @@ impl Key {
     }
 }
 
-impl From<k256::PublicKey> for Key {
-    fn from(pubkey: k256::PublicKey) -> Self {
+impl From<PublicKey> for Key {
+    fn from(pubkey: PublicKey) -> Self {
         Self(pubkey)
     }
 }
 
-impl From<Key> for k256::PublicKey {
+impl From<Key> for PublicKey {
     fn from(pubkey: Key) -> Self {
         pubkey.0
     }
 }
 
-impl From<k256::ecdsa::VerifyingKey> for Key {
-    fn from(vkey: k256::ecdsa::VerifyingKey) -> Self {
+impl From<VerifyingKey> for Key {
+    fn from(vkey: VerifyingKey) -> Self {
         Self(vkey.into())
     }
 }
 
-impl From<Key> for k256::ecdsa::VerifyingKey {
+impl From<Key> for VerifyingKey {
     fn from(pubkey: Key) -> Self {
         pubkey.0.into()
     }
@@ -261,14 +269,14 @@ fn test_public_key() {
 
 /// Same as "from_public_key_der".
 /// ref. <https://github.com/gakonst/ethers-rs/tree/master/ethers-signers/src/aws> "decode_pubkey"
-pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<k256::ecdsa::VerifyingKey> {
+pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<VerifyingKey> {
     let spk = spki::SubjectPublicKeyInfo::try_from(b).map_err(|e| {
         Error::new(
             ErrorKind::InvalidInput,
             format!("failed to load spki::SubjectPublicKeyInfo {}", e),
         )
     })?;
-    k256::ecdsa::VerifyingKey::from_sec1_bytes(spk.subject_public_key).map_err(|e| {
+    VerifyingKey::from_sec1_bytes(spk.subject_public_key).map_err(|e| {
         Error::new(
             ErrorKind::InvalidInput,
             format!(

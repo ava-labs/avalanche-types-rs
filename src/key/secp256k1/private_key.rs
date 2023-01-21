@@ -12,7 +12,10 @@ use crate::{
     },
 };
 use async_trait::async_trait;
-use k256::ecdsa::signature::hazmat::PrehashSigner;
+use k256::{
+    ecdsa::{recoverable::Signature, signature::hazmat::PrehashSigner, SigningKey},
+    SecretKey,
+};
 use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, thread_rng};
 
@@ -28,7 +31,7 @@ pub const CB58_ENCODE_PREFIX: &str = "PrivateKey-";
 
 /// Represents "k256::SecretKey" and "k256::ecdsa::SigningKey".
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Key(k256::SecretKey);
+pub struct Key(SecretKey);
 
 #[cfg(all(not(windows)))]
 fn secure_random() -> &'static dyn SecureRandom {
@@ -58,7 +61,7 @@ impl Key {
     /// Loads the private key from the raw scalar bytes.
     pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
         assert_eq!(raw.len(), LEN);
-        let sk = k256::SecretKey::from_be_bytes(raw).map_err(|e| {
+        let sk = SecretKey::from_be_bytes(raw).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
                 format!("failed k256::SecretKey::from_be_bytes {}", e),
@@ -67,8 +70,8 @@ impl Key {
         Ok(Self(sk))
     }
 
-    pub fn signing_key(&self) -> k256::ecdsa::SigningKey {
-        k256::ecdsa::SigningKey::from(self.0.clone())
+    pub fn signing_key(&self) -> SigningKey {
+        SigningKey::from(self.0.clone())
     }
 
     /// Converts the private key to raw scalar bytes.
@@ -183,7 +186,7 @@ impl Key {
         // with Keccak256 in such case. Use "sign_prehash" since avalanche signs
         // the already hashed SHA256 output.
         // ref. https://github.com/RustCrypto/elliptic-curves/issues/671
-        let sig: k256::ecdsa::recoverable::Signature = self
+        let sig: Signature = self
             .signing_key()
             .sign_prehash(digest)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed sign_prehash '{}'", e)))?;
@@ -199,13 +202,13 @@ impl Key {
     }
 }
 
-impl From<k256::SecretKey> for Key {
-    fn from(s: k256::SecretKey) -> Self {
+impl From<SecretKey> for Key {
+    fn from(s: SecretKey) -> Self {
         Self(s)
     }
 }
 
-impl From<Key> for k256::SecretKey {
+impl From<Key> for SecretKey {
     fn from(s: Key) -> Self {
         s.0
     }
@@ -224,7 +227,7 @@ impl std::fmt::Display for Key {
 impl key::secp256k1::SignOnly for Key {
     type Error = io::Error;
 
-    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+    fn signing_key(&self) -> io::Result<SigningKey> {
         Ok(self.signing_key())
     }
 

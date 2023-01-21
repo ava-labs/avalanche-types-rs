@@ -68,6 +68,7 @@ fn test_sha256_ripemd160() {
     assert_eq!(d.len(), 20);
 }
 
+/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/utils/hash.rs> "keccak256"
 pub fn keccak256(b: impl AsRef<[u8]>) -> primitive_types::H256 {
     primitive_types::H256::from_slice(&Keccak256::digest(b.as_ref()))
 }
@@ -75,11 +76,18 @@ pub fn keccak256(b: impl AsRef<[u8]>) -> primitive_types::H256 {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- hash::test_keccak256 --exact --show-output
 #[test]
 fn test_keccak256() {
-    let d = keccak256(&<Vec<u8>>::from([
+    let digest_input = <Vec<u8>>::from([
         0x3d, 0x0a, 0xd1, 0x2b, 0x8e, 0xe8, 0x92, 0x8e, 0xdf, 0x24, //
         0x8c, 0xa9, 0x1c, 0xa5, 0x56, 0x00, 0xfb, 0x38, 0x3f, 0x07, //
         0xc3, 0x2b, 0xff, 0x1d, 0x6d, 0xec, 0x47, 0x2b, 0x25, 0xcf, //
         0x59, 0xa7,
-    ]));
-    assert_eq!(d.0.len(), 32);
+    ]);
+
+    let d1 = keccak256(&digest_input);
+    assert_eq!(d1.0.len(), 32);
+
+    // ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/utils/hash.rs> "keccak256"
+    let d2 = ethers_core::utils::keccak256(&digest_input);
+    let d2 = primitive_types::H256::from_slice(&d2);
+    assert_eq!(d1, d2);
 }

@@ -5,6 +5,7 @@ use ethers_core::k256::ecdsa::{
     Signature as KSig,
 };
 use hmac::digest::generic_array::GenericArray;
+use k256::ecdsa::recoverable::Signature;
 
 /// The length of recoverable ECDSA signature.
 /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs
@@ -16,7 +17,7 @@ pub const LEN: usize = 65;
 
 /// Represents Ethereum-style "recoverable signatures".
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Sig(pub k256::ecdsa::recoverable::Signature);
+pub struct Sig(pub Signature);
 
 impl Sig {
     /// Loads the recoverable signature from the bytes.
@@ -28,7 +29,7 @@ impl Sig {
             ));
         }
 
-        let sig = k256::ecdsa::recoverable::Signature::try_from(b).map_err(|e| {
+        let sig = Signature::try_from(b).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
                 format!("failed to load recoverable signature {}", e),
@@ -73,7 +74,7 @@ impl Sig {
 }
 
 fn recover_pubkeys(
-    rsig: &k256::ecdsa::recoverable::Signature,
+    rsig: &Signature,
     digest: &[u8],
 ) -> io::Result<(
     crate::key::secp256k1::public_key::Key,
@@ -96,13 +97,13 @@ fn recover_pubkeys(
     Ok((vkey.into(), vkey))
 }
 
-impl From<k256::ecdsa::recoverable::Signature> for Sig {
-    fn from(sig: k256::ecdsa::recoverable::Signature) -> Self {
+impl From<Signature> for Sig {
+    fn from(sig: Signature) -> Self {
         Self(sig)
     }
 }
 
-impl From<Sig> for k256::ecdsa::recoverable::Signature {
+impl From<Sig> for Signature {
     fn from(sig: Sig) -> Self {
         sig.0
     }
