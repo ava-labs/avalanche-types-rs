@@ -18,7 +18,9 @@ use std::{
     sync::Arc,
 };
 
-use super::{errors, iterator::BoxedIterator, BoxedDatabase};
+use crate::subnet::rpc::errors::Error;
+
+use super::{iterator::BoxedIterator, BoxedDatabase};
 use tokio::sync::RwLock;
 
 /// Database is an ephemeral key-value store that implements the Database interface.
@@ -54,20 +56,20 @@ impl super::KeyValueReaderWriterDeleter for Database {
     /// Attempts to return the value that was mapped to the key that was provided.
     async fn get(&self, key: &[u8]) -> io::Result<Vec<u8>> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
 
         let db = self.state.read().await;
         match db.get(&key.to_vec()) {
             Some(key) => Ok(key.to_vec()),
-            None => Err(errors::not_found()),
+            None => Err(Error::NotFound.to_err()),
         }
     }
 
     /// Attempts to set the value this key maps to.
     async fn put(&mut self, key: &[u8], value: &[u8]) -> io::Result<()> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
 
         let mut db = self.state.write().await;
@@ -78,7 +80,7 @@ impl super::KeyValueReaderWriterDeleter for Database {
     /// Attempts to remove any mapping from the key.
     async fn delete(&mut self, key: &[u8]) -> io::Result<()> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
 
         let mut db = self.state.write().await;
@@ -92,7 +94,7 @@ impl super::Closer for Database {
     /// Attempts to close the database.
     async fn close(&self) -> io::Result<()> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
 
         self.closed.store(true, Ordering::Relaxed);
@@ -105,7 +107,7 @@ impl crate::subnet::rpc::health::Checkable for Database {
     /// Checks if the database has been closed.
     async fn health_check(&self) -> io::Result<Vec<u8>> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
         Ok(vec![])
     }
@@ -135,13 +137,13 @@ impl super::iterator::Iteratee for Database {
         prefix: &[u8],
     ) -> io::Result<BoxedIterator> {
         if self.closed.load(Ordering::Relaxed) {
-            return Err(errors::database_closed());
+            return Err(Error::DatabaseClosed.to_err());
         }
 
         let db = self.state.read().await;
         let mut keys: Vec<Vec<u8>> = Vec::with_capacity(db.len());
         for (k, _v) in db.iter() {
-            if k.starts_with(&prefix) && k >= &start.to_vec() {
+            if k.starts_with(prefix) && k >= &start.to_vec() {
                 keys.push(k.to_owned());
             }
         }

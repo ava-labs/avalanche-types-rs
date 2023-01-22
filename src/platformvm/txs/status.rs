@@ -112,6 +112,17 @@ impl Status {
         }
     }
 
+    /// Returns the i32 primitive representation of this status.
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            Status::Unknown(_) => 0,
+            Status::Committed => 4,
+            Status::Aborted => 5,
+            Status::Processing => 6,
+            Status::Dropped => 8,
+        }
+    }
+
     /// Returns native endian value from a slice if u8s.
     pub fn u32_from_slice(bytes: &[u8]) -> u32 {
         assert!(bytes.len() <= 4);

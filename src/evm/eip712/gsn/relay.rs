@@ -359,7 +359,7 @@ fn test_build_relay_transaction_request() {
         .type_suffix_data(&my_suffix_data);
 
     let k = crate::key::secp256k1::private_key::Key::generate().unwrap();
-    let signer: LocalWallet = k.signing_key().into();
+    let signer: LocalWallet = k.to_ethers_core_signing_key().into();
 
     let rr = ab!(tx.sign_to_request(signer.clone())).unwrap();
     log::info!("request: {}", serde_json::to_string_pretty(&rr).unwrap());

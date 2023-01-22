@@ -1,7 +1,7 @@
 //! Database Client
 pub mod iterator;
 
-use std::io::{self, Error, ErrorKind};
+use std::io;
 
 use crate::{
     proto::{
@@ -12,16 +12,14 @@ use crate::{
                 DeleteRequest, GetRequest, PutRequest,
             },
         },
-        rpcdb::NewIteratorWithStartAndPrefixRequest,
+        rpcdb::{HasRequest, NewIteratorWithStartAndPrefixRequest},
     },
-    subnet::rpc::database::{
-        self,
-        errors::{self, DatabaseError},
-        iterator::BoxedIterator,
-        BoxedDatabase,
+    subnet::rpc::{
+        database::{self, iterator::BoxedIterator, BoxedDatabase},
+        errors,
     },
 };
-use num_traits::FromPrimitive;
+
 use prost::bytes::Bytes;
 use tonic::transport::Channel;
 
@@ -47,20 +45,17 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
     async fn has(&self, key: &[u8]) -> io::Result<bool> {
         let mut db = self.inner.clone();
         let resp = db
-            .get(GetRequest {
+            .has(HasRequest {
                 key: Bytes::from(key.to_owned()),
             })
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("has request failed: {:?}", e)))?
+            .map_err(|s| {
+                log::error!("has request failed: {:?}", s);
+                errors::from_status(s)
+            })?
             .into_inner();
 
-        let err = DatabaseError::from_i32(resp.err);
-        match err {
-            Some(DatabaseError::Closed) => Err(errors::database_closed()),
-            Some(DatabaseError::NotFound) => Ok(false),
-            Some(DatabaseError::None) => Ok(true),
-            _ => Err(Error::new(ErrorKind::Other, "unexpected database error")),
-        }
+        Ok(resp.has)
     }
 
     /// Attempts to return the value that was mapped to the key that was provided.
@@ -71,17 +66,17 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
                 key: Bytes::from(key.to_owned()),
             })
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("get request failed: {:?}", e)))?
-            .into_inner();
+            .map_err(|s| {
+                log::error!("get request failed: {:?}", s);
+                errors::from_status(s)
+            })?;
 
         log::debug!("get response: {:?}", resp);
-        let err = DatabaseError::from_i32(resp.err);
-        match err {
-            Some(DatabaseError::None) => Ok(resp.value.to_vec()),
-            Some(DatabaseError::Closed) => Err(errors::database_closed()),
-            Some(DatabaseError::NotFound) => Err(errors::not_found()),
-            _ => Err(Error::new(ErrorKind::Other, "unexpected database error")),
-        }
+
+        let resp = resp.into_inner();
+        errors::from_i32(resp.err)?;
+
+        Ok(resp.value.to_vec())
     }
 
     /// Attempts to set the value this key maps to.
@@ -93,16 +88,12 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
                 value: Bytes::from(value.to_owned()),
             })
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("put request failed: {:?}", e)))?
-            .into_inner();
+            .map_err(|s| {
+                log::error!("put request failed: {:?}", s);
+                errors::from_status(s)
+            })?;
 
-        let err = DatabaseError::from_i32(resp.err);
-        match err {
-            Some(DatabaseError::None) => Ok(()),
-            Some(DatabaseError::Closed) => Err(errors::database_closed()),
-            Some(DatabaseError::NotFound) => Err(errors::not_found()),
-            _ => Err(Error::new(ErrorKind::Other, "unexpected database error")),
-        }
+        errors::from_i32(resp.into_inner().err)
     }
 
     /// Attempts to remove any mapping from the key.
@@ -113,15 +104,12 @@ impl database::KeyValueReaderWriterDeleter for DatabaseClient {
                 key: Bytes::from(key.to_owned()),
             })
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("delete request failed: {:?}", e)))?
-            .into_inner();
-        let err = DatabaseError::from_i32(resp.err);
-        match err {
-            Some(DatabaseError::None) => Ok(()),
-            Some(DatabaseError::Closed) => Err(errors::database_closed()),
-            Some(DatabaseError::NotFound) => Err(errors::not_found()),
-            _ => Err(Error::new(ErrorKind::Other, "unexpected database error")),
-        }
+            .map_err(|s| {
+                log::error!("delete request failed: {:?}", s);
+                errors::from_status(s)
+            })?;
+
+        errors::from_i32(resp.into_inner().err)
     }
 }
 
@@ -130,19 +118,12 @@ impl database::Closer for DatabaseClient {
     /// Attempts to close the database.
     async fn close(&self) -> io::Result<()> {
         let mut db = self.inner.clone();
-        let resp = db
-            .close(CloseRequest {})
-            .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("close request failed: {:?}", e)))?
-            .into_inner();
+        let resp = db.close(CloseRequest {}).await.map_err(|s| {
+            log::error!("close request failed: {:?}", s);
+            errors::from_status(s)
+        })?;
 
-        let err = DatabaseError::from_i32(resp.err);
-        match err {
-            Some(DatabaseError::None) => Ok(()),
-            Some(DatabaseError::Closed) => Err(errors::database_closed()),
-            Some(DatabaseError::NotFound) => Err(errors::not_found()),
-            _ => Err(Error::new(ErrorKind::Other, "unexpected database error")),
-        }
+        errors::from_i32(resp.into_inner().err)
     }
 }
 
@@ -151,10 +132,10 @@ impl crate::subnet::rpc::health::Checkable for DatabaseClient {
     /// Attempts to perform a health check against the underlying database.
     async fn health_check(&self) -> io::Result<Vec<u8>> {
         let mut db = self.inner.clone();
-        let resp = db
-            .health_check(Empty {})
-            .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("health check failed: {:?}", e)))?;
+        let resp = db.health_check(Empty {}).await.map_err(|s| {
+            log::error!("health check failed: {:?}", s);
+            errors::from_status(s)
+        })?;
 
         Ok(resp.into_inner().details.to_vec())
     }
@@ -195,8 +176,8 @@ impl database::iterator::Iteratee for DatabaseClient {
                 self.inner.clone(),
                 resp.into_inner().id,
             )),
-            Err(e) => Ok(crate::subnet::rpc::database::nodb::Iterator::new(Some(
-                Error::new(ErrorKind::Other, e),
+            Err(s) => Ok(crate::subnet::rpc::database::nodb::Iterator::new(Some(
+                errors::from_status(s),
             ))),
         }
     }

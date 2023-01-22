@@ -13,11 +13,12 @@ use crate::{
 };
 use async_trait::async_trait;
 use k256::{
-    ecdsa::{recoverable::Signature, signature::hazmat::PrehashSigner, SigningKey},
+    ecdsa::{hazmat::SignPrimitive, SigningKey},
     SecretKey,
 };
 use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, thread_rng};
+use sha2::Sha256;
 
 #[cfg(all(not(windows)))]
 use ring::rand::{SecureRandom, SystemRandom};
@@ -180,18 +181,33 @@ impl Key {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
-        // NOTE
-        // "k256::ecdsa::SigningKey::sign" with "k256::ecdsa::signature::Signer"
-        // signs the message, not a message digest, so the message is first hashed
-        // with Keccak256 in such case. Use "sign_prehash" since avalanche signs
-        // the already hashed SHA256 output.
-        // ref. https://github.com/RustCrypto/elliptic-curves/issues/671
-        let sig: Signature = self
-            .signing_key()
-            .sign_prehash(digest)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed sign_prehash '{}'", e)))?;
+        // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "PrehashSigner"
+        let prehash = <[u8; 32]>::try_from(digest).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed <[u8; 32]>::try_from(digest) '{}'", e),
+            )
+        })?;
 
-        Ok(sig.into())
+        let signing_key = self.signing_key();
+        let secret_scalar = signing_key.as_nonzero_scalar();
+
+        // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "sign_prehash"
+        let (sig, recid) = secret_scalar
+            .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::Other,
+                    format!("failed try_sign_prehashed_rfc6979 '{}'", e),
+                )
+            })?;
+        let recid = if let Some(ri) = recid {
+            ri
+        } else {
+            return Err(Error::new(ErrorKind::Other, "no recovery Id found"));
+        };
+
+        Ok(Sig((sig, recid)))
     }
 
     /// Derives the private key that uses libsecp256k1.
@@ -199,6 +215,12 @@ impl Key {
     pub fn to_libsecp256k1(&self) -> io::Result<crate::key::secp256k1::libsecp256k1::PrivateKey> {
         let b = self.to_bytes();
         crate::key::secp256k1::libsecp256k1::PrivateKey::from_bytes(&b)
+    }
+
+    /// TODO: remove this after upstream "ethers-core" migrates to "k256" >= 0.12
+    pub fn to_ethers_core_signing_key(&self) -> ethers_core::k256::ecdsa::SigningKey {
+        let kb = self.to_bytes();
+        ethers_core::k256::ecdsa::SigningKey::from_bytes(&kb).unwrap()
     }
 }
 

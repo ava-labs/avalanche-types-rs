@@ -20,6 +20,16 @@ impl State {
             State::NormalOp => "Normal operations state",
         }
     }
+
+    /// Returns the u32 primitive representation of the state.
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            State::Initializing => 1,
+            State::StateSyncing => 2,
+            State::Bootstrapping => 3,
+            State::NormalOp => 0,
+        }
+    }
 }
 
 impl TryFrom<u32> for State {

@@ -4,8 +4,8 @@ use ethers_core::k256::ecdsa::{
     recoverable::{Id as RId, Signature as RSig},
     Signature as KSig,
 };
-use hmac::digest::generic_array::GenericArray;
-use k256::ecdsa::recoverable::Signature;
+use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
+use zerocopy::AsBytes;
 
 /// The length of recoverable ECDSA signature.
 /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs
@@ -17,7 +17,7 @@ pub const LEN: usize = 65;
 
 /// Represents Ethereum-style "recoverable signatures".
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Sig(pub Signature);
+pub struct Sig(pub (Signature, RecoveryId));
 
 impl Sig {
     /// Loads the recoverable signature from the bytes.
@@ -29,19 +29,28 @@ impl Sig {
             ));
         }
 
-        let sig = Signature::try_from(b).map_err(|e| {
+        let sig = Signature::try_from(&b[..64]).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
                 format!("failed to load recoverable signature {}", e),
             )
         })?;
-        Ok(Self(sig))
+        let recid = RecoveryId::try_from(b[64]).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed to create recovery Id {}", e),
+            )
+        })?;
+        Ok(Self((sig, recid)))
     }
 
     /// Converts the signature to bytes.
     pub fn to_bytes(&self) -> [u8; LEN] {
+        // "elliptic_curve::generic_array::GenericArray"
+        let bb = self.0 .0.to_bytes();
+
         let mut b = [0u8; LEN];
-        b.copy_from_slice(self.0.as_ref());
+        b.copy_from_slice(&[&bb[..], &[u8::from(self.0 .1)]].concat());
         b
     }
 
@@ -49,63 +58,47 @@ impl Sig {
     pub fn recover_public_key(
         &self,
         digest: &[u8],
-    ) -> io::Result<(
-        crate::key::secp256k1::public_key::Key,
-        k256::ecdsa::VerifyingKey,
-    )> {
-        recover_pubkeys(&self.0, digest)
+    ) -> io::Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
+        recover_pubkeys(&self.0 .0, self.0 .1, digest)
     }
 
     pub fn r(&self) -> primitive_types::U256 {
-        let b = self.0.as_ref();
+        let b = self.0 .0.to_vec();
         primitive_types::U256::from_big_endian(&b[0..32])
     }
 
     pub fn s(&self) -> primitive_types::U256 {
-        let b = self.0.as_ref();
+        let b = self.0 .0.to_vec();
         primitive_types::U256::from_big_endian(&b[32..64])
     }
 
     /// Returns the recovery Id.
     pub fn v(&self) -> u64 {
-        let v: u8 = self.0.recovery_id().into();
-        v as u64
+        // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recovery_id"
+        u8::from(self.0 .1) as u64
     }
 }
 
 fn recover_pubkeys(
     rsig: &Signature,
+    recid: RecoveryId,
     digest: &[u8],
-) -> io::Result<(
-    crate::key::secp256k1::public_key::Key,
-    k256::ecdsa::VerifyingKey,
-)> {
-    let prehash = GenericArray::clone_from_slice(&digest[..]);
-    let vkey = rsig
-        .recover_verifying_key_from_digest_bytes(&prehash)
-        .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed recover_verifying_key_from_digest_bytes {}", e),
-            )
-        })?;
-
-    // [optional]
-    // use k256::ecdsa::signature::hazmat::PrehashVerifier;
-    // assert!(vkey.verify_prehash(digest, &self.0).is_ok());
+) -> io::Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
+    // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recovery_id"
+    // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recover_verifying_key_from_digest_bytes"
+    let vkey = VerifyingKey::recover_from_prehash(digest, rsig, recid).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed recover_verifying_key_from_digest_bytes {}", e),
+        )
+    })?;
 
     Ok((vkey.into(), vkey))
 }
 
-impl From<Signature> for Sig {
-    fn from(sig: Signature) -> Self {
-        Self(sig)
-    }
-}
-
 impl From<Sig> for Signature {
     fn from(sig: Sig) -> Self {
-        sig.0
+        sig.0 .0
     }
 }
 
@@ -156,7 +149,7 @@ pub fn decode_signature(b: &[u8]) -> io::Result<KSig> {
 pub fn rsig_from_digest_bytes_trial_recovery(
     sig: &KSig,
     digest: [u8; 32],
-    verifying_key: &ethers_core::k256::ecdsa::VerifyingKey,
+    verifying_key: &k256::ecdsa::VerifyingKey,
 ) -> RSig {
     let sig_0 = RSig::new(sig, RId::new(0).unwrap()).unwrap();
     let sig_1 = RSig::new(sig, RId::new(1).unwrap()).unwrap();
@@ -173,13 +166,11 @@ pub fn rsig_from_digest_bytes_trial_recovery(
 /// Checks whether the specified recoverable signature can derive
 /// the expected verifying key from the digest bytes.
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "check_candidate"
-fn check_candidate(
-    sig: &RSig,
-    digest: [u8; 32],
-    vk: &ethers_core::k256::ecdsa::VerifyingKey,
-) -> bool {
-    if let Ok(key) = sig.recover_verifying_key_from_digest_bytes(digest.as_ref().into()) {
-        key == *vk
+fn check_candidate(sig: &RSig, digest: [u8; 32], vk: &k256::ecdsa::VerifyingKey) -> bool {
+    if let Ok(old_k256_recovered_vk) =
+        sig.recover_verifying_key_from_digest_bytes(digest.as_ref().into())
+    {
+        old_k256_recovered_vk.to_bytes().as_bytes() == vk.to_encoded_point(true).as_bytes()
     } else {
         false
     }

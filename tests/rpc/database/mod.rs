@@ -16,6 +16,11 @@ use tonic::transport::Channel;
 
 #[tokio::test]
 async fn rpcdb_mutation_test() {
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .is_test(true)
+        .try_init();
+
     let bar_value = "bar".as_bytes().to_vec();
     let baz_value = "baz".as_bytes().to_vec();
 
@@ -36,29 +41,47 @@ async fn rpcdb_mutation_test() {
 
     let mut client = DatabaseClient::new(client_conn);
 
+    log::info!("put foo:bar");
     let resp = client.put("foo".as_bytes(), "bar".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
 
+    log::info!("get foo:bar");
     let resp = client.get("foo".as_bytes()).await;
     let value = resp.unwrap();
     assert_eq!(value, bar_value.clone());
 
+    // verify valid response from cloning client
     let mut client = client.clone();
 
+    log::info!("put foo:baz");
     let resp = client.put("foo".as_bytes(), "baz".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
 
+    log::info!("get foo:baz");
     let resp = client.get("foo".as_bytes()).await;
     let value = resp.unwrap();
     assert_eq!(value, baz_value.clone());
 
+    log::info!("has foo true");
+    let resp = client.has("foo".as_bytes()).await;
+    assert!(resp.is_ok());
+    assert_eq!(resp.unwrap(), true);
+
+    log::info!("get fool error not found");
     let resp = client.get("fool".as_bytes()).await;
     assert!(resp.is_err());
     assert_eq!(resp.unwrap_err().kind(), ErrorKind::NotFound);
 
-    let resp = client.close().await;
-    assert!(!resp.is_err());
+    log::info!("has fool false");
+    let resp = client.has("fool".as_bytes()).await;
+    assert!(resp.is_ok());
+    assert_eq!(resp.unwrap(), false);
 
+    log::info!("close client");
+    let resp = client.close().await;
+    assert!(resp.is_ok());
+
+    log::info!("get foo error closed");
     let resp = client.get("foo".as_bytes()).await;
     assert!(resp.is_err());
     assert!(resp.unwrap_err().to_string().contains("database closed"));
@@ -66,32 +89,49 @@ async fn rpcdb_mutation_test() {
 
 #[tokio::test]
 async fn corruptibledb_mutation_test() {
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .is_test(true)
+        .try_init();
+
     let bar_value = "bar".as_bytes().to_vec();
 
     let memdb = MemDb::new();
     let mut corruptible = CorruptableDb::new(memdb);
 
+    log::info!("put foo:bar");
     let resp = corruptible.put("foo".as_bytes(), "bar".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
 
+    log::info!("get foo:bar");
     let resp = corruptible.get("foo".as_bytes()).await;
     let value = resp.unwrap();
     assert_eq!(value, bar_value.clone());
 
+    log::info!("put foo:baz");
     let resp = corruptible.put("foo".as_bytes(), "baz".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
 
+    log::info!("has foo true");
     let resp = corruptible.has("foo".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
     assert_eq!(resp.unwrap(), true);
 
+    log::info!("get fool error not found");
     let resp = corruptible.get("fool".as_bytes()).await;
     assert!(resp.is_err());
     assert_eq!(resp.unwrap_err().kind(), ErrorKind::NotFound);
 
-    let resp = corruptible.close().await;
-    assert!(!resp.is_err());
+    log::info!("has fool false");
+    let resp = corruptible.has("fool".as_bytes()).await;
+    assert!(resp.is_ok());
+    assert_eq!(resp.unwrap(), false);
 
+    log::info!("close client");
+    let resp = corruptible.close().await;
+    assert!(resp.is_ok());
+
+    log::info!("get foo error closed");
     let resp = corruptible.put("foo".as_bytes(), "baz".as_bytes()).await;
     assert!(resp.is_err());
     assert!(resp.unwrap_err().to_string().contains("database closed"));
@@ -99,7 +139,13 @@ async fn corruptibledb_mutation_test() {
 
 #[tokio::test]
 async fn test_rpcdb_corruptible() {
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .is_test(true)
+        .try_init();
+
     let bar_value = "bar".as_bytes().to_vec();
+    let baz_value = "baz".as_bytes().to_vec();
 
     let memdb = MemDb::new();
     let rpc_server = RpcDb::new(memdb);
@@ -119,20 +165,62 @@ async fn test_rpcdb_corruptible() {
     let db = DatabaseClient::new(client_conn);
     let mut client = CorruptableDb::new(db);
 
+    log::info!("put foo:bar");
     let resp = client.put("foo".as_bytes(), "bar".as_bytes()).await;
     assert!(resp.is_ok());
 
+    log::info!("get foo:bar");
+    let resp = client.get("foo".as_bytes()).await;
+    let value = resp.unwrap();
+    assert_eq!(value, bar_value.clone());
+
+    // verify valid response from cloning client
+    let mut client = client.clone();
+
+    log::info!("put foo:baz");
+    let resp = client.put("foo".as_bytes(), "baz".as_bytes()).await;
+    assert!(resp.is_ok());
+
+    log::info!("get foo:baz");
+    let resp = client.get("foo".as_bytes()).await;
+    let value = resp.unwrap();
+    assert_eq!(value, baz_value.clone());
+
+    log::info!("has foo true");
+    let resp = client.has("foo".as_bytes()).await;
+    assert!(resp.is_ok());
+    assert_eq!(resp.unwrap(), true);
+
+    log::info!("get fool error not found");
     let resp = client.get("fool".as_bytes()).await;
     assert!(resp.is_err());
     assert_eq!(resp.unwrap_err().kind(), ErrorKind::NotFound);
 
+    log::info!("has fool false");
+    let resp = client.has("fool".as_bytes()).await;
+    assert!(resp.is_ok());
+    assert_eq!(resp.unwrap(), false);
+
+    log::info!("close client");
+    let resp = client.close().await;
+    assert!(resp.is_ok());
+
+    log::info!("get foo error closed");
     let resp = client.get("foo".as_bytes()).await;
-    assert!(!resp.is_err());
-    assert_eq!(resp.unwrap(), bar_value);
+    assert!(resp.is_err());
+    assert!(resp.unwrap_err().to_string().contains("database closed"));
 }
 
 #[tokio::test]
 async fn test_db_manager() {
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .is_test(true)
+        .try_init();
+
+    let bar_value = "bar".as_bytes().to_vec();
+    let baz_value = "baz".as_bytes().to_vec();
+
     let memdb = MemDb::new();
     let rpc_server = RpcDb::new(memdb);
 
@@ -158,21 +246,31 @@ async fn test_db_manager() {
 
     let mut client = current.db;
 
+    log::info!("put foo:bar");
     let resp = client.put("foo".as_bytes(), "bar".as_bytes()).await;
-    assert!(!resp.is_err());
+    assert!(resp.is_ok());
 
+    log::info!("get foo:bar");
     let resp = client.get("foo".as_bytes()).await;
-    assert!(!resp.is_err());
+    let value = resp.unwrap();
+    assert_eq!(value, bar_value.clone());
 
-    let resp = manager.close().await;
-    assert!(!resp.is_err());
+    // verify valid response from cloning client
+    let mut client = client.clone();
 
-    let resp = client.close().await;
-    assert!(resp.unwrap_err().to_string().eq("database closed"));
+    log::info!("put foo:baz");
+    let resp = client.put("foo".as_bytes(), "baz".as_bytes()).await;
+    assert!(resp.is_ok());
 
-    let resp = manager.close().await;
-    assert!(resp.unwrap_err().to_string().eq("database closed"));
+    log::info!("get foo:baz");
+    let resp = client.get("foo".as_bytes()).await;
+    let value = resp.unwrap();
+    assert_eq!(value, baz_value.clone());
 
+    log::info!("close all db with manager");
+    let _ = manager.close().await;
+
+    log::info!("get foo error closed");
     let resp = client.get("foo".as_bytes()).await;
     assert!(resp.is_err());
     assert!(resp.unwrap_err().to_string().contains("database closed"));

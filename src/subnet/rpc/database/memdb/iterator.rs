@@ -46,7 +46,7 @@ impl database::iterator::Iterator for Iterator {
         // If the iterator was not yet initialized, do it now
         if !self.initialized.load(Ordering::Relaxed) {
             self.initialized.store(true, Ordering::Relaxed);
-            return Ok(self.keys.len() > 0);
+            return Ok(!self.keys.is_empty());
         }
 
         // Iterator already initialize, advance it
@@ -55,7 +55,7 @@ impl database::iterator::Iterator for Iterator {
             self.values.drain(0..1);
         }
 
-        Ok(self.keys.len() > 0)
+        Ok(!self.keys.is_empty())
     }
 
     /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.

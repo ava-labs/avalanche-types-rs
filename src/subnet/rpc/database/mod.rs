@@ -1,5 +1,4 @@
 pub mod corruptabledb;
-pub mod errors;
 pub mod iterator;
 pub mod manager;
 pub mod memdb;

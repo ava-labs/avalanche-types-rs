@@ -41,7 +41,7 @@ async fn main() -> io::Result<()> {
     .unwrap();
     let key_info = k.to_info(1).unwrap();
     log::info!("created hot key:\n\n{}\n", key_info);
-    let signer: ethers_signers::LocalWallet = k.signing_key().into();
+    let signer: ethers_signers::LocalWallet = k.to_ethers_core_signing_key().into();
 
     let relay_tx_request = Tx::new()
         //

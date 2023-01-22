@@ -1,12 +1,15 @@
 //! Consensus engine message type.
 use num_derive::{FromPrimitive, ToPrimitive};
 
+/// Message is an enum of the message types that vms can send to consensus.
+///
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Message>
 #[derive(FromPrimitive, ToPrimitive, PartialEq, Eq, Debug)]
+#[repr(u32)]
 pub enum Message {
     /// Notifies a consensus engine that its VM has pending transactions
     /// (i.e. it would like to add a new block/vertex to consensus)
-    PendingTxs = 0,
+    PendingTxs = 1, // 0 is reserved for grpc unspecified.
 
     /// Notifies the state syncer engine that the VM has finishing
     /// syncing the requested state summary.
@@ -41,9 +44,8 @@ impl TryFrom<u32> for Message {
 
 #[test]
 fn test_message() {
-    let m = Message::try_from(0).unwrap();
+    let m = Message::try_from(1).unwrap();
     assert_eq!(m, Message::PendingTxs);
     assert!(m.as_str().contains("Pending Transactions"));
-
     assert!(Message::try_from(5).is_err());
 }

@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.222" # https://crates.io/crates/avalanche-types
+version = "0.0.225" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.66"
 publish = true
@@ -20,7 +20,7 @@ cmp-manager = "0.0.1"
 ethers-core = { version = "1.0.2", features = ["eip712"] }
 hex = "0.4.3"
 hmac = "0.12.1"
-k256 = { version = "0.11.6", features = ["ecdsa", "keccak256"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
+k256 = "0.12.0" # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
 lazy_static = "1.4.0"
 log = "0.4.17"
 prefix-manager = "0.0.2"

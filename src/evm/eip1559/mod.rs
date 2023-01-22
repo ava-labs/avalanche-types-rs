@@ -216,6 +216,7 @@ fn test_transaction() {
     let k1 = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let key_info1 = k1.to_info(1234).unwrap();
     log::info!("created {}", key_info1.h160_address);
+    let k1_signer: ethers_signers::LocalWallet = k1.to_ethers_core_signing_key().into();
 
     let k2 = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let key_info2 = k2.to_info(1234).unwrap();
@@ -236,9 +237,7 @@ fn test_transaction() {
         .gas_limit(gas_limit)
         .value(value);
 
-    let eth_signer: ethers_signers::LocalWallet = k1.signing_key().into();
-
-    let signed_bytes = ab!(tx.sign_as_typed_transaction(eth_signer)).unwrap();
+    let signed_bytes = ab!(tx.sign_as_typed_transaction(k1_signer)).unwrap();
     log::info!("signed_bytes: {}", signed_bytes);
 
     let (decoded_tx, sig) = decode_signed_rlp(&signed_bytes).unwrap();

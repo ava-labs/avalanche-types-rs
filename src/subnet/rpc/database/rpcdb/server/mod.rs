@@ -173,9 +173,7 @@ impl pb::rpcdb::database_server::Database for Server {
         let id = self.next_iterator_id.fetch_add(1, Ordering::SeqCst);
         iterators.insert(id, it);
 
-        Ok(Response::new(NewIteratorWithStartAndPrefixResponse {
-            id: id.clone(),
-        }))
+        Ok(Response::new(NewIteratorWithStartAndPrefixResponse { id }))
     }
 
     async fn iterator_next(

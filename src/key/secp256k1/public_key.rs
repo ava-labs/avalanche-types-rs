@@ -9,8 +9,7 @@ use crate::{
     },
 };
 use k256::{
-    ecdsa::{recoverable::Signature, signature::hazmat::PrehashVerifier, VerifyingKey},
-    elliptic_curve::sec1::ToEncodedPoint,
+    ecdsa::{signature::hazmat::PrehashVerifier, VerifyingKey},
     pkcs8::DecodePublicKey,
     PublicKey,
 };
@@ -74,8 +73,7 @@ impl Key {
         let sig = Sig::from_bytes(sig)?;
 
         let (recovered_pubkey, verifying_key) = sig.recover_public_key(digest)?;
-        let rsig = Signature::from(sig);
-        if verifying_key.verify_prehash(digest, &rsig).is_err() {
+        if verifying_key.verify_prehash(digest, &sig.0 .0).is_err() {
             return Ok(false);
         }
 
@@ -86,12 +84,10 @@ impl Key {
     pub fn to_compressed_bytes(&self) -> [u8; LEN] {
         let vkey: VerifyingKey = self.0.into();
 
-        // TODO: update to "k256" 0.12.0
         // ref. <https://github.com/RustCrypto/elliptic-curves/commit/c87d391a107b5bc22f03acf0de4ded988797c4ec> "to_bytes"
         // ref. <https://github.com/RustCrypto/signatures/blob/master/ecdsa/src/verifying.rs> "to_encoded_point"
-        // let ep = vkey.to_encoded_point(true);
-        // let bb = ep.as_bytes();
-        let bb = vkey.to_bytes();
+        let ep = vkey.to_encoded_point(true);
+        let bb = ep.as_bytes();
 
         let mut b = [0u8; LEN];
         b.copy_from_slice(&bb);
@@ -261,10 +257,8 @@ fn test_public_key() {
 
     let x_avax_addr = pubkey1.to_hrp_address(1, "X").unwrap();
     let p_avax_addr = pubkey1.to_hrp_address(1, "P").unwrap();
-    let c_avax_addr = pubkey1.to_hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
-    log::info!("AVAX C address: {}", c_avax_addr);
 }
 
 /// Same as "from_public_key_der".

@@ -132,26 +132,19 @@ where
             mpsc::channel(100);
         tokio::spawn(async move {
             loop {
-                match rx_engine.recv().await {
-                    Some(msg) => {
-                        log::debug!("message received: {:?}", msg);
-                        match message
-                            .notify(NotifyRequest {
-                                message: msg as i32,
-                            })
-                            .await
-                        {
-                            Ok(_) => continue,
-                            Err(e) => {
-                                return tonic::Status::unknown(e.to_string());
-                            }
-                        }
-                    }
-                    None => {
-                        log::error!("engine receiver closed unexpectedly");
-                        return tonic::Status::unknown("engine receiver closed unexpectedly");
-                    }
+                if let Some(msg) = rx_engine.recv().await {
+                    log::debug!("message received: {:?}", msg);
+                    let _ = message
+                        .notify(NotifyRequest {
+                            message: msg as i32,
+                        })
+                        .await
+                        .map_err(|s| tonic::Status::unknown(s.to_string()));
+                    continue;
                 }
+
+                log::error!("engine receiver closed unexpectedly");
+                return tonic::Status::unknown("engine receiver closed unexpectedly");
             }
         });
 

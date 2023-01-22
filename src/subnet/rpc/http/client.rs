@@ -23,7 +23,7 @@ impl subnet::rpc::http::Handler for Client {
         &mut self,
         _req: http::Request<Vec<u8>>,
     ) -> io::Result<http::Response<Vec<u8>>> {
-        Err(Error::new(ErrorKind::Other, format!("not implemented")))
+        Err(Error::new(ErrorKind::Other, "not implemented"))
     }
 
     /// http client takes an http request and sends to server.  Does not support websockets.

@@ -1,11 +1,11 @@
 use crate::{
     proto::rpcdb::{self, database_client::DatabaseClient},
-    subnet::rpc::database::{self, errors::DatabaseError},
+    subnet::rpc::{database, errors, utils},
 };
 
-use std::io::{Error, ErrorKind, Result};
+use std::{io::Result, sync::Arc};
 
-use num_traits::FromPrimitive;
+use tokio::sync::RwLock;
 use tonic::transport::Channel;
 
 use crate::subnet::rpc::database::iterator::BoxedIterator;
@@ -17,7 +17,8 @@ pub struct Iterator {
     id: u64,
     /// List of PutRequests.
     data: Vec<rpcdb::PutRequest>,
-    error: Option<Error>,
+    /// Collects first error reported by iterator.
+    error: Arc<RwLock<utils::Errors>>,
     db: DatabaseClient<Channel>,
 }
 
@@ -29,7 +30,7 @@ impl Iterator {
         Box::new(Self {
             id,
             data: vec![],
-            error: None,
+            error: Arc::new(RwLock::new(utils::Errors::new())),
             db,
         })
     }
@@ -47,54 +48,48 @@ impl database::iterator::Iterator for Iterator {
             return Ok(true);
         }
 
-        let resp = db
+        let mut errs = self.error.write().await;
+        match db
             .iterator_next(rpcdb::IteratorNextRequest { id: self.id })
-            .await;
-
-        if resp.is_err() {
-            self.error = Some(Error::new(
-                ErrorKind::Other,
-                format!("iterator next failed: {}", resp.unwrap_err()),
-            ));
-            return Ok(false);
+            .await
+        {
+            Ok(resp) => {
+                self.data = resp.into_inner().data;
+                return Ok(!self.data.is_empty());
+            }
+            Err(s) => {
+                log::error!("iterator next request failed: {:?}", s);
+                errs.add(&errors::from_status(s));
+                return Ok(false);
+            }
         }
-        self.data = resp.unwrap().into_inner().data;
-
-        Ok(self.data.len() > 0)
     }
 
     /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
     async fn error(&mut self) -> Result<()> {
-        let mut db = self.db.clone();
-        if let Some(err) = &self.error {
-            return Err(Error::new(err.kind(), err.to_string()));
-        }
+        let mut errs = self.error.write().await;
+        errs.err()?;
 
-        let resp = db
+        let mut db = self.db.clone();
+        match db
             .iterator_error(rpcdb::IteratorErrorRequest { id: self.id })
-            .await;
-        if resp.is_err() {
-            self.error = Some(Error::new(
-                ErrorKind::Other,
-                format!("iterator next failed: {}", resp.unwrap_err()),
-            ));
-        } else {
-            let err = DatabaseError::from_i32(resp.unwrap().into_inner().err);
-            match err {
-                Some(DatabaseError::None) => {}
-                Some(DatabaseError::Closed) => {
-                    self.error = Some(Error::new(ErrorKind::Other, "database closed"))
+            .await
+        {
+            Ok(resp) => {
+                // check response for error
+                if let Err(err) = errors::from_i32(resp.into_inner().err) {
+                    errs.add(&err);
+                    return Err(err);
                 }
-                Some(DatabaseError::NotFound) => {
-                    self.error = Some(Error::new(ErrorKind::NotFound, "not found"))
-                }
-                _ => self.error = Some(Error::new(ErrorKind::Other, "unexpected database error")),
+                return Ok(());
+            }
+            Err(s) => {
+                log::error!("iterator error request failed: {:?}", s);
+                let err = errors::from_status(s);
+                errs.add(&err);
+                return Err(err);
             }
         }
-        if let Some(err) = &self.error {
-            return Err(Error::new(err.kind(), err.to_string()));
-        }
-        Ok(())
     }
 
     /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
@@ -115,27 +110,21 @@ impl database::iterator::Iterator for Iterator {
 
     /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
     async fn release(&mut self) {
+        let mut errs = self.error.write().await;
         let mut db = self.db.clone();
-
-        let resp = db
+        match db
             .iterator_release(rpcdb::IteratorReleaseRequest { id: self.id })
-            .await;
-        if resp.is_err() {
-            self.error = Some(Error::new(
-                ErrorKind::Other,
-                format!("iterator release failed: {}", resp.unwrap_err()),
-            ));
-        } else {
-            let err = DatabaseError::from_i32(resp.unwrap().into_inner().err);
-            match err {
-                Some(DatabaseError::None) => {}
-                Some(DatabaseError::Closed) => {
-                    self.error = Some(Error::new(ErrorKind::Other, "database closed"))
+            .await
+        {
+            Ok(resp) => {
+                // check response for error
+                if let Err(err) = errors::from_i32(resp.into_inner().err) {
+                    errs.add(&err);
                 }
-                Some(DatabaseError::NotFound) => {
-                    self.error = Some(Error::new(ErrorKind::NotFound, "not found"))
-                }
-                _ => self.error = Some(Error::new(ErrorKind::Other, "unexpected database error")),
+            }
+            Err(s) => {
+                log::error!("iterator release request failed: {:?}", s);
+                errs.add(&errors::from_status(s));
             }
         }
     }
