@@ -183,40 +183,75 @@ impl pb::rpcdb::database_server::Database for Server {
         let req = request.into_inner();
 
         let mut iterators = self.iterators.write().await;
+        if let Some(it) = iterators.get_mut(&req.id) {
+            let mut size: usize = 0;
+            let mut data: Vec<PutRequest> = Vec::new();
 
-        match iterators.get_mut(&req.id) {
-            Some(it) => {
-                let mut size: usize = 0;
-                let mut data: Vec<PutRequest> = Vec::new();
+            while (size < MAX_BATCH_SIZE) && it.next().await? {
+                let key = it.key().await?.to_owned();
+                let value = it.value().await?.to_owned();
+                size += key.len() + value.len();
 
-                while (size < MAX_BATCH_SIZE) && it.next().await? {
-                    let key = it.key().await?.to_owned();
-                    let value = it.value().await?.to_owned();
-                    size += key.len() + value.len();
-
-                    data.push(PutRequest {
-                        key: Bytes::from(key),
-                        value: Bytes::from(value),
-                    });
-                }
-
-                Ok(Response::new(IteratorNextResponse { data }))
+                data.push(PutRequest {
+                    key: Bytes::from(key),
+                    value: Bytes::from(value),
+                });
             }
-            None => Err(tonic::Status::unknown("unknown iterator")),
+
+            return Ok(Response::new(IteratorNextResponse { data }));
         }
+
+        Err(tonic::Status::unknown("unknown iterator"))
     }
 
     async fn iterator_error(
         &self,
-        _request: Request<IteratorErrorRequest>,
+        request: Request<IteratorErrorRequest>,
     ) -> Result<Response<IteratorErrorResponse>, Status> {
-        Err(Status::unimplemented("iterator error"))
+        let req = request.into_inner();
+
+        let mut iterators = self.iterators.write().await;
+        if let Some(it) = iterators.get_mut(&req.id) {
+            match it.error().await {
+                Ok(_) => {
+                    return Ok(Response::new(IteratorErrorResponse {
+                        err: pb::rpcdb::Error::Unspecified.into(),
+                    }))
+                }
+                Err(e) => {
+                    return Ok(Response::new(IteratorErrorResponse {
+                        err: error_to_error_code(&e.to_string()).unwrap(),
+                    }))
+                }
+            }
+        }
+
+        Err(tonic::Status::unknown("unknown iterator"))
     }
 
     async fn iterator_release(
         &self,
-        _request: Request<IteratorReleaseRequest>,
+        request: Request<IteratorReleaseRequest>,
     ) -> Result<Response<IteratorReleaseResponse>, Status> {
-        Err(Status::unimplemented("iterator release"))
+        let req = request.into_inner();
+
+        let mut iterators = self.iterators.write().await;
+        if let Some(it) = iterators.get_mut(&req.id) {
+            match it.error().await {
+                Ok(_) => {
+                    let _ = it.release().await;
+                    return Ok(Response::new(IteratorReleaseResponse {
+                        err: pb::rpcdb::Error::Unspecified.into(),
+                    }));
+                }
+                Err(e) => {
+                    return Ok(Response::new(IteratorReleaseResponse {
+                        err: error_to_error_code(&e.to_string()).unwrap(),
+                    }))
+                }
+            }
+        }
+
+        Err(tonic::Status::unknown("unknown iterator"))
     }
 }

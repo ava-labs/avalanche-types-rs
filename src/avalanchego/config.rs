@@ -253,7 +253,7 @@ pub const DEFAULT_API_INFO_ENABLED: bool = true;
 pub const DEFAULT_API_KEYSTORE_ENABLED: bool = false;
 pub const DEFAULT_API_METRICS_ENABLED: bool = true;
 pub const DEFAULT_API_HEALTH_ENABLED: bool = true;
-pub const DEFAULT_API_IPCS_ENABLED: bool = true;
+pub const DEFAULT_API_IPCS_ENABLED: bool = false;
 
 /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.7/config/flags.go>
 pub const DEFAULT_PLUGIN_DIR: &str = "/usr/local/bin/plugin";

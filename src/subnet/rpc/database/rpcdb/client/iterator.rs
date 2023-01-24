@@ -1,9 +1,19 @@
 use crate::{
     proto::rpcdb::{self, database_client::DatabaseClient},
-    subnet::rpc::{database, errors, utils},
+    subnet::rpc::{
+        database,
+        errors::{self, Error},
+        utils,
+    },
 };
 
-use std::{io::Result, sync::Arc};
+use std::{
+    io::Result,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use tokio::sync::RwLock;
 use tonic::transport::Channel;
@@ -20,18 +30,21 @@ pub struct Iterator {
     /// Collects first error reported by iterator.
     error: Arc<RwLock<utils::Errors>>,
     db: DatabaseClient<Channel>,
+    /// True if the underlying database is closed.
+    closed: Arc<AtomicBool>,
 }
 
 /// Iterator iterates over a rpcdb database's key/value pairs.
 ///
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#Iterator>
 impl Iterator {
-    pub fn new(db: DatabaseClient<Channel>, id: u64) -> BoxedIterator {
+    pub fn new(db: DatabaseClient<Channel>, id: u64, closed: Arc<AtomicBool>) -> BoxedIterator {
         Box::new(Self {
             id,
             data: vec![],
             error: Arc::new(RwLock::new(utils::Errors::new())),
             db,
+            closed,
         })
     }
 }
@@ -42,13 +55,17 @@ impl database::iterator::Iterator for Iterator {
     async fn next(&mut self) -> Result<bool> {
         // Short-circuit and set an error if the underlying database has been closed
         let mut db = self.db.clone();
-        // TODO: handle db closed
+        let mut errs = self.error.write().await;
+        if self.closed.load(Ordering::Relaxed) {
+            errs.add(&Error::DatabaseClosed.to_err());
+            return Ok(false);
+        }
+
         if self.data.len() > 1 {
             self.data.drain(0..1);
             return Ok(true);
         }
 
-        let mut errs = self.error.write().await;
         match db
             .iterator_next(rpcdb::IteratorNextRequest { id: self.id })
             .await

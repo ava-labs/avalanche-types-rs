@@ -1,7 +1,13 @@
 //! Database Client
 pub mod iterator;
 
-use std::io;
+use std::{
+    io,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use crate::{
     proto::{
@@ -29,12 +35,15 @@ use tonic::transport::Channel;
 #[derive(Clone)]
 pub struct DatabaseClient {
     inner: RpcDbDatabaseClient<Channel>,
+    /// True if the underlying database is closed.
+    closed: Arc<AtomicBool>,
 }
 
 impl DatabaseClient {
     pub fn new(client_conn: Channel) -> BoxedDatabase {
         Box::new(Self {
             inner: RpcDbDatabaseClient::new(client_conn),
+            closed: Arc::new(AtomicBool::new(false)),
         })
     }
 }
@@ -118,6 +127,8 @@ impl database::Closer for DatabaseClient {
     /// Attempts to close the database.
     async fn close(&self) -> io::Result<()> {
         let mut db = self.inner.clone();
+        self.closed.store(true, Ordering::Relaxed);
+
         let resp = db.close(CloseRequest {}).await.map_err(|s| {
             log::error!("close request failed: {:?}", s);
             errors::from_status(s)
@@ -175,6 +186,7 @@ impl database::iterator::Iteratee for DatabaseClient {
             Ok(resp) => Ok(iterator::Iterator::new(
                 self.inner.clone(),
                 resp.into_inner().id,
+                Arc::clone(&self.closed),
             )),
             Err(s) => Ok(crate::subnet::rpc::database::nodb::Iterator::new(Some(
                 errors::from_status(s),

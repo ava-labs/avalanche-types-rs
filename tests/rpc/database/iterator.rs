@@ -145,3 +145,97 @@ async fn iterator_prefix_test() {
     // cleanup
     let _ = iterator.release().await;
 }
+
+// Tests to make sure that an iterator on a database will report itself as being
+// exhausted and return [ErrClosed] to indicate that the iteration was not
+// successful. Additionally tests that an iterator that has already called
+// next() can still serve its current value after the underlying DB was closed.
+#[tokio::test]
+async fn iterator_error_test() {
+    let server = RpcDb::new(MemDb::new());
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        serve_test_database(server, listener).await.unwrap();
+    });
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    let client_conn = Channel::builder(format!("http://{}", addr).parse().unwrap())
+        .connect()
+        .await
+        .unwrap();
+
+    let mut db = CorruptableDb::new(DatabaseClient::new(client_conn));
+
+    let key1 = "hello1".as_bytes();
+    let value1 = "world1".as_bytes();
+    let key2 = "hello2".as_bytes();
+    let value2 = "world2".as_bytes();
+
+    let _ = db.put(key1, value1).await.unwrap();
+    let _ = db.put(key2, value2).await.unwrap();
+
+    let resp = db.new_iterator().await;
+    assert!(resp.is_ok());
+
+    let mut iterator = resp.unwrap();
+    assert!(iterator.next().await.unwrap());
+
+    let resp = db.close().await;
+    assert!(resp.is_ok());
+
+    assert_eq!(iterator.key().await.unwrap(), key1);
+    assert_eq!(iterator.value().await.unwrap(), value1);
+
+    // Subsequent calls to the iterator should return false and report an error
+    assert_eq!(iterator.next().await.unwrap(), false);
+
+    let resp = iterator.error().await;
+    assert!(resp.is_err());
+    assert!(resp.unwrap_err().to_string().contains("database closed"));
+}
+
+// Tests to make sure that an iterator that was
+// released still reports the error correctly.
+#[tokio::test]
+async fn iterator_error_after_release_test() {
+    let server = RpcDb::new(MemDb::new());
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        serve_test_database(server, listener).await.unwrap();
+    });
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    let client_conn = Channel::builder(format!("http://{}", addr).parse().unwrap())
+        .connect()
+        .await
+        .unwrap();
+
+    let mut db = CorruptableDb::new(DatabaseClient::new(client_conn));
+
+    let key1 = "hello1".as_bytes();
+    let value1 = "world1".as_bytes();
+
+    let _ = db.put(key1, value1).await.unwrap();
+
+    let resp = db.close().await;
+    assert!(resp.is_ok());
+
+    let resp = db.new_iterator().await;
+    assert!(resp.is_ok());
+
+    let mut iterator = resp.unwrap();
+    let _ = iterator.release().await;
+
+    assert_eq!(iterator.next().await.unwrap(), false);
+
+    assert!(iterator.key().await.unwrap().is_empty());
+    assert!(iterator.value().await.unwrap().is_empty());
+
+    let resp = iterator.error().await;
+    assert!(resp.is_err());
+    assert!(resp.unwrap_err().to_string().contains("database closed"));
+}
