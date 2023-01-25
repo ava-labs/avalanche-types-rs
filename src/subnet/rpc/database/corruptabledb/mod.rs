@@ -1,7 +1,7 @@
 //! Database corruption manager.
 use std::{io, sync::Arc};
 
-use super::{iterator::BoxedIterator, BoxedDatabase};
+use super::{batch::BoxedBatch, iterator::BoxedIterator, BoxedDatabase};
 use crate::subnet::rpc::{errors, utils};
 
 use tokio::sync::Mutex;
@@ -150,22 +150,22 @@ impl crate::subnet::rpc::health::Checkable for Database {
 
 #[tonic::async_trait]
 impl crate::subnet::rpc::database::iterator::Iteratee for Database {
-    /// Implements the [`crate::subnet::rpc::database::iteratee::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator(&self) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::iteratee::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start(&self, start: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(start, &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::iteratee::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_prefix(&self, prefix: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], prefix).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::iteratee::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start_and_prefix(
         &self,
         start: &[u8],
@@ -177,6 +177,27 @@ impl crate::subnet::rpc::database::iterator::Iteratee for Database {
         self.db
             .new_iterator_with_start_and_prefix(start, prefix)
             .await
+    }
+}
+
+#[tonic::async_trait]
+impl crate::subnet::rpc::database::batch::Batcher for Database {
+    /// Implements the [`crate::subnet::rpc::database::batch::Batcher`] trait.
+    async fn new_batch(&self) -> io::Result<BoxedBatch> {
+        let db = &self.db;
+        let mut corrupted = self.corrupted.lock().await;
+
+        let batch = db.new_batch().await.map_err(|err| {
+            if errors::is_corruptible(&err) {
+                corrupted.add(&io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("closed to avoid possible corruption, init error: {err}"),
+                ));
+            }
+            err
+        })?;
+
+        Ok(batch)
     }
 }
 

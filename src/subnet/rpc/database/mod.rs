@@ -1,13 +1,17 @@
+pub mod batch;
 pub mod corruptabledb;
 pub mod iterator;
 pub mod manager;
 pub mod memdb;
 pub mod nodb;
 pub mod rpcdb;
+pub mod versiondb;
 
 use std::io::Result;
 
 use crate::subnet::rpc::health::Checkable;
+
+use self::batch::BoxedBatch;
 
 pub const MAX_BATCH_SIZE: usize = 128 * 1000;
 
@@ -18,11 +22,11 @@ pub trait Closer {
 
 #[tonic::async_trait]
 pub trait Database:
-    CloneBox + KeyValueReaderWriterDeleter + Closer + Checkable + iterator::Iteratee
+    batch::Batcher + CloneBox + KeyValueReaderWriterDeleter + Closer + Checkable + iterator::Iteratee
 {
 }
 
-/// Helper type which defines a thread safe boxed Database interface.
+/// Helper type which defines a thread safe boxed Database trait.
 pub type BoxedDatabase = Box<dyn Database + Send + Sync + 'static>;
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#KeyValueReaderWriterDeleter>
@@ -32,6 +36,21 @@ pub trait KeyValueReaderWriterDeleter {
     async fn get(&self, key: &[u8]) -> Result<Vec<u8>>;
     async fn put(&mut self, key: &[u8], value: &[u8]) -> Result<()>;
     async fn delete(&mut self, key: &[u8]) -> Result<()>;
+}
+
+// Trait that specifies that something may be
+// committed.
+#[tonic::async_trait]
+trait Commitable {
+    /// Writes all the operations of this database to the underlying database.
+    async fn commit(&mut self) -> Result<()>;
+    /// Abort all changes to the underlying database.
+    async fn abort(&self) -> Result<()>;
+    /// Returns a batch that contains all uncommitted puts/deletes.  Calling
+    /// write() on the returned batch causes the puts/deletes to be written to
+    /// the underlying database. The returned batch should be written before
+    /// future calls to this DB unless the batch will never be written.
+    async fn commit_batch(&mut self) -> Result<BoxedBatch>;
 }
 
 pub trait CloneBox {

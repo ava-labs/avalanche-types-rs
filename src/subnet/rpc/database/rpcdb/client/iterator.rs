@@ -1,3 +1,4 @@
+//! Database Iterator management implementation for rpcdb client.
 use crate::{
     proto::rpcdb::{self, database_client::DatabaseClient},
     subnet::rpc::{
@@ -34,9 +35,6 @@ pub struct Iterator {
     closed: Arc<AtomicBool>,
 }
 
-/// Iterator iterates over a rpcdb database's key/value pairs.
-///
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#Iterator>
 impl Iterator {
     pub fn new(db: DatabaseClient<Channel>, id: u64, closed: Arc<AtomicBool>) -> BoxedIterator {
         Box::new(Self {
@@ -51,7 +49,7 @@ impl Iterator {
 
 #[tonic::async_trait]
 impl database::iterator::Iterator for Iterator {
-    /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iterator`] trait.
     async fn next(&mut self) -> Result<bool> {
         // Short-circuit and set an error if the underlying database has been closed
         let mut db = self.db.clone();
@@ -82,7 +80,7 @@ impl database::iterator::Iterator for Iterator {
         }
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iterator`] trait.
     async fn error(&mut self) -> Result<()> {
         let mut errs = self.error.write().await;
         errs.err()?;
@@ -109,7 +107,7 @@ impl database::iterator::Iterator for Iterator {
         }
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iterator`] trait.
     async fn key(&self) -> Result<&[u8]> {
         if self.data.is_empty() {
             return Ok(&[]);
@@ -117,7 +115,7 @@ impl database::iterator::Iterator for Iterator {
         Ok(&self.data[0].key)
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iterator`] trait.
     async fn value(&self) -> Result<&[u8]> {
         if self.data.is_empty() {
             return Ok(&[]);
@@ -125,7 +123,7 @@ impl database::iterator::Iterator for Iterator {
         Ok(&self.data[0].value)
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iterator`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iterator`] trait.
     async fn release(&mut self) {
         let mut errs = self.error.write().await;
         let mut db = self.db.clone();

@@ -44,7 +44,7 @@ pub fn encode_cb58_with_checksum_vec(d: &[u8]) -> Vec<u8> {
 }
 
 /// Implements "formatting.Decode" with "formatting.CB58".
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode>
 pub fn decode_cb58_with_checksum(d: &str) -> io::Result<Vec<u8>> {
     let decoded = match bs58::decode(d).into_vec() {
         Ok(v) => v,
@@ -78,7 +78,7 @@ pub fn decode_cb58_with_checksum(d: &str) -> io::Result<Vec<u8>> {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- formatting::test_encode_c58_with_checksum --exact --show-output
 #[test]
 fn test_encode_c58_with_checksum() {
-    // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.5/utils/formatting/encoding_test.go#L71
+    // ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.7/utils/formatting/encoding_test.go#>
     let d: Vec<u8> = Vec::new();
     let hashed = encode_cb58_with_checksum_string(&d);
     assert_eq!(hashed, "45PJLL");
@@ -159,7 +159,7 @@ pub fn decode_hex_with_checksum(d: &[u8]) -> io::Result<Vec<u8>> {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- formatting::test_encode_hex_with_checksum --exact --show-output
 #[test]
 fn test_encode_hex_with_checksum() {
-    // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.5/utils/formatting/encoding_test.go#L71
+    // ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.7/utils/formatting/encoding_test.go>
     let d: Vec<u8> = Vec::new();
     let hashed = encode_hex_with_checksum(&d);
     assert_eq!(hashed, "7852b855");

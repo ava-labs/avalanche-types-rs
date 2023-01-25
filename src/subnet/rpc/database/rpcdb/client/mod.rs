@@ -1,4 +1,5 @@
-//! Database Client
+//! RPC Database Client
+pub mod batch;
 pub mod iterator;
 
 use std::{
@@ -21,7 +22,7 @@ use crate::{
         rpcdb::{HasRequest, NewIteratorWithStartAndPrefixRequest},
     },
     subnet::rpc::{
-        database::{self, iterator::BoxedIterator, BoxedDatabase},
+        database::{self, batch::BoxedBatch, iterator::BoxedIterator, BoxedDatabase},
         errors,
     },
 };
@@ -154,22 +155,22 @@ impl crate::subnet::rpc::health::Checkable for DatabaseClient {
 
 #[tonic::async_trait]
 impl database::iterator::Iteratee for DatabaseClient {
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator(&self) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start(&self, start: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(start, &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_prefix(&self, prefix: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], prefix).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start_and_prefix(
         &self,
         start: &[u8],
@@ -192,6 +193,14 @@ impl database::iterator::Iteratee for DatabaseClient {
                 errors::from_status(s),
             ))),
         }
+    }
+}
+
+#[tonic::async_trait]
+impl database::batch::Batcher for DatabaseClient {
+    /// Implements the [`crate::subnet::rpc::database::batch::Batcher`] trait.
+    async fn new_batch(&self) -> io::Result<BoxedBatch> {
+        Ok(Box::new(batch::Batch::new(self.inner.clone())))
     }
 }
 

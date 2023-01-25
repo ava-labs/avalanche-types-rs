@@ -8,7 +8,7 @@
 //! let resp = db.has("foo".as_bytes()).await;
 //! assert_eq!(resp.unwrap(), true);
 //! ```
-
+pub mod batch;
 pub mod iterator;
 
 use std::{
@@ -20,7 +20,7 @@ use std::{
 
 use crate::subnet::rpc::errors::Error;
 
-use super::{iterator::BoxedIterator, BoxedDatabase};
+use super::{batch::BoxedBatch, iterator::BoxedIterator, BoxedDatabase};
 use tokio::sync::RwLock;
 
 /// Database is an ephemeral key-value store that implements the Database interface.
@@ -29,7 +29,7 @@ use tokio::sync::RwLock;
 pub struct Database {
     /// Hashmap guarded by mutex which stores the memdb state.
     state: Arc<RwLock<HashMap<Vec<u8>, Vec<u8>>>>,
-    /// True if the database is closed
+    /// True if the database is closed.
     closed: Arc<AtomicBool>,
 }
 
@@ -115,22 +115,22 @@ impl crate::subnet::rpc::health::Checkable for Database {
 
 #[tonic::async_trait]
 impl super::iterator::Iteratee for Database {
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator(&self) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start(&self, start: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(start, &[]).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_prefix(&self, prefix: &[u8]) -> io::Result<BoxedIterator> {
         self.new_iterator_with_start_and_prefix(&[], prefix).await
     }
 
-    /// Implements the [`crate::subnet::rpc::database::Iteratee`] trait.
+    /// Implements the [`crate::subnet::rpc::database::iterator::Iteratee`] trait.
     async fn new_iterator_with_start_and_prefix(
         &self,
         start: &[u8],
@@ -162,6 +162,17 @@ impl super::iterator::Iteratee for Database {
             values,
             Arc::clone(&self.closed),
         ))
+    }
+}
+
+#[tonic::async_trait]
+impl crate::subnet::rpc::database::batch::Batcher for Database {
+    /// Implements the [`crate::subnet::rpc::database::batch::Batcher`] trait.
+    async fn new_batch(&self) -> io::Result<BoxedBatch> {
+        Ok(Box::new(batch::Batch::new(
+            Arc::clone(&self.state),
+            Arc::clone(&self.closed),
+        )))
     }
 }
 

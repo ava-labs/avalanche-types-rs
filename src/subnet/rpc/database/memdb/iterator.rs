@@ -1,3 +1,4 @@
+//! Database Iterator management implementation for memdb.
 use std::{
     io::{Error, ErrorKind, Result},
     sync::{
@@ -8,6 +9,9 @@ use std::{
 
 use crate::subnet::rpc::database::{self, iterator::BoxedIterator};
 
+/// Iterator iterates over a membd database's key/value pairs.
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#Iterator>
 pub struct Iterator {
     keys: Vec<Vec<u8>>,
     values: Vec<Vec<u8>>,
@@ -16,9 +20,6 @@ pub struct Iterator {
     closed: Arc<AtomicBool>,
 }
 
-/// Iterator iterates over a membd database's key/value pairs.
-///
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/database#Iterator>
 impl Iterator {
     pub fn new(keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>, closed: Arc<AtomicBool>) -> BoxedIterator {
         Box::new(Self {

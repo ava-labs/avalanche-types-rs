@@ -1,4 +1,4 @@
-//! Database Server
+//! RPC Database Server
 
 use std::{
     collections::HashMap,
@@ -154,9 +154,42 @@ impl pb::rpcdb::database_server::Database for Server {
 
     async fn write_batch(
         &self,
-        _request: Request<WriteBatchRequest>,
+        request: Request<WriteBatchRequest>,
     ) -> Result<Response<WriteBatchResponse>, Status> {
-        Err(Status::unimplemented("write batch"))
+        let req = request.into_inner();
+        let db = self.inner.read().await;
+
+        let mut batch = db.new_batch().await?;
+        for put in req.puts.iter() {
+            let resp = batch.put(&put.key, &put.value).await;
+            if let Err(e) = resp {
+                return Ok(Response::new(WriteBatchResponse {
+                    err: error_to_error_code(&e.to_string()).unwrap(),
+                }));
+            }
+        }
+
+        for del in req.deletes.iter() {
+            let resp = batch.delete(&del.key).await;
+            if let Err(e) = resp {
+                return Ok(Response::new(WriteBatchResponse {
+                    err: error_to_error_code(&e.to_string()).unwrap(),
+                }));
+            }
+        }
+
+        match batch.write().await {
+            Ok(_) => {
+                return Ok(Response::new(WriteBatchResponse {
+                    err: pb::rpcdb::Error::Unspecified.into(),
+                }))
+            }
+            Err(e) => {
+                return Ok(Response::new(WriteBatchResponse {
+                    err: error_to_error_code(&e.to_string()).unwrap(),
+                }))
+            }
+        }
     }
 
     async fn new_iterator_with_start_and_prefix(
