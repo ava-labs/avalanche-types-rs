@@ -379,7 +379,7 @@ where
         // serde_json::to_string(&tx).unwrap()
         if let Some(inner) = &tx {
             assert_eq!(inner.hash(), tx_receipt.transaction_hash);
-            log::info!("successfully issued transaction '{}'", inner.hash());
+            log::info!("successfully issued transaction '0x{:x}'", inner.hash());
         } else {
             log::warn!("transaction not found in get_transaction");
         }

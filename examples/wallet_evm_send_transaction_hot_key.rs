@@ -5,7 +5,7 @@ use ethers::utils::format_units;
 use ethers_providers::Middleware;
 use primitive_types::U256;
 
-/// cargo run --example wallet_evm_send_transaction_hot_key -- [HTTP RPC ENDPOINT] [CHAIN ALIAS] [PRIVATE KEY]
+/// cargo run --example wallet_evm_send_transaction_hot_key -- [HTTP RPC ENDPOINT] [PRIVATE KEY]
 /// cargo run --example wallet_evm_send_transaction_hot_key -- http://3.37.240.20:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 /// cargo run --example wallet_evm_send_transaction_hot_key -- http://3.37.240.20:9650/ext/bc/jyMffWvvB6Jd6C3ZqSuz67dMQUsMSmvZyLKLu26MrgFhjinst/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 #[tokio::main]
@@ -16,7 +16,7 @@ async fn main() -> io::Result<()> {
     );
 
     let chain_rpc_url = args().nth(1).expect("no url given");
-    let private_key = args().nth(2).expect("no private_key given");
+    let private_key = args().nth(2).expect("no private key given");
 
     let chain_id = json_client_evm::chain_id(&chain_rpc_url).await.unwrap();
     log::info!("running against {chain_rpc_url}, {chain_id}");

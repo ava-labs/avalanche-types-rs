@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::{io, str::FromStr};
 
 use avalanche_types::evm::abi;
@@ -6,7 +8,7 @@ use ethers_core::{
     types::{H160, U256},
 };
 
-/// cargo run --example evm_abi_calldata --features="evm"
+/// cargo run --example evm_contract_abi_calldata --features="evm"
 fn main() -> io::Result<()> {
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Debug)

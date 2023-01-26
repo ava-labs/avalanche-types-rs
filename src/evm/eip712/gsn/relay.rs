@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::{
     convert::TryFrom,
     io::{self, Error, ErrorKind},
@@ -13,6 +15,13 @@ use serde_with::serde_as;
 use zerocopy::AsBytes;
 
 impl super::Tx {
+    pub async fn sign(
+        &self,
+        eth_signer: impl ethers_signers::Signer + Clone,
+    ) -> io::Result<Vec<u8>> {
+        Request::sign(self, eth_signer).await
+    }
+
     /// Builds and signs the typed data with the signer and returns the
     /// "RelayTransactionRequest" with the signature attached in the relay metadata.
     /// Use "serde_json::to_vec" to encode to "ethers_core::types::Bytes"
@@ -21,7 +30,7 @@ impl super::Tx {
         &self,
         eth_signer: impl ethers_signers::Signer + Clone,
     ) -> io::Result<Request> {
-        Request::sign(self, eth_signer).await
+        Request::sign_to_request(self, eth_signer).await
     }
 }
 
@@ -49,11 +58,24 @@ pub struct Metadata {
 }
 
 impl Request {
+    /// Signs the typed data with the signer and returns the signature.
+    pub async fn sign(
+        tx: &super::Tx,
+        signer: impl ethers_signers::Signer + Clone,
+    ) -> io::Result<Vec<u8>> {
+        let sig = signer
+            .sign_typed_data(tx)
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed sign_typed_data '{}'", e)))?;
+
+        Ok(sig.to_vec())
+    }
+
     /// Signs the typed data with the signer and returns the "RelayTransactionRequest"
     /// with the signature attached in the relay metadata.
     /// Use "serde_json::to_vec" to encode to "ethers_core::types::Bytes"
     /// and send the request via "eth_sendRawTransaction".
-    pub async fn sign(
+    pub async fn sign_to_request(
         tx: &super::Tx,
         signer: impl ethers_signers::Signer + Clone,
     ) -> io::Result<Self> {

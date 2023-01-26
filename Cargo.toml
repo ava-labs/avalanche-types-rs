@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.227" # https://crates.io/crates/avalanche-types
+version = "0.0.229" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.66"
 publish = true
@@ -181,7 +181,7 @@ subnet_metrics = [
 ]
 
 [[example]]
-name = "evm_abi_calldata"
+name = "evm_contract_abi_calldata"
 required-features = ["evm"]
 
 [[example]]
@@ -193,7 +193,35 @@ name = "evm_eip712_gsn_request_type_hash"
 required-features = ["evm"]
 
 [[example]]
-name = "evm_eip712_gsn_send_relay_request"
+name = "evm_contract_counter_increment"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_counter_increment_append_calldata"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_forwarder_proxy_call_counter_increment"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_forwarder_proxy_call_counter_increment_append_calldata"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_forwarder_execute_counter_increment"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_counter_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_registry"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_registry_relay_eip712"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]

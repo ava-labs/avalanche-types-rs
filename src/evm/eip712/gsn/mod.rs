@@ -1,10 +1,10 @@
+#![allow(deprecated)]
+
 pub mod relay;
 
-use std::{
-    collections::BTreeMap,
-    io::{self, Error, ErrorKind},
-};
+use std::{collections::BTreeMap, io};
 
+use crate::evm::abi as evm_abi;
 use ethers_core::{
     abi::{Function, Param, ParamType, StateMutability, Token},
     types::{
@@ -280,13 +280,73 @@ impl Tx {
     /// ref. "execute((address,address,uint256,uint256,uint256,bytes,uint256) req,bytes32 domainSeparator,bytes32 requestTypeHash,bytes suffixData,bytes sig) (bool success, bytes memory ret)"
     /// ref. ["(0x52C84043CD9c865236f11d9Fc9F56aa003c1f922,0x52C84043CD9c865236f11d9Fc9F56aa003c1f922,0,0,0,0x11,0)", "0x11", "0x11", "0x11", "0x11", "0x11"]
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol>
+    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol>
+    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/RelayHub.sol> "innerRelayCall"
+    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/utils/GsnEip712Library.sol> "execute"
+    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/utils/GsnTypes.sol> "GsnTypes"
     /// ref. <https://eips.ethereum.org/EIPS/eip-712>
     pub fn encode_execute_call(&self, sig: Vec<u8>) -> io::Result<Vec<u8>> {
+        // Parsed function of "execute((address,address,uint256,uint256,uint256,bytes,uint256) req,bytes32 domainSeparator,bytes32 requestTypeHash,bytes suffixData,bytes sig) (bool success, bytes memory ret)".
+        // ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "execute"
+        // ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/abi/human_readable/mod.rs> "HumanReadableParser::parse_function"
+        let func = Function {
+            name: "execute".to_string(),
+            inputs: vec![
+                Param {
+                    name: "req".to_string(),
+                    kind: ParamType::Tuple(vec![
+                        ParamType::Address,   // "from"
+                        ParamType::Address,   // "to"
+                        ParamType::Uint(256), // "value"
+                        ParamType::Uint(256), // "gas"
+                        ParamType::Uint(256), // "nonce"
+                        ParamType::Bytes,     // "data"
+                        ParamType::Uint(256), // "validUntilTime"
+                    ]),
+                    internal_type: None,
+                },
+                Param {
+                    name: "domainSeparator".to_string(),
+                    kind: ParamType::FixedBytes(32),
+                    internal_type: None,
+                },
+                Param {
+                    name: "requestTypeHash".to_string(),
+                    kind: ParamType::FixedBytes(32),
+                    internal_type: None,
+                },
+                Param {
+                    name: "suffixData".to_string(),
+                    kind: ParamType::Bytes,
+                    internal_type: None,
+                },
+                Param {
+                    name: "sig".to_string(),
+                    kind: ParamType::Bytes,
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![
+                Param {
+                    name: "success".to_string(),
+                    kind: ParamType::Bool,
+                    internal_type: None,
+                },
+                Param {
+                    name: "ret".to_string(),
+                    kind: ParamType::Bytes,
+                    internal_type: None,
+                },
+            ],
+            constant: None,
+            state_mutability: StateMutability::Payable,
+        };
+
         // do not use "encode_args" from str
         // "LenientTokenizer::tokenize" cannot handle hex encode
         // "Uint parse error: InvalidCharacter"
         // ref. <https://github.com/foundry-rs/foundry/blob/master/common/src/abi.rs> "encode_args"
-        let tokens = vec![
+        let arg_tokens = vec![
             Token::Tuple(vec![
                 Token::Address(self.from),
                 Token::Address(self.to),
@@ -302,9 +362,7 @@ impl Tx {
             Token::Bytes(sig),
         ];
 
-        let func = forwarder_execute_func();
-        func.encode_input(&tokens)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to encode_input {}", e)))
+        evm_abi::encode_calldata(func, &arg_tokens)
     }
 
     /// Returns the default "TypedData" with its default "struct_hash" implementation.
@@ -476,63 +534,4 @@ fn foward_request_types() -> Types {
         ],
     );
     return types;
-}
-
-/// Parsed function of "execute((address,address,uint256,uint256,uint256,bytes,uint256) req,bytes32 domainSeparator,bytes32 requestTypeHash,bytes suffixData,bytes sig) (bool success, bytes memory ret)".
-/// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "execute"
-/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/abi/human_readable/mod.rs> "HumanReadableParser::parse_function"
-fn forwarder_execute_func() -> Function {
-    #![allow(deprecated)]
-    Function {
-        name: "execute".to_string(),
-        inputs: vec![
-            Param {
-                name: "req".to_string(),
-                kind: ParamType::Tuple(vec![
-                    ParamType::Address,   // "from"
-                    ParamType::Address,   // "to"
-                    ParamType::Uint(256), // "value"
-                    ParamType::Uint(256), // "gas"
-                    ParamType::Uint(256), // "nonce"
-                    ParamType::Bytes,     // "data"
-                    ParamType::Uint(256), // "validUntilTime"
-                ]),
-                internal_type: None,
-            },
-            Param {
-                name: "domainSeparator".to_string(),
-                kind: ParamType::FixedBytes(32),
-                internal_type: None,
-            },
-            Param {
-                name: "requestTypeHash".to_string(),
-                kind: ParamType::FixedBytes(32),
-                internal_type: None,
-            },
-            Param {
-                name: "suffixData".to_string(),
-                kind: ParamType::Bytes,
-                internal_type: None,
-            },
-            Param {
-                name: "sig".to_string(),
-                kind: ParamType::Bytes,
-                internal_type: None,
-            },
-        ],
-        outputs: vec![
-            Param {
-                name: "success".to_string(),
-                kind: ParamType::Bool,
-                internal_type: None,
-            },
-            Param {
-                name: "ret".to_string(),
-                kind: ParamType::Bytes,
-                internal_type: None,
-            },
-        ],
-        constant: None,
-        state_mutability: StateMutability::NonPayable,
-    }
 }
