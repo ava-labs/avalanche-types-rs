@@ -1,8 +1,8 @@
 [package]
 name = "avalanche-types"
-version = "0.0.229" # https://crates.io/crates/avalanche-types
+version = "0.0.230" # https://crates.io/crates/avalanche-types
 edition = "2021"
-rust-version = "1.66"
+rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
 description = "Avalanche primitive types in Rust"
 license = "BSD-3-Clause"
@@ -44,9 +44,9 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.26.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.23.2", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
-aws-sdk-kms = { version = "0.23.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
-aws-smithy-types = { version = "0.53.1", optional = true } # https://github.com/awslabs/smithy-rs/releases
+aws-manager = { version = "0.24.0", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
+aws-smithy-types = { version = "0.54.1", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
@@ -61,7 +61,7 @@ bip32 = { version = "0.4.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "jsonrpc_client", "tokio"
-http-manager = { version = "0.0.8", optional = true }
+http-manager = { version = "0.0.9", optional = true }
 tokio = { version = "1.24.2", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "wallet"
@@ -120,7 +120,7 @@ default = [
     # "cert",
     # "codec_base64",
     # "codec_big_int",
-    # "evm",
+    "evm",
     # "jsonrpc_client",
     # "kms_aws",
     # "libsecp256k1",
@@ -181,16 +181,20 @@ subnet_metrics = [
 ]
 
 [[example]]
-name = "evm_contract_abi_calldata"
-required-features = ["evm"]
-
-[[example]]
 name = "evm_eip712_gsn_domain_separator"
 required-features = ["evm"]
 
 [[example]]
 name = "evm_eip712_gsn_request_type_hash"
 required-features = ["evm"]
+
+
+
+[[example]]
+name = "evm_contract_abi_calldata"
+required-features = ["evm"]
+
+
 
 [[example]]
 name = "evm_contract_counter_increment"
@@ -201,28 +205,32 @@ name = "evm_contract_counter_increment_append_calldata"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
-name = "evm_contract_forwarder_proxy_call_counter_increment"
+name = "evm_contract_counter_increment_forwarder_proxy_call"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
-name = "evm_contract_forwarder_proxy_call_counter_increment_append_calldata"
+name = "evm_contract_counter_increment_forwarder_execute"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
-name = "evm_contract_forwarder_execute_counter_increment"
+name = "evm_contract_counter_increment_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+
+
+[[example]]
+name = "evm_contract_simple_registry_register"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
-name = "evm_contract_counter_relay_eip712"
+name = "evm_contract_simple_registry_forwarder_execute"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
-name = "evm_contract_registry"
+name = "evm_contract_simple_registry_register_forwarder_relay_eip712"
 required-features = ["jsonrpc_client", "evm"]
 
-[[example]]
-name = "evm_contract_registry_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+
 
 [[example]]
 name = "evm_send_raw_transaction_eip1559_hot_key"
@@ -231,6 +239,8 @@ required-features = ["jsonrpc_client", "evm"]
 [[example]]
 name = "evm_send_raw_transaction_eip1559_kms_aws"
 required-features = ["jsonrpc_client", "evm", "kms_aws"]
+
+
 
 [[example]]
 name = "wallet_evm_send_transaction_hot_key"

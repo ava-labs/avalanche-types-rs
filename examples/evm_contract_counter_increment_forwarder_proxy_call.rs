@@ -8,8 +8,8 @@ use ethers_core::{
     types::{H160, U256},
 };
 
-/// cargo run --example evm_contract_forwarder_proxy_call_counter_increment --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_forwarder_proxy_call_counter_increment --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x7466154c5DE2680Ee2767C763546F052DC7bC393 0x59289F9Ea2432226c8430e3057E2642aD5f979aE
+/// cargo run --example evm_contract_counter_increment_forwarder_proxy_call --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_counter_increment_forwarder_proxy_call --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x7466154c5DE2680Ee2767C763546F052DC7bC393 0x59289F9Ea2432226c8430e3057E2642aD5f979aE
 ///
 /// cast send --gas-price 700000000000 --priority-gas-price 10000000000 --private-key=56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "increment()"
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "getNumber()" | sed -r '/^\s*$/d' | tail -1
@@ -85,14 +85,6 @@ async fn main() -> io::Result<()> {
     ];
     let calldata = abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!("calldata: 0x{}", hex::encode(calldata.clone()));
-
-    // as if forwarder appends the original EIP712 signer
-    // this does not work because the msg.sender is not a trusted forwarder
-    // let no_gas_key = key::secp256k1::private_key::Key::generate().unwrap();
-    // let no_gas_key_info = no_gas_key.to_info(1).unwrap();
-    // log::info!("created hot key:\n\n{}\n", no_gas_key_info);
-    // let mut calldata = calldata.clone();
-    // calldata.extend(no_gas_key_info.h160_address.to_fixed_bytes().to_vec());
 
     let tx_id = evm_wallet
         .eip1559()

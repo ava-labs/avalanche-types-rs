@@ -8,8 +8,9 @@ use ethers_core::{
     types::{H160, U256},
 };
 
-/// cargo run --example evm_contract_registry --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [PRIVATE KEY] [CONTRACT ADDRESS]
-/// cargo run --example evm_contract_registry --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x95CA0a568236fC7413Cd2b794A7da24422c2BBb6
+/// cargo run --example evm_contract_simple_registry_register --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [PRIVATE KEY] [CONTRACT ADDRESS]
+/// cargo run --example evm_contract_simple_registry_register --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x95CA0a568236fC7413Cd2b794A7da24422c2BBb6
+///
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x95CA0a568236fC7413Cd2b794A7da24422c2BBb6 "getName(address addr)" "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC" | sed -r '/^\s*$/d' | tail -1 | xxd -r -p
 #[tokio::main]
 async fn main() -> io::Result<()> {

@@ -38,7 +38,7 @@ a basic example of using the Rust SDK.
 
 ### Rust Version
 
-`avalanche-types` currently works on Rust `1.66` and above as it requires
+`avalanche-types` currently works on Rust `1.67` and above as it requires
 support for the 2021 edition. This project uses the stable toolchain.
 
 ## Getting Help

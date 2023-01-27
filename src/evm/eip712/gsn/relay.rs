@@ -350,7 +350,7 @@ fn test_build_relay_transaction_request() {
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let arg_tokens = vec![Token::String("aaaaa".to_string())];
+    let arg_tokens = vec![Token::String(random_manager::string(10))];
     let calldata = crate::evm::abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!("calldata: 0x{}", hex::encode(calldata.clone()));
 
@@ -374,6 +374,7 @@ fn test_build_relay_transaction_request() {
         .from(H160::random())
         .to(H160::random())
         .value(U256::zero())
+        .gas(U256::from(random_manager::u64()))
         .nonce(U256::from(random_manager::u64()))
         .data(calldata)
         .valid_until_time(U256::from(random_manager::u64()))

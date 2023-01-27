@@ -8,14 +8,14 @@ use avalanche_types::{
     key, wallet,
 };
 use ethers_core::{
-    abi::{Function, StateMutability},
+    abi::{Function, Param, ParamType, StateMutability, Token},
     types::{H160, U256},
 };
 
 /// Sends a request to the forwarder.
 ///
-/// cargo run --example evm_contract_forwarder_execute_counter_increment --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_forwarder_execute_counter_increment --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x7466154c5DE2680Ee2767C763546F052DC7bC393 0x59289F9Ea2432226c8430e3057E2642aD5f979aE
+/// cargo run --example evm_contract_simple_registry_forwarder_execute --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_simple_registry_forwarder_execute --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 0x95CA0a568236fC7413Cd2b794A7da24422c2BBb6
 ///
 /// cast send --gas-price 700000000000 --priority-gas-price 10000000000 --private-key=56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "increment()"
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "getNumber()" | sed -r '/^\s*$/d' | tail -1
@@ -50,19 +50,25 @@ async fn main() -> io::Result<()> {
     log::info!("created hot key:\n\n{}\n", no_gas_key_info);
     let no_gas_signer: ethers_signers::LocalWallet = no_gas_key.to_ethers_core_signing_key().into();
 
-    // parsed function of "increment()"
+    // parsed function of "register(string name)"
     let func = Function {
-        name: "increment".to_string(),
-        inputs: vec![],
+        name: "register".to_string(),
+        inputs: vec![Param {
+            name: "name".to_string(),
+            kind: ParamType::String,
+            internal_type: None,
+        }],
         outputs: Vec::new(),
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let arg_tokens = vec![];
-    let no_gas_calldata = abi::encode_calldata(func, &arg_tokens).unwrap();
+    let name_to_register = random_manager::string(10);
+    log::info!("registering {name_to_register}");
+    let arg_tokens = vec![Token::String(name_to_register.clone())];
+    let no_gas_recipient_contract_calldata = abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!(
-        "no gas calldata: 0x{}",
-        hex::encode(no_gas_calldata.clone())
+        "no gas recipient contract calldata: 0x{}",
+        hex::encode(no_gas_recipient_contract_calldata.clone())
     );
 
     let rr_tx = Tx::new()
@@ -73,7 +79,7 @@ async fn main() -> io::Result<()> {
         .domain_version("1")
         //
         // local network
-        .domain_chain_id(U256::from(43112))
+        .domain_chain_id(chain_id)
         //
         // trusted forwarder contract address
         .domain_verifying_contract(forwarder_contract_addr)
@@ -84,13 +90,17 @@ async fn main() -> io::Result<()> {
         // contract address that this gasless transaction will interact with
         .to(recipient_contract_addr)
         //
+        // fails if zero (e.g., "out of gas")
+        // TODO: better estimate gas based on "RelayHub"
+        .gas(U256::from(90000))
+        //
         // contract call needs no value
         .value(U256::zero())
         //
         // initial nonce is zero
         .nonce(U256::from(0))
         //
-        .data(no_gas_calldata)
+        .data(no_gas_recipient_contract_calldata)
         //
         .valid_until_time(U256::MAX)
         //
@@ -131,6 +141,7 @@ async fn main() -> io::Result<()> {
         .submit()
         .await?;
     log::info!("evm ethers wallet SUCCESS with transaction id {}", tx_id);
+    log::info!("registered {name_to_register}");
 
     Ok(())
 }
