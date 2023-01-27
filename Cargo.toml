@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.230" # https://crates.io/crates/avalanche-types
+version = "0.0.231" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -120,7 +120,7 @@ default = [
     # "cert",
     # "codec_base64",
     # "codec_big_int",
-    "evm",
+    # "evm",
     # "jsonrpc_client",
     # "kms_aws",
     # "libsecp256k1",
