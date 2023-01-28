@@ -21,7 +21,7 @@ async fn main() -> io::Result<()> {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let chain_rpc_url = args().nth(1).expect("no url given");
+    let chain_rpc_url = args().nth(1).expect("no chain RPC URL given");
     let private_key = args().nth(2).expect("no private key given");
 
     let forwarder_contract_addr = args().nth(3).expect("no contract address given");

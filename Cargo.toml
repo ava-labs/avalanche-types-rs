@@ -189,15 +189,22 @@ name = "evm_eip712_gsn_request_type_hash"
 required-features = ["evm"]
 
 
-
 [[example]]
 name = "evm_contract_abi_calldata"
 required-features = ["evm"]
 
 
+[[example]]
+name = "evm_contract_forwarder_get_nonce"
+required-features = ["jsonrpc_client", "evm"]
+
 
 [[example]]
 name = "evm_contract_counter_increment"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_counter_get_last"
 required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
@@ -217,7 +224,6 @@ name = "evm_contract_counter_increment_forwarder_relay_eip712"
 required-features = ["jsonrpc_client", "evm"]
 
 
-
 [[example]]
 name = "evm_contract_simple_registry_register"
 required-features = ["jsonrpc_client", "evm"]
@@ -231,7 +237,6 @@ name = "evm_contract_simple_registry_register_forwarder_relay_eip712"
 required-features = ["jsonrpc_client", "evm"]
 
 
-
 [[example]]
 name = "evm_send_raw_transaction_eip1559_hot_key"
 required-features = ["jsonrpc_client", "evm"]
@@ -239,7 +244,6 @@ required-features = ["jsonrpc_client", "evm"]
 [[example]]
 name = "evm_send_raw_transaction_eip1559_kms_aws"
 required-features = ["jsonrpc_client", "evm", "kms_aws"]
-
 
 
 [[example]]

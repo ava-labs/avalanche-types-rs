@@ -7,8 +7,10 @@ use avalanche_types::{
     jsonrpc::client::evm as json_client_evm,
     key,
 };
+use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::{
     abi::{Function, Param, ParamType, StateMutability, Token},
+    types::transaction::eip2718::TypedTransaction,
     types::{H160, U256},
 };
 use ethers_providers::{Http, Middleware, Provider};
@@ -23,7 +25,14 @@ async fn main() -> io::Result<()> {
     );
 
     let relay_server_rpc_url = args().nth(1).expect("no relay server RPC URL given");
+    let relay_server_provider = Provider::<Http>::try_from(relay_server_rpc_url.clone())
+        .expect("could not instantiate HTTP Provider");
+    log::info!("created relay server provider for {relay_server_rpc_url}");
+
     let chain_rpc_url = args().nth(2).expect("no chain RPC URL given");
+    let chain_rpc_provider = Provider::<Http>::try_from(chain_rpc_url.clone())
+        .expect("could not instantiate HTTP Provider");
+    log::info!("created chain rpc server provider for {chain_rpc_url}");
 
     let forwarder_contract_addr = args().nth(3).expect("no forwarder contract address given");
     let forwarder_contract_addr =
@@ -65,7 +74,7 @@ async fn main() -> io::Result<()> {
         hex::encode(no_gas_recipient_contract_calldata.clone())
     );
 
-    let relay_tx_request = Tx::new()
+    let relay_tx = Tx::new()
         //
         // make sure this matches with "registerDomainSeparator" call
         .domain_name("my name")
@@ -82,8 +91,8 @@ async fn main() -> io::Result<()> {
         .to(recipient_contract_addr)
         //
         // fails if zero (e.g., "out of gas")
-        // TODO: better estimate gas based on "RelayHub"
-        .gas(U256::from(30000))
+        // TODO: better estimate gas based on "RelayHub", use "eth_estimateGas"
+        .gas(U256::from(300000))
         //
         // contract call needs no value
         .value(U256::zero())
@@ -101,23 +110,41 @@ async fn main() -> io::Result<()> {
         .type_name("my name")
         //
         //
-        .type_suffix_data("my suffix")
-        //
-        //
-        .sign_to_request(no_gas_key_signer)
+        .type_suffix_data("my suffix");
+    let relay_tx_request = relay_tx
+        .sign_to_request(no_gas_key_signer.clone())
         .await
         .unwrap();
-
-    log::info!("relay_tx_request: {:?}", relay_tx_request);
-
     let signed_bytes: ethers_core::types::Bytes =
         serde_json::to_vec(&relay_tx_request).unwrap().into();
+    log::info!("relay_tx_request: {:?}", relay_tx_request);
 
-    let provider = Provider::<Http>::try_from(relay_server_rpc_url.clone())
-        .expect("could not instantiate HTTP Provider");
-    log::info!("created provider for {relay_server_rpc_url}");
+    let relay_tx_calldata = relay_tx
+        .encode_execute_call(signed_bytes.to_vec().clone())
+        .unwrap();
+    let eip1559_tx = Eip1559TransactionRequest::new()
+        .chain_id(chain_id.as_u64())
+        .to(ethers::prelude::H160::from(
+            forwarder_contract_addr.as_fixed_bytes(),
+        ))
+        .data(relay_tx_calldata);
+    let typed_tx: TypedTransaction = eip1559_tx.into();
+    let estimated_gas = chain_rpc_provider
+        .estimate_gas(&typed_tx, None)
+        .await
+        .unwrap();
+    log::info!("estimated gas: {estimated_gas}");
 
-    let pending = provider.send_raw_transaction(signed_bytes).await.unwrap();
+    let relay_tx = relay_tx.gas(estimated_gas.checked_add(U256::from(5000)).unwrap());
+    let relay_tx_request = relay_tx.sign_to_request(no_gas_key_signer).await.unwrap();
+    let signed_bytes: ethers_core::types::Bytes =
+        serde_json::to_vec(&relay_tx_request).unwrap().into();
+    log::info!("relay_tx_request: {:?}", relay_tx_request);
+
+    let pending = relay_server_provider
+        .send_raw_transaction(signed_bytes)
+        .await
+        .unwrap();
     log::info!(
         "pending tx hash {} from 0x{:x}",
         pending.tx_hash(),

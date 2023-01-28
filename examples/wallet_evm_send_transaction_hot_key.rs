@@ -15,7 +15,7 @@ async fn main() -> io::Result<()> {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let chain_rpc_url = args().nth(1).expect("no url given");
+    let chain_rpc_url = args().nth(1).expect("no chain RPC URL given");
     let private_key = args().nth(2).expect("no private key given");
 
     let chain_id = json_client_evm::chain_id(&chain_rpc_url).await.unwrap();

@@ -16,15 +16,13 @@ async fn main() -> io::Result<()> {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let url = args().nth(1).expect("no url given");
-    log::info!("running against {url}");
+    let chain_rpc_url = args().nth(1).expect("no chain rpc url given");
+    let chain_rpc_provider = Provider::<Http>::try_from(chain_rpc_url.clone())
+        .expect("could not instantiate HTTP Provider");
+    log::info!("created chain rpc server provider for {chain_rpc_url}");
 
     let kms_cmk_arn = args().nth(2).expect("no KMS CMK ARN given");
     log::info!("running with {kms_cmk_arn}");
-
-    let provider =
-        Provider::<Http>::try_from(url.clone()).expect("could not instantiate HTTP Provider");
-    log::info!("created provider for {url}");
 
     let chain_id = random_manager::u64() % 3000;
     let signer_nonce = U256::from(random_manager::u64() % 10);
@@ -60,7 +58,10 @@ async fn main() -> io::Result<()> {
     let signed_bytes = tx.sign_as_typed_transaction(k1_signer).await.unwrap();
     log::info!("signed_bytes: {}", signed_bytes);
 
-    let pending = provider.send_raw_transaction(signed_bytes).await.unwrap();
+    let pending = chain_rpc_provider
+        .send_raw_transaction(signed_bytes)
+        .await
+        .unwrap();
     log::info!("pending tx hash {}", pending.tx_hash());
 
     Ok(())

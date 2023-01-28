@@ -46,30 +46,39 @@ pub struct Tx {
     pub domain_verifying_contract: H160,
 
     /// Forward request "from" field.
+    /// An externally-owned account making the request.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub from: H160,
     /// Forward request "to" field.
+    /// A destination address, normally a smart-contract.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub to: H160,
     /// Forward request "value" field.
+    /// An amount of Ether to transfer to the destination.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub value: U256,
     /// Forward request "gas" field.
+    /// An amount of gas limit to set for the execution.
+    /// When an externally owned account (EOA) signs the transaction, it must estimate the required gas
+    /// to provide enough for its execution.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub gas: U256,
     /// Forward request "nonce" field.
+    /// An on-chain tracked nonce of a transaction.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub nonce: U256,
     /// Forward request "data" field.
+    /// The data to be sent to the destination (recipient contract).
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub data: Vec<u8>,
     /// Forward request "validUntil" field.
+    /// The highest block number the request can be forwarded in, or 0 if request validity is not time-limited.
     /// ref. <https://eips.ethereum.org/EIPS/eip-2770>
     /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/IForwarder.sol> "ForwardRequest"
     pub valid_until_time: U256,
