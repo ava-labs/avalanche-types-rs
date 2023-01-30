@@ -14,7 +14,6 @@ pub mod platformvm;
 pub mod txs;
 pub mod units;
 pub mod verify;
-pub mod version;
 
 #[cfg(feature = "avalanchego")]
 pub mod avalanchego;
@@ -42,3 +41,6 @@ pub mod proto;
 
 #[cfg(any(doc, feature = "subnet"))]
 pub mod subnet;
+
+#[cfg(feature = "utils")]
+pub mod utils;

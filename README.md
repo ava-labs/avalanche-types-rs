@@ -14,13 +14,9 @@
 
 ## Introduction
 
-The `avalanche-types` crate implements and is the canonical representation of
-Avalanche primitive types in Rust.  Avalanche types are separated by modules and
-are all under the `src` directory.
+The `avalanche-types` crate implements and is the canonical representation of Avalanche primitive types in Rust.  Avalanche types are separated by modules and are all under the `src` directory.
 
-This crate also provides an SDK library for developing subnets in Rust. For the
-SDK functionality, see `src/subnet` which contains everything required to build
-a subnet VM in Rust.
+This crate also provides an SDK library for developing subnets in Rust. For the SDK functionality, see `src/subnet` which contains everything required to build a subnet VM in Rust.
 
 The following VMs were built with the SDK:
 * Simple Rust VM: [TimestampVM](https://github.com/ava-labs/timestampvm-rs)
@@ -28,23 +24,19 @@ The following VMs were built with the SDK:
 
 ## Getting Started
 
-Examples can be found in [`examples`] and is a good first step to getting an
-understanding of general usage.
+Examples can be found in [`examples`](./examples) and is a good first step to getting an understanding of general usage.
 
 ### Tutorials
 
-- [How to Build a Simple Rust VM](https://docs.avax.network/subnets/create-a-simple-rust-vm) tutorial provides
-a basic example of using the Rust SDK.
+- [How to Build a Simple Rust VM](https://docs.avax.network/subnets/create-a-simple-rust-vm) tutorial provides a basic example of using the Rust SDK.
 
 ### Rust Version
 
-`avalanche-types` currently works on Rust `1.67` and above as it requires
-support for the 2021 edition. This project uses the stable toolchain.
+`avalanche-types` currently works on Rust `1.67` and above as it requires support for the 2021 edition. This project uses the stable toolchain.
 
 ## Getting Help
 
-First please try find the answer to your question in the code documentation.
-If more clarification is required, try opening an [issue] with the question.
+First please try find the answer to your question in the code documentation. If more clarification is required, try opening an [issue] with the question.
 
 [issue]: https://github.com/ava-labs/avalanche-types-rs/issues/new
 

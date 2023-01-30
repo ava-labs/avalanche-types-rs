@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.231" # https://crates.io/crates/avalanche-types
+version = "0.0.233" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -44,7 +44,7 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.26.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.24.0", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.24.1", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.54.1", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
@@ -61,10 +61,10 @@ bip32 = { version = "0.4.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "jsonrpc_client", "tokio"
-http-manager = { version = "0.0.9", optional = true }
-tokio = { version = "1.24.2", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
+http-manager = { version = "0.0.10", optional = true }
+tokio = { version = "1.25.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
-# [OPTIONAL] for "wallet"
+# [OPTIONAL] for "utils"
 url = { version = "2.3.1", optional = true }
 
 # [OPTIONAL] for "evm"
@@ -130,6 +130,7 @@ default = [
     # "subnet",
     # "subnet_evm",
     # "subnet_metrics",
+    # "utils",
     # "wallet",
     # "wallet_evm",
     # "xsvm",
@@ -145,9 +146,10 @@ kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types", "ethers-signers"]
 libsecp256k1 = ["secp256k1"]
 mnemonic = ["bip32", "rand_core"]
 subnet_evm = []
-wallet = ["http-manager", "tokio", "url"]
+wallet = ["http-manager", "tokio", "utils"]
 wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client"]
 xsvm = []
+utils = ["url"]
 
 proto = [
     "prost",

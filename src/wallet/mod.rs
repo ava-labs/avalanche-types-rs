@@ -12,9 +12,8 @@ use std::{
 use crate::{
     ids::{self, short},
     jsonrpc::client::{info as api_info, x as api_x},
-    key, units,
+    key, units, utils,
 };
-use url::Url;
 
 #[derive(Debug, Clone)]
 pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone> {
@@ -127,12 +126,18 @@ where
     /// If URL path is specified, it strips the URL path.
     #[must_use]
     pub fn base_http_url(mut self, u: String) -> Self {
-        let url = Url::parse(&u).unwrap();
-        let rpc_ep = format!("{}://{}", url.scheme(), url.host_str().unwrap());
-        let rpc_url = if let Some(port) = url.port() {
+        let (scheme, host, port, _, _) =
+            utils::urls::extract_scheme_host_port_path_chain_alias(&u).unwrap();
+        let scheme = if let Some(s) = scheme {
+            format!("{s}://")
+        } else {
+            String::new()
+        };
+        let rpc_ep = format!("{scheme}{host}");
+        let rpc_url = if let Some(port) = port {
             format!("{rpc_ep}:{port}")
         } else {
-            rpc_ep // e.g., DNS
+            rpc_ep.clone() // e.g., DNS
         };
 
         if self.base_http_urls.is_empty() {
@@ -149,13 +154,20 @@ where
     pub fn base_http_urls(mut self, urls: Vec<String>) -> Self {
         let mut base_http_urls = Vec::new();
         for http_rpc in urls.iter() {
-            let url = Url::parse(http_rpc).unwrap();
-            let rpc_ep = format!("{}://{}", url.scheme(), url.host_str().unwrap());
-            let rpc_url = if let Some(port) = url.port() {
+            let (scheme, host, port, _, _) =
+                utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).unwrap();
+            let scheme = if let Some(s) = scheme {
+                format!("{s}://")
+            } else {
+                String::new()
+            };
+            let rpc_ep = format!("{scheme}{host}");
+            let rpc_url = if let Some(port) = port {
                 format!("{rpc_ep}:{port}")
             } else {
-                rpc_ep // e.g., DNS
+                rpc_ep.clone() // e.g., DNS
             };
+
             base_http_urls.push(rpc_url);
         }
         self.base_http_urls = base_http_urls;
