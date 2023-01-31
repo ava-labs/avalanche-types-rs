@@ -219,7 +219,7 @@ required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
 name = "evm_contract_counter_increment_forwarder_execute"
-required-features = ["jsonrpc_client", "evm", "wallet"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_counter_increment_forwarder_relay_eip712"
@@ -232,7 +232,7 @@ required-features = ["jsonrpc_client", "evm"]
 
 [[example]]
 name = "evm_contract_simple_registry_register_forwarder_execute"
-required-features = ["jsonrpc_client", "evm", "wallet"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_simple_registry_register_forwarder_relay_eip712"
