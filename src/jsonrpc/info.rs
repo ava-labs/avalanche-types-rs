@@ -399,9 +399,23 @@ pub struct GetTxFeeResponse {
 #[serde(rename_all = "camelCase")]
 pub struct GetTxFeeResult {
     #[serde_as(as = "DisplayFromStr")]
-    pub creation_tx_fee: u64,
-    #[serde_as(as = "DisplayFromStr")]
     pub tx_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub create_asset_tx_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub create_subnet_tx_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub transform_subnet_tx_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub create_blockchain_tx_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub add_primary_network_validator_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub add_primary_network_delegator_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub add_subnet_validator_fee: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub add_subnet_delegator_fee: u64,
 }
 
 impl Default for GetTxFeeResult {
@@ -413,8 +427,15 @@ impl Default for GetTxFeeResult {
 impl GetTxFeeResult {
     pub fn default() -> Self {
         Self {
-            creation_tx_fee: 0,
             tx_fee: 0,
+            create_asset_tx_fee: 0,
+            create_subnet_tx_fee: 0,
+            transform_subnet_tx_fee: 0,
+            create_blockchain_tx_fee: 0,
+            add_primary_network_validator_fee: 0,
+            add_primary_network_delegator_fee: 0,
+            add_subnet_validator_fee: 0,
+            add_subnet_delegator_fee: 0,
         }
     }
 }
@@ -422,15 +443,23 @@ impl GetTxFeeResult {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_get_tx_fee --exact --show-output
 #[test]
 fn test_get_tx_fee() {
-    // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee
+    // ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee>
+    // default local network fees
     let resp: GetTxFeeResponse = serde_json::from_str(
         "
 
 {
     \"jsonrpc\": \"2.0\",
     \"result\": {
-        \"creationTxFee\": \"10000000\",
-        \"txFee\": \"1000000\"
+        \"txFee\": \"1000000\",
+        \"createAssetTxFee\": \"1000000\",
+        \"createSubnetTxFee\": \"100000000\",
+        \"transformSubnetTxFee\": \"100000000\",
+        \"createBlockchainTxFee\": \"100000000\",
+        \"addPrimaryNetworkValidatorFee\": \"0\",
+        \"addPrimaryNetworkDelegatorFee\": \"1000000\",
+        \"addSubnetValidatorFee\": \"1000000\",
+        \"addSubnetDelegatorFee\": \"1000000\"
     },
     \"id\": 1
 }
@@ -443,8 +472,15 @@ fn test_get_tx_fee() {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetTxFeeResult {
-            creation_tx_fee: 10000000_u64,
-            tx_fee: 1000000_u64,
+            tx_fee: 1000000,
+            create_asset_tx_fee: 1000000,
+            create_subnet_tx_fee: 100000000,
+            transform_subnet_tx_fee: 100000000,
+            create_blockchain_tx_fee: 100000000,
+            add_primary_network_validator_fee: 0,
+            add_primary_network_delegator_fee: 1000000,
+            add_subnet_validator_fee: 1000000,
+            add_subnet_delegator_fee: 1000000,
         }),
     };
     assert_eq!(resp, expected);

@@ -140,8 +140,10 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 
 /// e.g., "info.getTxFee".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee>
+/// ref. "genesi/genesis_mainnet.go" requires 1 * units::AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
+/// ref. "genesi/genesis_fuji/local.go" requires 100 * units::MILLI_AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
 pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
-    log::info!("getting node ID for {}", http_rpc);
+    log::info!("getting tx fee for {}", http_rpc);
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getTxFee");

@@ -12,7 +12,7 @@ use std::{
 use crate::{
     ids::{self, short},
     jsonrpc::client::{info as api_info, x as api_x},
-    key, units, utils,
+    key, utils,
 };
 
 #[derive(Debug, Clone)]
@@ -201,16 +201,10 @@ where
         let avax_asset_id = resp.asset_id;
 
         let resp = api_info::get_tx_fee(&self.base_http_urls[0]).await?;
-        let tx_fee = resp.result.unwrap().tx_fee;
-
-        let (create_subnet_tx_fee, create_blockchain_tx_fee) = if network_id == 1 {
-            // ref. "genesi/genesis_mainnet.go"
-            (1 * units::AVAX, 1 * units::AVAX)
-        } else {
-            // ref. "genesi/genesis_fuji.go"
-            // ref. "genesi/genesis_local.go"
-            (100 * units::MILLI_AVAX, 100 * units::MILLI_AVAX)
-        };
+        let get_tx_fee_result = resp.result.unwrap();
+        let tx_fee = get_tx_fee_result.tx_fee;
+        let create_subnet_tx_fee = get_tx_fee_result.create_subnet_tx_fee;
+        let create_blockchain_tx_fee = get_tx_fee_result.create_blockchain_tx_fee;
 
         let w = Wallet {
             key_type: self.key.key_type(),
