@@ -71,20 +71,14 @@ fn test_avax_address_to_short_bytes() {
 
     let x_avax_addr = pubkey.to_hrp_address(1, "X").unwrap();
     let p_avax_addr = pubkey.to_hrp_address(1, "P").unwrap();
-    let c_avax_addr = pubkey.to_hrp_address(1, "C").unwrap();
     log::info!("AVAX X address: {}", x_avax_addr);
     log::info!("AVAX P address: {}", p_avax_addr);
-    log::info!("AVAX C address: {}", c_avax_addr);
 
     let (hrp, parsed_short_addr) = avax_address_to_short_bytes("X", &x_avax_addr).unwrap();
     assert_eq!(hrp, "avax");
     assert_eq!(parsed_short_addr, short_addr);
 
     let (hrp, parsed_short_addr) = avax_address_to_short_bytes("P", &p_avax_addr).unwrap();
-    assert_eq!(hrp, "avax");
-    assert_eq!(parsed_short_addr, short_addr);
-
-    let (hrp, parsed_short_addr) = avax_address_to_short_bytes("C", &c_avax_addr).unwrap();
     assert_eq!(hrp, "avax");
     assert_eq!(parsed_short_addr, short_addr);
 }

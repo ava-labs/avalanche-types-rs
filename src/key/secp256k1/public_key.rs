@@ -219,6 +219,9 @@ impl key::secp256k1::ReadOnly for Key {
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::public_key::test_public_key --exact --show-output
 #[test]
 fn test_public_key() {
+    use primitive_types::H160;
+    use std::str::FromStr;
+
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)
@@ -254,6 +257,11 @@ fn test_public_key() {
     log::info!("to_short_id: {}", pubkey1.to_short_id().unwrap());
     log::info!("to_h160: {}", pubkey1.to_h160());
     log::info!("eth_address: {}", pubkey1.to_eth_address());
+
+    // make sure H160 parses regardless of lower/upper case
+    let eth_addr = pubkey1.to_eth_address();
+    let eth_to_h160 = H160::from_str(&eth_addr.trim_start_matches("0x")).unwrap();
+    assert_eq!(eth_to_h160, pubkey1.to_h160());
 
     let x_avax_addr = pubkey1.to_hrp_address(1, "X").unwrap();
     let p_avax_addr = pubkey1.to_hrp_address(1, "P").unwrap();

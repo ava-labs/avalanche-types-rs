@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
 use ethers_core::k256::ecdsa::recoverable::Signature as RSig;
+use tokio::time::{sleep, Duration, Instant};
 
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
 /// Note that the actual private key never leaves KMS.
@@ -27,6 +28,11 @@ pub struct Cmk {
 
     /// Public key.
     pub public_key: key::secp256k1::public_key::Key,
+
+    /// Total duration for retries.
+    pub retry_timeout: Duration,
+    /// Interval between retries.
+    pub retry_interval: Duration,
 }
 
 impl Cmk {
@@ -34,17 +40,24 @@ impl Cmk {
     pub async fn create(
         kms_manager: kms::Manager,
         tags: HashMap<String, String>,
+        retry_timeout: Duration,
+        retry_interval: Duration,
     ) -> io::Result<Self> {
         let cmk = kms_manager
             .create_key(KeySpec::EccSecgP256K1, KeyUsageType::SignVerify, Some(tags))
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.create_key {}", e)))?;
 
-        Self::from_arn(kms_manager, &cmk.arn).await
+        Self::from_arn(kms_manager, &cmk.arn, retry_timeout, retry_interval).await
     }
 
     /// Loads the Cmk from its Arn or Id.
-    pub async fn from_arn(kms_manager: kms::Manager, arn: &str) -> io::Result<Self> {
+    pub async fn from_arn(
+        kms_manager: kms::Manager,
+        arn: &str,
+        retry_timeout: Duration,
+        retry_interval: Duration,
+    ) -> io::Result<Self> {
         let desc = kms_manager
             .client()
             .describe_key()
@@ -79,11 +92,24 @@ impl Cmk {
                 public_key.to_eth_address(),
             );
 
+            let retry_timeout = if retry_timeout.is_zero() {
+                Duration::from_secs(90)
+            } else {
+                retry_timeout
+            };
+            let retry_interval = if retry_interval.is_zero() {
+                Duration::from_secs(10)
+            } else {
+                retry_interval
+            };
+
             return Ok(Self {
                 kms_manager,
                 public_key,
                 id,
                 arn: arn.to_string(),
+                retry_timeout,
+                retry_interval,
             });
         }
 
@@ -137,12 +163,50 @@ impl Cmk {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
+        let (start, mut success) = (Instant::now(), false);
+        let mut round = 0_u32;
+
         // DER-encoded >65-byte signature, need convert to 65-byte recoverable signature
         // ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
-        let raw_der = self
-            .kms_manager
-            .sign_digest_secp256k1_ecdsa_sha256(&self.id, digest)
-            .await?;
+        let mut raw_der = Vec::new();
+        loop {
+            round = round + 1;
+            let elapsed = start.elapsed();
+            if elapsed.gt(&self.retry_timeout) {
+                break;
+            }
+
+            raw_der = match self
+                .kms_manager
+                .sign_digest_secp256k1_ecdsa_sha256(&self.id, digest)
+                .await
+            {
+                Ok(raw) => {
+                    success = true;
+                    raw
+                }
+                Err(aerr) => {
+                    log::warn!(
+                        "[round {round}] failed sign {} (retriable {})",
+                        aerr,
+                        aerr.is_retryable()
+                    );
+                    if !aerr.is_retryable() {
+                        return Err(aerr);
+                    }
+
+                    sleep(self.retry_interval).await;
+                    continue;
+                }
+            };
+            break;
+        }
+        if !success {
+            return Err(aws_manager::errors::Error::API {
+                message: "failed sign after retries".to_string(),
+                is_retryable: false,
+            });
+        }
 
         let sig = key::secp256k1::signature::decode_signature(&raw_der).map_err(|e| {
             aws_manager::errors::Error::Other {

@@ -27,7 +27,9 @@ fn main() {
 
     let cmk = ab!(key::secp256k1::kms::aws::Cmk::create(
         kms_manager.clone(),
-        tags
+        tags,
+        tokio::time::Duration::from_secs(300),
+        tokio::time::Duration::from_secs(10),
     ))
     .unwrap();
 
@@ -36,7 +38,9 @@ fn main() {
 
     let cmk2 = ab!(key::secp256k1::kms::aws::Cmk::from_arn(
         kms_manager,
-        &cmk.arn
+        &cmk.arn,
+        tokio::time::Duration::from_secs(300),
+        tokio::time::Duration::from_secs(10),
     ))
     .unwrap();
     let cmk_info2 = cmk2.to_info(1).unwrap();
