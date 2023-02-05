@@ -31,7 +31,7 @@ ripemd = "0.1.3"
 rust-embed = "6.4.2"
 rustls-pemfile = "1.0.2"
 serde = { version = "1.0.152", features = ["derive"] } # https://github.com/serde-rs/serde/releases
-serde_json = "1.0.91" # https://github.com/serde-rs/json/releases
+serde_json = "1.0.92" # https://github.com/serde-rs/json/releases
 serde_with = { version = "2.2.0", features = ["hex"] }
 serde_yaml = "0.9.17" # https://github.com/dtolnay/serde-yaml/releases
 sha2 = "0.10.6"
@@ -236,6 +236,28 @@ required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_simple_registry_register_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+
+[[example]]
+name = "evm_contract_erc20_simple_token_increase_allowance_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+
+[[example]]
+name = "evm_contract_erc721_my_token_mint_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_erc721_my_token_approve_forwarder_relay_eip712"
+required-features = ["jsonrpc_client", "evm"]
+
+[[example]]
+name = "evm_contract_erc721_my_token_transfer_from_forwarder_relay_eip712"
 required-features = ["jsonrpc_client", "evm"]
 
 

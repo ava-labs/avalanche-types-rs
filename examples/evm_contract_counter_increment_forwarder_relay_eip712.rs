@@ -85,7 +85,6 @@ async fn main() -> io::Result<()> {
         .to(recipient_contract_addr)
         //
         // fails if zero (e.g., "out of gas")
-        // TODO: better estimate gas based on "RelayHub", use "eth_estimateGas"
         .gas(U256::from(30000))
         //
         // contract call needs no value

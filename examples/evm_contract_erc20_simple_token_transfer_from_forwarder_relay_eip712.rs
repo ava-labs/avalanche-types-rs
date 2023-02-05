@@ -15,8 +15,8 @@ use ethers_core::{
 };
 use ethers_providers::{Http, Middleware, Provider};
 
-/// cargo run --example evm_contract_simple_registry_register_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_simple_registry_register_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
+/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS] [ORIGINAL SIGNER PRIVATE KEY] [FROM ADDRESS] [TO ADDRESS] [TRANSFER AMOUNT]
+/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 1af42b797a6bfbd3cf7554bed261e876db69190f5eb1b806acbd72046ee957c3 0xb513578fAb80487a7Af50e0b2feC381D0BD8fa9D 0xAa32FeF56d76a600CBF6dA252c67eFe56703ac1b 500000
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
@@ -42,32 +42,62 @@ async fn main() -> io::Result<()> {
     let recipient_contract_addr =
         H160::from_str(recipient_contract_addr.trim_start_matches("0x")).unwrap();
 
+    let original_signer_key = args().nth(5).expect("no original signer key given");
+    let no_gas_key = key::secp256k1::private_key::Key::from_hex(&original_signer_key).unwrap();
+
+    let from_addr = args().nth(6).expect("no from address given");
+    let from_addr = H160::from_str(from_addr.trim_start_matches("0x")).unwrap();
+
+    let to_addr = args().nth(7).expect("no to address given");
+    let to_addr = H160::from_str(to_addr.trim_start_matches("0x")).unwrap();
+
+    let transfer_amount = args().nth(8).expect("no transfer amount given");
+    let transfer_amount = U256::from_dec_str(&transfer_amount).unwrap();
+
     let chain_id = json_client_evm::chain_id(&chain_rpc_url).await.unwrap();
     log::info!(
         "running against {chain_rpc_url}, {chain_id} for forwarder contract {forwarder_contract_addr}, recipient contract {recipient_contract_addr}"
     );
 
-    let no_gas_key = key::secp256k1::private_key::Key::generate().unwrap();
     let no_gas_key_info = no_gas_key.to_info(1).unwrap();
-    log::info!("created hot key:\n\n{}\n", no_gas_key_info);
+    log::info!("loaded hot key:\n\n{}\n", no_gas_key_info);
     let no_gas_key_signer: ethers_signers::LocalWallet =
         no_gas_key.to_ethers_core_signing_key().into();
 
-    // parsed function of "register(string name)"
+    // parsed function of "transferFrom(address from, address to, uint256 amount) public virtual override returns (bool)"
+    // ref. <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol#L158>
     let func = Function {
-        name: "register".to_string(),
-        inputs: vec![Param {
-            name: "name".to_string(),
-            kind: ParamType::String,
+        name: "transferFrom".to_string(),
+        inputs: vec![
+            Param {
+                name: "from".to_string(),
+                kind: ParamType::Address,
+                internal_type: None,
+            },
+            Param {
+                name: "to".to_string(),
+                kind: ParamType::Address,
+                internal_type: None,
+            },
+            Param {
+                name: "amount".to_string(),
+                kind: ParamType::Uint(256),
+                internal_type: None,
+            },
+        ],
+        outputs: vec![Param {
+            name: "executed".to_string(),
+            kind: ParamType::Bool,
             internal_type: None,
         }],
-        outputs: Vec::new(),
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let name_to_register = random_manager::string(10);
-    log::info!("registering {name_to_register}");
-    let arg_tokens = vec![Token::String(name_to_register.clone())];
+    let arg_tokens = vec![
+        Token::Address(from_addr),
+        Token::Address(to_addr),
+        Token::Uint(transfer_amount),
+    ];
     let no_gas_recipient_contract_calldata = abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!(
         "no gas recipient contract calldata: 0x{}",
@@ -96,8 +126,8 @@ async fn main() -> io::Result<()> {
         // contract call needs no value
         .value(U256::zero())
         //
-        // assume this is the first transaction
-        .nonce(U256::from(0))
+        // assume this is the second transaction after increaseAllowance
+        .nonce(U256::from(1))
         //
         // calldata for contract calls
         .data(no_gas_recipient_contract_calldata)
@@ -149,7 +179,6 @@ async fn main() -> io::Result<()> {
         pending.tx_hash(),
         no_gas_key_info.h160_address
     );
-    log::info!("registered {name_to_register}");
 
     Ok(())
 }
