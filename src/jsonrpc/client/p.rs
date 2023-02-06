@@ -100,6 +100,7 @@ pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightRespo
 
 /// e.g., "platform.getBalance" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance>
+/// ref. <https://github.com/ava-labs/avalanchego/blob/45ec88151f8a0e3bca1d43fe902fd632c41cd956/vms/platformvm/service.go#L192-L194>
 pub async fn get_balance(
     http_rpc: &str,
     paddr: &str,
@@ -107,11 +108,11 @@ pub async fn get_balance(
     let joined = http_manager::join_uri(http_rpc, "/ext/P")?;
     log::debug!("getting balances for {} via {:?}", paddr, joined);
 
-    let mut data = jsonrpc::Request::default();
+    let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
     data.method = String::from("platform.getBalance");
 
     let mut params = HashMap::new();
-    params.insert(String::from("address"), paddr.to_string());
+    params.insert(String::from("addresses"), vec![paddr.to_string()]);
     data.params = Some(params);
 
     let d = data.encode_json()?;

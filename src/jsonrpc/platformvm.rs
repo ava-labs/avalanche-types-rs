@@ -1,4 +1,7 @@
-use std::io::{self, Error, ErrorKind};
+use std::{
+    collections::HashMap,
+    io::{self, Error, ErrorKind},
+};
 
 use crate::{
     codec::serde::hex_0x_utxo::Hex0xUtxo,
@@ -599,6 +602,14 @@ pub struct GetBalanceResult {
     #[serde(rename = "lockedStakeable", skip_serializing_if = "Option::is_none")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub locked_stakeable: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<HashMap<_, DisplayFromStr>>")]
+    pub balances: Option<HashMap<String, u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<HashMap<_, DisplayFromStr>>")]
+    pub unlockeds: Option<HashMap<String, u64>>,
+
     #[serde(rename = "lockedNotStakeable", skip_serializing_if = "Option::is_none")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub locked_not_stakeable: Option<u64>,
@@ -620,6 +631,8 @@ impl GetBalanceResult {
             unlocked: 0,
             locked_stakeable: None,
             locked_not_stakeable: None,
+            balances: None,
+            unlockeds: None,
             utxo_ids: None,
         }
     }
@@ -642,6 +655,12 @@ fn test_get_balance() {
         \"unlocked\": \"10000000000000000\",
         \"lockedStakeable\": \"10000000000000000\",
         \"lockedNotStakeable\": \"0\",
+        \"balances\": {
+            \"2ZKbwERx36B5WrYesQGAeTV4NTo4dx6j8svkjwAEix89ZPencR\": \"147573952589676412\"
+        },
+        \"unlockeds\": {
+            \"2ZKbwERx36B5WrYesQGAeTV4NTo4dx6j8svkjwAEix89ZPencR\": \"147573952589676412\"
+        },
         \"utxoIDs\": [
             {
                 \"txID\": \"11111111111111111111111111111111LpoYY\",
@@ -660,14 +679,25 @@ fn test_get_balance() {
     )
     .unwrap();
 
+    let mut h = HashMap::new();
+    h.insert(
+        "2ZKbwERx36B5WrYesQGAeTV4NTo4dx6j8svkjwAEix89ZPencR".to_string(),
+        147573952589676412_u64,
+    );
+
     let expected = GetBalanceResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetBalanceResult {
             balance: 20000000000000000,
             unlocked: 10000000000000000,
+
             locked_stakeable: Some(10000000000000000),
             locked_not_stakeable: Some(0),
+
+            balances: Some(h.clone()),
+            unlockeds: Some(h.clone()),
+
             utxo_ids: Some(vec![
                 txs::utxo::Id {
                     tx_id: ids::Id::from_str("11111111111111111111111111111111LpoYY").unwrap(),
