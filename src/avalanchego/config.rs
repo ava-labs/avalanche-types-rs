@@ -13,7 +13,8 @@ use serde::{Deserialize, Serialize};
 /// but the actual Avalanche nodes run on the remote machines
 /// so the paths will be invalid.
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/config>
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.10/config/flags.go>
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.8/config/flags.go>
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.8/config/keys.go>
 /// ref. <https://serde.rs/container-attrs.html>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -136,9 +137,10 @@ pub struct Config {
     pub api_ipcs_enabled: Option<bool>,
 
     /// A list of whitelisted/tracked subnet IDs (comma-separated).
-    /// From avalanchego v1.9.7, it's renamed to "tracked-subnets".
+    /// From avalanchego v1.9.7, it's renamed to "track-subnets".
+    /// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.8/config/keys.go>
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tracked_subnets: Option<String>,
+    pub track_subnets: Option<String>,
 
     /// Plugin directory.
     /// Default to "/usr/local/bin/plugin".
@@ -331,7 +333,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            tracked_subnets: None,
+            track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
@@ -415,7 +417,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            tracked_subnets: None,
+            track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
@@ -499,7 +501,7 @@ impl Config {
             api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
             api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
 
-            tracked_subnets: None,
+            track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
             chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),

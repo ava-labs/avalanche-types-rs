@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use std::{convert::TryFrom, env::args, io, str::FromStr};
+use std::{env::args, io, str::FromStr};
 
 use avalanche_types::{
     evm::{abi, eip712::gsn::Tx},
@@ -9,14 +9,14 @@ use avalanche_types::{
 };
 use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::{
-    abi::{Function, StateMutability},
+    abi::{Function, Param, ParamType, StateMutability, Token},
     types::transaction::eip2718::TypedTransaction,
     types::{H160, U256},
 };
 use ethers_providers::{Http, Middleware, Provider};
 
-/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
+/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my name" "1" "my suffix" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
@@ -38,7 +38,11 @@ async fn main() -> io::Result<()> {
     let forwarder_contract_addr =
         H160::from_str(forwarder_contract_addr.trim_start_matches("0x")).unwrap();
 
-    let recipient_contract_addr = args().nth(4).expect("no recipient contract address given");
+    let domain_name = args().nth(4).expect("no domain name given");
+    let domain_version = args().nth(5).expect("no domain version given");
+    let type_suffix_data = args().nth(6).expect("no type suffix data given");
+
+    let recipient_contract_addr = args().nth(7).expect("no recipient contract address given");
     let recipient_contract_addr =
         H160::from_str(recipient_contract_addr.trim_start_matches("0x")).unwrap();
 
@@ -52,6 +56,21 @@ async fn main() -> io::Result<()> {
     log::info!("created hot key:\n\n{}\n", no_gas_key_info);
     let no_gas_key_signer: ethers_signers::LocalWallet =
         no_gas_key.to_ethers_core_signing_key().into();
+
+    let tx = Eip1559TransactionRequest::new()
+        .chain_id(chain_id.as_u64())
+        .to(ethers::prelude::H160::from(
+            forwarder_contract_addr.as_fixed_bytes(),
+        ))
+        .data(get_nonce_calldata(no_gas_key_info.h160_address));
+    let tx: TypedTransaction = tx.into();
+    let output = chain_rpc_provider.call(&tx, None).await.unwrap();
+    let forwarder_nonce_no_gas_key = U256::from_big_endian(&output);
+    log::info!(
+        "forwarder_nonce_no_gas_key: {} {}",
+        no_gas_key_info.h160_address,
+        forwarder_nonce_no_gas_key
+    );
 
     // parsed function of "increment()"
     let func = Function {
@@ -71,8 +90,9 @@ async fn main() -> io::Result<()> {
     let relay_tx = Tx::new()
         //
         // make sure this matches with "registerDomainSeparator" call
-        .domain_name("my name")
-        .domain_version("1")
+        .domain_name(&domain_name)
+        //
+        .domain_version(&domain_version)
         //
         // local network
         .domain_chain_id(chain_id)
@@ -84,26 +104,22 @@ async fn main() -> io::Result<()> {
         // contract address that this gasless transaction will interact with
         .to(recipient_contract_addr)
         //
-        // fails if zero (e.g., "out of gas")
+        // just some random value, otherwise, estimate gas fails
         .gas(U256::from(30000))
         //
         // contract call needs no value
         .value(U256::zero())
         //
-        // assume this is the first transaction
-        .nonce(U256::from(0))
+        .nonce(forwarder_nonce_no_gas_key)
         //
         // calldata for contract calls
         .data(no_gas_recipient_contract_calldata)
         //
-        //
         .valid_until_time(U256::MAX)
         //
+        .type_name(&domain_name)
         //
-        .type_name("my name")
-        //
-        //
-        .type_suffix_data("my suffix");
+        .type_suffix_data(&type_suffix_data);
     let relay_tx_request = relay_tx
         .sign_to_request(no_gas_key_signer.clone())
         .await
@@ -145,4 +161,25 @@ async fn main() -> io::Result<()> {
     );
 
     Ok(())
+}
+
+fn get_nonce_calldata(addr: H160) -> Vec<u8> {
+    // parsed function of "getNonce(address from)"
+    let func = Function {
+        name: "getNonce".to_string(),
+        inputs: vec![Param {
+            name: "from".to_string(),
+            kind: ParamType::Address,
+            internal_type: None,
+        }],
+        outputs: vec![Param {
+            name: "nonce".to_string(),
+            kind: ParamType::Uint(256),
+            internal_type: None,
+        }],
+        constant: None,
+        state_mutability: StateMutability::NonPayable,
+    };
+    let arg_tokens = vec![Token::Address(addr)];
+    abi::encode_calldata(func, &arg_tokens).unwrap()
 }

@@ -58,26 +58,29 @@ impl Cmk {
         retry_timeout: Duration,
         retry_interval: Duration,
     ) -> io::Result<Self> {
-        let desc = kms_manager
-            .client()
-            .describe_key()
-            .key_id(arn)
-            .send()
-            .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.describe_key {}", e)))?;
-        let id = desc.key_metadata().unwrap().key_id().unwrap().to_string();
+        let (id, _desc) = kms_manager.describe_key(arn).await.map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!(
+                    "failed kms.describe_key {} (retryable {})",
+                    e.message(),
+                    e.is_retryable()
+                ),
+            )
+        })?;
         log::info!("described key Id '{id}' from '{arn}'");
 
         // derives the public key from its private key
-        let pubkey = kms_manager
-            .client()
-            .get_public_key()
-            .key_id(arn) // or use Cmk Id
-            .send()
-            .await
-            .map_err(|e| {
-                Error::new(ErrorKind::Other, format!("failed kms.get_public_key {}", e))
-            })?;
+        let pubkey = kms_manager.get_public_key(arn).await.map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!(
+                    "failed kms.get_public_key {} (retryable {})",
+                    e.message(),
+                    e.is_retryable()
+                ),
+            )
+        })?;
 
         if let Some(blob) = pubkey.public_key() {
             // same as "key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())"

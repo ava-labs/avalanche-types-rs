@@ -1,6 +1,6 @@
 use std::{env::args, io};
 
-use avalanche_types::evm::eip712::gsn::Tx;
+use avalanche_types::evm::eip712::gsn;
 
 /// "registerRequestType(string typeName, string typeSuffix)" "my name" "my suffix"
 /// cargo run --example evm_eip712_gsn_request_type_hash --features="evm" -- "my name" "my suffix"
@@ -17,10 +17,7 @@ fn main() -> io::Result<()> {
     let type_suffix_data = args().nth(2).expect("no type_suffix_data given");
     log::info!("type_suffix_data: {type_suffix_data}");
 
-    let request_type_hash = Tx::new()
-        .type_name(type_name)
-        .type_suffix_data(type_suffix_data)
-        .compute_request_type_hash();
+    let request_type_hash = gsn::compute_request_type_hash(&type_name, &type_suffix_data);
     log::info!("request type hash: {:x}", request_type_hash);
 
     Ok(())

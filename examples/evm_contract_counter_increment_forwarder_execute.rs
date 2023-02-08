@@ -7,19 +7,22 @@ use avalanche_types::{
     jsonrpc::client::evm as json_client_evm,
     key, wallet,
 };
+use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::{
-    abi::{Function, StateMutability},
+    abi::{Function, Param, ParamType, StateMutability, Token},
+    types::transaction::eip2718::TypedTransaction,
     types::{H160, U256},
 };
+use ethers_providers::{Http, Middleware, Provider};
 
 /// Sends a request to the forwarder.
 ///
-/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x7466154c5DE2680Ee2767C763546F052DC7bC393 0x59289F9Ea2432226c8430e3057E2642aD5f979aE
+/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my name" "1" "my suffix" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
 ///
-/// cast send --gas-price 700000000000 --priority-gas-price 10000000000 --private-key=56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "increment()"
-/// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "getNumber()" | sed -r '/^\s*$/d' | tail -1
-/// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x59289F9Ea2432226c8430e3057E2642aD5f979aE "getLast()"
+/// cast send --gas-price 700000000000 --priority-gas-price 10000000000 --private-key=56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 "increment()"
+/// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 "getNumber()" | sed -r '/^\s*$/d' | tail -1
+/// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 "getLast()"
 ///
 /// cast receipt --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x31b977eff419b20c7f0e1c612530258e65cf51a38676b4c7930060ec3b9f10ee
 #[tokio::main]
@@ -30,13 +33,21 @@ async fn main() -> io::Result<()> {
     );
 
     let chain_rpc_url = args().nth(1).expect("no chain RPC URL given");
+    let chain_rpc_provider = Provider::<Http>::try_from(chain_rpc_url.clone())
+        .expect("could not instantiate HTTP Provider");
+    log::info!("created chain rpc server provider for {chain_rpc_url}");
+
     let private_key = args().nth(2).expect("no private key given");
 
     let forwarder_contract_addr = args().nth(3).expect("no forwarder contract address given");
     let forwarder_contract_addr =
         H160::from_str(forwarder_contract_addr.trim_start_matches("0x")).unwrap();
 
-    let recipient_contract_addr = args().nth(4).expect("no recipient contract address given");
+    let domain_name = args().nth(4).expect("no domain name given");
+    let domain_version = args().nth(5).expect("no domain version given");
+    let type_suffix_data = args().nth(6).expect("no type suffix data given");
+
+    let recipient_contract_addr = args().nth(7).expect("no recipient contract address given");
     let recipient_contract_addr =
         H160::from_str(recipient_contract_addr.trim_start_matches("0x")).unwrap();
 
@@ -49,6 +60,21 @@ async fn main() -> io::Result<()> {
     let no_gas_key_info = no_gas_key.to_info(1).unwrap();
     log::info!("created hot key:\n\n{}\n", no_gas_key_info);
     let no_gas_signer: ethers_signers::LocalWallet = no_gas_key.to_ethers_core_signing_key().into();
+
+    let tx = Eip1559TransactionRequest::new()
+        .chain_id(chain_id.as_u64())
+        .to(ethers::prelude::H160::from(
+            forwarder_contract_addr.as_fixed_bytes(),
+        ))
+        .data(get_nonce_calldata(no_gas_key_info.h160_address));
+    let tx: TypedTransaction = tx.into();
+    let output = chain_rpc_provider.call(&tx, None).await.unwrap();
+    let forwarder_nonce_no_gas_key = U256::from_big_endian(&output);
+    log::info!(
+        "forwarder_nonce_no_gas_key: {} {}",
+        no_gas_key_info.h160_address,
+        forwarder_nonce_no_gas_key
+    );
 
     // parsed function of "increment()"
     let func = Function {
@@ -68,9 +94,9 @@ async fn main() -> io::Result<()> {
     let rr_tx = Tx::new()
         //
         // make sure this matches with "registerDomainSeparator" call
-        .domain_name("my name")
+        .domain_name(&domain_name)
         //
-        .domain_version("1")
+        .domain_version(&domain_version)
         //
         // local network
         .domain_chain_id(chain_id)
@@ -92,15 +118,15 @@ async fn main() -> io::Result<()> {
         .value(U256::zero())
         //
         // initial nonce is zero
-        .nonce(U256::from(0))
+        .nonce(forwarder_nonce_no_gas_key)
         //
         .data(no_gas_recipient_contract_calldata)
         //
         .valid_until_time(U256::MAX)
         //
-        .type_name("my name")
+        .type_name(&domain_name)
         //
-        .type_suffix_data("my suffix");
+        .type_suffix_data(&type_suffix_data);
 
     let no_gas_sig = rr_tx.sign(no_gas_signer.clone()).await.unwrap();
     log::info!("gas payer sig: 0x{}", hex::encode(no_gas_sig.clone()));
@@ -138,4 +164,25 @@ async fn main() -> io::Result<()> {
     log::info!("evm ethers wallet SUCCESS with transaction id {}", tx_id);
 
     Ok(())
+}
+
+fn get_nonce_calldata(addr: H160) -> Vec<u8> {
+    // parsed function of "getNonce(address from)"
+    let func = Function {
+        name: "getNonce".to_string(),
+        inputs: vec![Param {
+            name: "from".to_string(),
+            kind: ParamType::Address,
+            internal_type: None,
+        }],
+        outputs: vec![Param {
+            name: "nonce".to_string(),
+            kind: ParamType::Uint(256),
+            internal_type: None,
+        }],
+        constant: None,
+        state_mutability: StateMutability::NonPayable,
+    };
+    let arg_tokens = vec![Token::Address(addr)];
+    abi::encode_calldata(func, &arg_tokens).unwrap()
 }

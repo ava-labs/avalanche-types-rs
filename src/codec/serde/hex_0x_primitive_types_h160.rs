@@ -60,7 +60,19 @@ fn test_custom_de_serializer() {
     let d = Data {
         data: vec![
             H160::from_str("0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC").unwrap(),
+            H160::from_str(
+                "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC"
+                    .to_lowercase() // case should not matter for H160
+                    .as_str(),
+            )
+            .unwrap(),
             H160::from_str("0xeF14C4Ee608e5C79BcE97e3113401a360df809FB").unwrap(),
+            H160::from_str(
+                "0xeF14C4Ee608e5C79BcE97e3113401a360df809FB"
+                    .to_lowercase() // case should not matter for H160
+                    .as_str(),
+            )
+            .unwrap(),
         ],
     };
 
@@ -78,7 +90,7 @@ fn test_custom_de_serializer() {
         "
 
 {
-\"data\":[\"0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC\", \"0xeF14C4Ee608e5C79BcE97e3113401a360df809FB\"]
+\"data\":[\"0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC\", \"0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC\", \"0xeF14C4Ee608e5C79BcE97e3113401a360df809FB\", \"0xeF14C4Ee608e5C79BcE97e3113401a360df809FB\"]
 }
 
 ",

@@ -156,6 +156,7 @@ impl Tx {
         self
     }
 
+    /// Fails if zero (e.g., "out of gas").
     #[must_use]
     pub fn gas(mut self, gas: impl Into<U256>) -> Self {
         self.gas = gas.into();
@@ -209,14 +210,6 @@ impl Tx {
         H256(self.eip712_domain().separator())
     }
 
-    /// Implements "type_hash".
-    /// ref. "ethers_core::types::transaction::eip712::EIP712_DOMAIN_TYPE_HASH"
-    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol> "registerRequestType"
-    /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol> "registerRequestTypeInternal"
-    pub fn compute_request_type_hash(&self) -> H256 {
-        compute_request_type_hash(&self.type_name, &self.type_suffix_data)
-    }
-
     /// Hash of the struct, according to EIP-712 definition of `hashStruct`.
     /// Implements "_getEncoded" and "_verifySig" in GSN Forwarder.sol.
     /// This method is used for "encode_eip712".
@@ -225,7 +218,13 @@ impl Tx {
     /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/types/transaction/eip712.rs> "EIP712Domain.separator"
     pub fn compute_struct_hash(&self) -> H256 {
         // "requestTypeHash"
-        let request_type_hash = self.compute_request_type_hash().to_fixed_bytes().to_vec();
+        // Implements "type_hash".
+        // ref. "ethers_core::types::transaction::eip712::EIP712_DOMAIN_TYPE_HASH"
+        // ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol> "registerRequestType"
+        // ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol> "registerRequestTypeInternal"
+        let request_type_hash = compute_request_type_hash(&self.type_name, &self.type_suffix_data)
+            .to_fixed_bytes()
+            .to_vec();
 
         // "uint256(uint160(req.from))"
         // ref. <https://docs.soliditylang.org/en/v0.8.17/abi-spec.html>
@@ -366,7 +365,11 @@ impl Tx {
                 Token::Uint(self.valid_until_time),
             ]),
             Token::FixedBytes(self.compute_domain_separator().as_bytes().to_vec()),
-            Token::FixedBytes(self.compute_request_type_hash().as_bytes().to_vec()),
+            Token::FixedBytes(
+                compute_request_type_hash(&self.type_name, &self.type_suffix_data)
+                    .as_bytes()
+                    .to_vec(),
+            ),
             Token::Bytes(self.type_suffix_data.as_bytes().to_vec()),
             Token::Bytes(sig),
         ];
