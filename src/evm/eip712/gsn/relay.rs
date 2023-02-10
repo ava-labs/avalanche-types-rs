@@ -6,10 +6,15 @@ use std::{
     str::FromStr,
 };
 
+use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::types::{
-    transaction::eip712::{Eip712, TypedData},
+    transaction::{
+        eip2718::TypedTransaction,
+        eip712::{Eip712, TypedData},
+    },
     RecoveryMessage, Signature, H160, H256, U256,
 };
+use ethers_providers::{Http, Middleware, Provider};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use zerocopy::AsBytes;
@@ -31,6 +36,36 @@ impl super::Tx {
         eth_signer: impl ethers_signers::Signer + Clone,
     ) -> io::Result<Request> {
         Request::sign_to_request(self, eth_signer).await
+    }
+
+    /// "sign_to_request" but with estimated gas via RPC endpoints.
+    pub async fn sign_to_request_with_estimated_gas(
+        &mut self,
+        eth_signer: impl ethers_signers::Signer + Clone,
+        chain_rpc_provider: Provider<Http>,
+    ) -> io::Result<Request> {
+        let relay_req = Request::sign_to_request(self, eth_signer.clone()).await?;
+
+        // to estimate the gas, construct calldata
+        // as if a user sends EIp-1559 to the forwarder contract
+        // as if the user has enough gas
+        let relay_req_calldata = self.encode_execute_call(relay_req.metadata.signature)?;
+        let eip1559_tx = Eip1559TransactionRequest::new()
+            .chain_id(self.domain_chain_id.as_u64())
+            .to(self.domain_verifying_contract)
+            .data(relay_req_calldata);
+        let typed_tx: TypedTransaction = eip1559_tx.into();
+
+        let estimated_gas = chain_rpc_provider
+            .estimate_gas(&typed_tx, None)
+            .await
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed estimate_gas '{}'", e)))?;
+        log::info!("estimated gas {estimated_gas} -- now signing again with updated gas");
+
+        // add extra 5000 just in case
+        // TODO: do we need extra buf?
+        self.gas = estimated_gas.checked_add(U256::from(5000)).unwrap();
+        Request::sign_to_request(&self, eth_signer).await
     }
 }
 

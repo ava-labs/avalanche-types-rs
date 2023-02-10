@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.243" # https://crates.io/crates/avalanche-types
+version = "0.0.244" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -140,7 +140,7 @@ avalanchego = []
 cert = ["rcgen", "rsa", "rustls"]
 codec_base64 = ["base64"]
 codec_big_int = ["num-bigint"]
-evm = ["ethers", "ethers-signers", "rlp"]
+evm = ["ethers", "ethers-providers", "ethers-signers", "rlp"]
 jsonrpc_client = ["http-manager", "ethers-providers", "tokio"]
 kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types", "ethers-signers"]
 libsecp256k1 = ["secp256k1"]

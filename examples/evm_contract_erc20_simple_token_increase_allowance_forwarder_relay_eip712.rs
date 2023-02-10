@@ -114,7 +114,7 @@ async fn main() -> io::Result<()> {
         hex::encode(no_gas_recipient_contract_calldata.clone())
     );
 
-    let relay_tx = Tx::new()
+    let mut relay_tx = Tx::new()
         //
         // make sure this matches with "registerDomainSeparator" call
         .domain_name(&domain_name)
@@ -147,35 +147,15 @@ async fn main() -> io::Result<()> {
         .type_name(&domain_name)
         //
         .type_suffix_data(&type_suffix_data);
+
     let relay_tx_request = relay_tx
-        .sign_to_request(no_gas_key_signer.clone())
+        .sign_to_request_with_estimated_gas(no_gas_key_signer, chain_rpc_provider)
         .await
         .unwrap();
-    let signed_bytes: ethers_core::types::Bytes =
-        serde_json::to_vec(&relay_tx_request).unwrap().into();
     log::info!("relay_tx_request: {:?}", relay_tx_request);
 
-    let relay_tx_calldata = relay_tx
-        .encode_execute_call(signed_bytes.to_vec().clone())
-        .unwrap();
-    let eip1559_tx = Eip1559TransactionRequest::new()
-        .chain_id(chain_id.as_u64())
-        .to(ethers::prelude::H160::from(
-            forwarder_contract_addr.as_fixed_bytes(),
-        ))
-        .data(relay_tx_calldata);
-    let typed_tx: TypedTransaction = eip1559_tx.into();
-    let estimated_gas = chain_rpc_provider
-        .estimate_gas(&typed_tx, None)
-        .await
-        .unwrap();
-    log::info!("estimated gas: {estimated_gas}");
-
-    let relay_tx = relay_tx.gas(estimated_gas.checked_add(U256::from(5000)).unwrap());
-    let relay_tx_request = relay_tx.sign_to_request(no_gas_key_signer).await.unwrap();
     let signed_bytes: ethers_core::types::Bytes =
         serde_json::to_vec(&relay_tx_request).unwrap().into();
-    log::info!("relay_tx_request: {:?}", relay_tx_request);
 
     let pending = relay_server_provider
         .send_raw_transaction(signed_bytes)
