@@ -17,8 +17,8 @@ use ethers_providers::{Http, Middleware, Provider};
 
 /// Sends a request to the forwarder.
 ///
-/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my name" "1" "my suffix" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
+/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- [HTTP RPC ENDPOINT] [GAS PAYER PRIVATE KEY] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_counter_increment_forwarder_execute --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
 ///
 /// cast send --gas-price 700000000000 --priority-gas-price 10000000000 --private-key=56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 "increment()"
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 "getNumber()" | sed -r '/^\s*$/d' | tail -1

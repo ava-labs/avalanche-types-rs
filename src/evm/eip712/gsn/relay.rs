@@ -17,6 +17,7 @@ use ethers_core::types::{
 use ethers_providers::{Http, Middleware, Provider};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use tokio::time::{sleep, Duration, Instant};
 use zerocopy::AsBytes;
 
 impl super::Tx {
@@ -47,7 +48,7 @@ impl super::Tx {
         let relay_req = Request::sign_to_request(self, eth_signer.clone()).await?;
 
         // to estimate the gas, construct calldata
-        // as if a user sends EIp-1559 to the forwarder contract
+        // as if a user sends EIP-1559 to the forwarder contract
         // as if the user has enough gas
         let relay_req_calldata = self.encode_execute_call(relay_req.metadata.signature)?;
         let eip1559_tx = Eip1559TransactionRequest::new()
@@ -66,6 +67,58 @@ impl super::Tx {
         // TODO: do we need extra buf?
         self.gas = estimated_gas.checked_add(U256::from(5000)).unwrap();
         Request::sign_to_request(&self, eth_signer).await
+    }
+
+    /// "sign_to_request" but with estimated gas via RPC endpoints.
+    pub async fn sign_to_request_with_estimated_gas_with_retries(
+        &mut self,
+        eth_signer: impl ethers_signers::Signer + Clone,
+        chain_rpc_provider: Provider<Http>,
+        retry_timeout: Duration,
+        retry_interval: Duration,
+    ) -> io::Result<Request> {
+        log::info!(
+            "sign with retries estimated gas, retry timeout {:?}, retry interval {:?}",
+            retry_timeout,
+            retry_interval
+        );
+
+        let start = Instant::now();
+        if self.gas.is_zero() {
+            self.gas = U256::from(30000);
+        }
+        let mut retries = 0;
+        loop {
+            let elapsed = start.elapsed();
+            if elapsed.gt(&retry_timeout) {
+                break;
+            }
+            retries = retries + 1;
+
+            match Self::sign_to_request_with_estimated_gas(
+                self,
+                eth_signer.clone(),
+                chain_rpc_provider.clone(),
+            )
+            .await
+            {
+                Ok(req) => return Ok(req),
+                Err(e) => {
+                    log::warn!(
+                        "[retries {}] failed to estimate gas {} with {} (elapsed {:?})",
+                        retries,
+                        e,
+                        self.gas,
+                        elapsed
+                    );
+                    self.gas = self.gas.checked_add(U256::from(5000)).unwrap();
+
+                    sleep(retry_interval).await;
+                    continue;
+                }
+            }
+        }
+        return Err(Error::new(ErrorKind::Other, "failed estimate_gas in time"));
     }
 }
 

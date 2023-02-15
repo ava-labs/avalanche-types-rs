@@ -15,8 +15,8 @@ use ethers_core::{
 };
 use ethers_providers::{Http, Middleware, Provider};
 
-/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS] [ORIGINAL SIGNER PRIVATE KEY] [FROM ADDRESS] [TO ADDRESS] [TRANSFER AMOUNT]
-/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my name" "1" "my suffix" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 1af42b797a6bfbd3cf7554bed261e876db69190f5eb1b806acbd72046ee957c3 0xb513578fAb80487a7Af50e0b2feC381D0BD8fa9D 0xAa32FeF56d76a600CBF6dA252c67eFe56703ac1b 500000
+/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS] [ORIGINAL SIGNER PRIVATE KEY] [FROM ADDRESS] [TO ADDRESS] [TRANSFER AMOUNT]
+/// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 1af42b797a6bfbd3cf7554bed261e876db69190f5eb1b806acbd72046ee957c3 0xb513578fAb80487a7Af50e0b2feC381D0BD8fa9D 0xAa32FeF56d76a600CBF6dA252c67eFe56703ac1b 500000
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47

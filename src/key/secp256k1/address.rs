@@ -1,12 +1,13 @@
 use std::io::{self, Error, ErrorKind};
 
 use crate::hash;
+use primitive_types::H160;
 
 /// ref. <https://eips.ethereum.org/EIPS/eip-55>
 /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto#PubkeyToAddress>
 /// ref. <https://pkg.go.dev/github.com/ethereum/go-ethereum/common#Address.Hex>
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-core/src/utils/mod.rs> "to_checksum"
-pub fn h160_to_eth_address(h160_addr: &primitive_types::H160, chain_id: Option<u8>) -> String {
+pub fn h160_to_eth_address(h160_addr: &H160, chain_id: Option<u8>) -> String {
     let prefixed_addr = match chain_id {
         Some(chain_id) => format!("{chain_id}0x{h160_addr:x}"),
         None => format!("{h160_addr:x}"),
