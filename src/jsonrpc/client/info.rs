@@ -1,9 +1,11 @@
 use std::{
     collections::HashMap,
     io::{self, Error, ErrorKind},
+    time::Duration,
 };
 
 use crate::jsonrpc::{self, info};
+use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 
 /// e.g., "info.getNetworkName".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname>
@@ -12,11 +14,36 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkName");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb).map_err(|e| {
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
         Error::new(
             ErrorKind::Other,
             format!("failed info.getNetworkName '{}'", e),
@@ -31,11 +58,36 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkID");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb).map_err(|e| {
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
         Error::new(
             ErrorKind::Other,
             format!("failed info.getNetworkID '{}'", e),
@@ -57,11 +109,36 @@ pub async fn get_blockchain_id(
     let mut params = HashMap::new();
     params.insert(String::from("alias"), String::from(chain_alias));
     data.params = Some(params);
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb).map_err(|e| {
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
         Error::new(
             ErrorKind::Other,
             format!("failed info.getBlockchainID '{}'", e),
@@ -76,27 +153,76 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeID");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb)
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out)
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getNodeID '{}'", e)))
 }
 
 /// e.g., "info.getNodeVersion".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
 pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersionResponse> {
-    let joined = http_manager::join_uri(http_rpc, "ext/info")?;
-    log::info!("getting node version for {}", joined.as_str());
+    log::info!("getting node version for {http_rpc}/ext/info");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeVersion");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb).map_err(|e| {
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
         Error::new(
             ErrorKind::Other,
             format!("failed info.getNodeVersion '{}'", e),
@@ -111,11 +237,36 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getVMs");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb)
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out)
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getVMs '{}'", e)))
 }
 
@@ -126,11 +277,36 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.isBootstrapped");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb).map_err(|e| {
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
         Error::new(
             ErrorKind::Other,
             format!("failed info.isBootstrapped '{}'", e),
@@ -147,10 +323,35 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getTxFee");
-
     let d = data.encode_json()?;
-    let rb = http_manager::post_non_tls(http_rpc, "ext/info", &d).await?;
 
-    serde_json::from_slice(&rb)
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(format!("{http_rpc}/ext/info").as_str())
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out)
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getTxFee '{}'", e)))
 }

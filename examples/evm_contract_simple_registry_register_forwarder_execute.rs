@@ -62,7 +62,7 @@ async fn main() -> io::Result<()> {
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let name_to_register = random_manager::string(10);
+    let name_to_register = random_manager::secure_string(10);
     log::info!("registering {name_to_register}");
     let arg_tokens = vec![Token::String(name_to_register.clone())];
     let no_gas_recipient_contract_calldata = abi::encode_calldata(func, &arg_tokens).unwrap();

@@ -239,7 +239,7 @@ fn test_public_key() {
     assert_eq!(pubkey1, pubkey2);
     assert_eq!(pubkey2, pubkey3);
 
-    let msg: Vec<u8> = random_manager::bytes(100).unwrap();
+    let msg: Vec<u8> = random_manager::secure_bytes(100).unwrap();
     let hashed = hash::sha256(&msg);
 
     let sig1 = pk1.sign_digest(&hashed).unwrap();

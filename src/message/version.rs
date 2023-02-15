@@ -183,7 +183,7 @@ fn test_message() {
         .ip_port(8080)
         .my_version(String::from("v1.2.3"))
         .my_version_time(1234567)
-        .sig(random_manager::bytes(65).unwrap())
+        .sig(random_manager::secure_bytes(65).unwrap())
         .tracked_subnets(vec![
             ids::Id::empty(),
             ids::Id::empty(),
@@ -193,8 +193,8 @@ fn test_message() {
             ids::Id::empty(),
             ids::Id::empty(),
             ids::Id::empty(),
-            ids::Id::from_slice(&random_manager::bytes(32).unwrap()),
-            ids::Id::from_slice(&random_manager::bytes(32).unwrap()),
+            ids::Id::from_slice(&random_manager::secure_bytes(32).unwrap()),
+            ids::Id::from_slice(&random_manager::secure_bytes(32).unwrap()),
         ]);
 
     let data1 = msg1_with_no_compression.serialize().unwrap();

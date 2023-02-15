@@ -261,7 +261,7 @@ fn test_key() {
         .is_test(true)
         .try_init();
 
-    let msg: Vec<u8> = random_manager::bytes(100).unwrap();
+    let msg: Vec<u8> = random_manager::secure_bytes(100).unwrap();
     let hashed = hash::sha256(&msg);
 
     let pk1 = key::secp256k1::private_key::Key::generate().unwrap();

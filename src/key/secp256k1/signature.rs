@@ -119,7 +119,7 @@ fn test_signature() {
     let pk = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let pubkey = pk.to_public_key();
 
-    let msg: Vec<u8> = random_manager::bytes(100).unwrap();
+    let msg: Vec<u8> = random_manager::secure_bytes(100).unwrap();
     let hashed = crate::hash::sha256(&msg);
 
     let sig = pk.sign_digest(&hashed).unwrap();

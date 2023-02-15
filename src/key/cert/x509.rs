@@ -311,12 +311,12 @@ fn test_default_pem() {
 
     let tmp_dir = tempfile::tempdir().unwrap();
 
-    let key_path = tmp_dir.path().join(random_manager::string(20));
+    let key_path = tmp_dir.path().join(random_manager::secure_string(20));
     let key_path = key_path.as_os_str().to_str().unwrap();
     let mut key_path = String::from(key_path);
     key_path.push_str(".key");
 
-    let cert_path = tmp_dir.path().join(random_manager::string(20));
+    let cert_path = tmp_dir.path().join(random_manager::secure_string(20));
     let cert_path = cert_path.as_os_str().to_str().unwrap();
     let mut cert_path = String::from(cert_path);
     cert_path.push_str(".cert");

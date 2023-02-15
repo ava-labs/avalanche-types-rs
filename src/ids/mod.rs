@@ -581,7 +581,7 @@ fn test_vm_id() {
         "srEXiWaHuhNyGwPUi444Tu47ZEDwxTWrbQiuD7FmgSAQ6X7Dy"
     );
 
-    let contents = random_manager::string(30);
+    let contents = random_manager::secure_string(30);
     let v = encode_vm_name_to_id(&contents).expect("failed to generate id from str");
     info!("vm_id_from_str: {}", v);
 }

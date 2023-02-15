@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.252" # https://crates.io/crates/avalanche-types
+version = "0.0.253" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -44,7 +44,7 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.26.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.24.10", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.24.11", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.54.3", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
@@ -61,7 +61,7 @@ bip32 = { version = "0.4.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "evm", "jsonrpc_client"
-http-manager = { version = "0.0.14", optional = true }
+reqwest = { version = "0.11.14", optional = true }
 tokio = { version = "1.25.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "utils"
@@ -105,7 +105,7 @@ protoc-gen-tonic = "0.2.1"
 [dev-dependencies]
 env_logger = "0.10.0"
 id-manager = "0.0.2"
-random-manager = "0.0.3"
+random-manager = "0.0.5"
 tempfile = "3.3.0"
 tokio-stream = { version = "0.1.11", features = ["net"] }
 tokio-test = "0.4.2"
@@ -141,12 +141,12 @@ cert = ["rcgen", "rsa", "rustls"]
 codec_base64 = ["base64"]
 codec_big_int = ["num-bigint"]
 evm = ["ethers", "ethers-providers", "ethers-signers", "rlp", "tokio"]
-jsonrpc_client = ["http-manager", "ethers-providers", "tokio"]
+jsonrpc_client = ["ethers-providers", "reqwest", "tokio"]
 kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types", "ethers-signers"]
 libsecp256k1 = ["secp256k1"]
 mnemonic = ["bip32", "rand_core"]
 subnet_evm = []
-wallet = ["http-manager", "tokio", "utils"]
+wallet = ["reqwest", "tokio", "utils"]
 wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client"]
 xsvm = []
 utils = ["url"]

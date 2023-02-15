@@ -51,7 +51,7 @@ async fn main() -> io::Result<()> {
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let arg_tokens = vec![Token::String(random_manager::string(10))];
+    let arg_tokens = vec![Token::String(random_manager::secure_string(10))];
     let calldata = abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!("calldata: 0x{}", hex::encode(calldata.clone()));
 

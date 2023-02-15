@@ -138,7 +138,9 @@ fn test_message() {
         .try_init();
 
     let msg1_with_no_compression = Message::default()
-        .chain_id(ids::Id::from_slice(&random_manager::bytes(32).unwrap()))
+        .chain_id(ids::Id::from_slice(
+            &random_manager::secure_bytes(32).unwrap(),
+        ))
         .request_id(random_manager::u32())
         .container(vec![0; 100]);
 

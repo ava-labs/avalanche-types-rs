@@ -145,10 +145,14 @@ fn test_message() {
         .try_init();
 
     let msg1_with_no_compression = Message::default()
-        .chain_id(ids::Id::from_slice(&random_manager::bytes(32).unwrap()))
+        .chain_id(ids::Id::from_slice(
+            &random_manager::secure_bytes(32).unwrap(),
+        ))
         .request_id(random_manager::u32())
         .deadline(random_manager::u64())
-        .container_id(ids::Id::from_slice(&random_manager::bytes(32).unwrap()));
+        .container_id(ids::Id::from_slice(
+            &random_manager::secure_bytes(32).unwrap(),
+        ));
 
     let data1 = msg1_with_no_compression.serialize().unwrap();
     let msg1_with_no_compression_deserialized = Message::deserialize(&data1).unwrap();

@@ -438,7 +438,7 @@ fn test_build_relay_transaction_request() {
         constant: None,
         state_mutability: StateMutability::NonPayable,
     };
-    let arg_tokens = vec![Token::String(random_manager::string(10))];
+    let arg_tokens = vec![Token::String(random_manager::secure_string(10))];
     let calldata = crate::evm::abi::encode_calldata(func, &arg_tokens).unwrap();
     log::info!("calldata: 0x{}", hex::encode(calldata.clone()));
 
@@ -448,11 +448,11 @@ fn test_build_relay_transaction_request() {
         };
     }
 
-    let domain_name = random_manager::string(20);
+    let domain_name = random_manager::secure_string(20);
     let domain_version = format!("{}", random_manager::u16());
 
-    let my_type = random_manager::string(20);
-    let my_suffix_data = random_manager::string(20);
+    let my_type = random_manager::secure_string(20);
+    let my_suffix_data = random_manager::secure_string(20);
 
     let tx = super::Tx::new()
         .domain_name(domain_name)
