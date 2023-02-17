@@ -16,8 +16,8 @@ use ethers_core::{
 use ethers_providers::{Http, Middleware, Provider};
 use tokio::time::Duration;
 
-/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
-/// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
+/// cargo run --example evm_contract_voter_vote_a_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
+/// cargo run --example evm_contract_voter_vote_a_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. https://github.com/env-logger-rs/env_logger/issues/47
@@ -74,9 +74,9 @@ async fn main() -> io::Result<()> {
         forwarder_nonce_no_gas_key
     );
 
-    // parsed function of "increment()"
+    // parsed function of "voteA()"
     let func = Function {
-        name: "increment".to_string(),
+        name: "voteA".to_string(),
         inputs: vec![],
         outputs: Vec::new(),
         constant: None,

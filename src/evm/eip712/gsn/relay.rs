@@ -45,27 +45,28 @@ impl super::Tx {
         eth_signer: impl ethers_signers::Signer + Clone,
         chain_rpc_provider: Provider<Http>,
     ) -> io::Result<Request> {
-        let relay_req = Request::sign_to_request(self, eth_signer.clone()).await?;
-
-        // to estimate the gas, construct calldata
-        // as if a user sends EIP-1559 to the forwarder contract
-        // as if the user has enough gas
-        let relay_req_calldata = self.encode_execute_call(relay_req.metadata.signature)?;
+        // as if a user sends EIP-1559 to the recipient contract
         let eip1559_tx = Eip1559TransactionRequest::new()
             .chain_id(self.domain_chain_id.as_u64())
-            .to(self.domain_verifying_contract)
-            .data(relay_req_calldata);
+            .from(self.from)
+            .to(self.to)
+            .gas(self.gas)
+            .data(self.data.clone());
         let typed_tx: TypedTransaction = eip1559_tx.into();
+        log::info!(
+            "estimating gas for typed tx {}",
+            serde_json::to_string(&typed_tx).unwrap()
+        );
 
+        // this can fail with 'gas required exceeds allowance'
+        // when the specified gas cap is too low
         let estimated_gas = chain_rpc_provider
             .estimate_gas(&typed_tx, None)
             .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed estimate_gas '{}'", e)))?;
         log::info!("estimated gas {estimated_gas} -- now signing again with updated gas");
 
-        // add extra 5000 just in case
-        // TODO: do we need extra buf?
-        self.gas = estimated_gas.checked_add(U256::from(5000)).unwrap();
+        self.gas = estimated_gas;
         Request::sign_to_request(&self, eth_signer).await
     }
 
@@ -76,16 +77,17 @@ impl super::Tx {
         chain_rpc_provider: Provider<Http>,
         retry_timeout: Duration,
         retry_interval: Duration,
+        retry_increment_gas: U256,
     ) -> io::Result<Request> {
         log::info!(
-            "sign with retries estimated gas, retry timeout {:?}, retry interval {:?}",
+            "sign with retries estimated gas, retry timeout {:?}, retry interval {:?}, retry increment gas {retry_increment_gas}",
             retry_timeout,
-            retry_interval
+            retry_interval,
         );
 
         let start = Instant::now();
         if self.gas.is_zero() {
-            self.gas = U256::from(30000);
+            self.gas = U256::from(21000);
         }
         let mut retries = 0;
         loop {
@@ -105,13 +107,17 @@ impl super::Tx {
                 Ok(req) => return Ok(req),
                 Err(e) => {
                     log::warn!(
-                        "[retries {}] failed to estimate gas {} with {} (elapsed {:?})",
+                        "[retries {}] failed to estimate gas {} with gas {} (incrementing, elapsed {:?})",
                         retries,
                         e,
                         self.gas,
                         elapsed
                     );
-                    self.gas = self.gas.checked_add(U256::from(5000)).unwrap();
+                    if let Some(added_gas) = self.gas.checked_add(retry_increment_gas) {
+                        self.gas = added_gas;
+                    } else {
+                        return Err(Error::new(ErrorKind::Other, "gas overflow U256"));
+                    }
 
                     sleep(retry_interval).await;
                     continue;
