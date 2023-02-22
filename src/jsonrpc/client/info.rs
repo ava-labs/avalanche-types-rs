@@ -4,13 +4,27 @@ use std::{
     time::Duration,
 };
 
-use crate::jsonrpc::{self, info};
+use crate::{
+    jsonrpc::{self, info},
+    utils,
+};
 use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 
 /// e.g., "info.getNetworkName".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname>
 pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkNameResponse> {
-    log::info!("getting network name for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting network name for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkName");
@@ -29,7 +43,7 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -54,7 +68,18 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
 /// e.g., "info.getNetworkID".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid>
 pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResponse> {
-    log::info!("getting network ID for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting network Id for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkID");
@@ -73,7 +98,7 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -101,7 +126,18 @@ pub async fn get_blockchain_id(
     http_rpc: &str,
     chain_alias: &str,
 ) -> io::Result<info::GetBlockchainIdResponse> {
-    log::info!("getting blockchain ID for {} and {}", http_rpc, chain_alias);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting blockchain Id for {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("info.getBlockchainID");
@@ -124,7 +160,7 @@ pub async fn get_blockchain_id(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -149,7 +185,18 @@ pub async fn get_blockchain_id(
 /// e.g., "info.getNodeID".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
 pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> {
-    log::info!("getting node ID for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting node Id for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeID");
@@ -168,7 +215,7 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -189,7 +236,18 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
 /// e.g., "info.getNodeVersion".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
 pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersionResponse> {
-    log::info!("getting node version for {http_rpc}/ext/info");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting node version for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeVersion");
@@ -208,7 +266,7 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -233,7 +291,18 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
 /// e.g., "info.getVMs".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetvms>
 pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
-    log::info!("getting VMs for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting VMs for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getVMs");
@@ -252,7 +321,7 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -273,7 +342,18 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
 /// e.g., "info.isBootstrapped".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped>
 pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedResponse> {
-    log::info!("getting bootstrapped for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting bootstrapped for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.isBootstrapped");
@@ -292,7 +372,7 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()

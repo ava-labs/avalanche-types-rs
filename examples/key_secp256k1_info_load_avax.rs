@@ -22,11 +22,11 @@ fn main() {
     let entry = k.to_info(network_id).unwrap();
     assert_eq!(private_key, entry.private_key_cb58.clone().unwrap());
     assert_eq!(
-        entry.addresses.get(&network_id).unwrap().x_address,
+        entry.addresses.get(&network_id).unwrap().x,
         pubkey.to_hrp_address(network_id, "X").unwrap()
     );
     assert_eq!(
-        entry.addresses.get(&network_id).unwrap().p_address,
+        entry.addresses.get(&network_id).unwrap().p,
         pubkey.to_hrp_address(network_id, "P").unwrap()
     );
     assert_eq!(entry.short_address, pubkey.to_short_id().unwrap());

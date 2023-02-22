@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.259" # https://crates.io/crates/avalanche-types
+version = "0.0.264" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -85,7 +85,7 @@ num-derive = { version = "0.3.3", optional = true }
 num-traits = { version = "0.2.15", optional = true }
 prost = { version = "0.11.6", optional = true } # prost-build requires "cmake", https://github.com/tokio-rs/prost/releases
 semver = { version = "1.0.16", optional = true }
-tokio-stream = { version = "0.1.11", features = ["net"], optional = true }
+tokio-stream = { version = "0.1.12", features = ["net"], optional = true }
 tonic = { version = "0.8.3", features = ["gzip"], optional = true } # https://github.com/hyperium/tonic/tags
 tonic-health = { version = "0.8.0", optional = true }
 tonic-reflection = { version = "0.6.0", optional = true }
@@ -107,7 +107,7 @@ env_logger = "0.10.0"
 id-manager = "0.0.3"
 random-manager = "0.0.5"
 tempfile = "3.3.0"
-tokio-stream = { version = "0.1.11", features = ["net"] }
+tokio-stream = { version = "0.1.12", features = ["net"] }
 tokio-test = "0.4.2"
 
 # Add optional features to docs.
@@ -141,7 +141,7 @@ cert = ["rcgen", "rsa", "rustls"]
 codec_base64 = ["base64"]
 codec_big_int = ["num-bigint"]
 evm = ["ethers", "ethers-providers", "ethers-signers", "rlp", "tokio"]
-jsonrpc_client = ["ethers-providers", "reqwest", "tokio"]
+jsonrpc_client = ["ethers-providers", "reqwest", "tokio", "utils"]
 kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types", "ethers-signers"]
 libsecp256k1 = ["secp256k1"]
 mnemonic = ["bip32", "rand_core"]

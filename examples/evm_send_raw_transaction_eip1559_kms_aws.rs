@@ -32,14 +32,10 @@ async fn main() -> io::Result<()> {
 
     let shared_config = aws_manager::load_config(None).await?;
     let kms_manager = kms::Manager::new(&shared_config);
-    let k1 = avalanche_types::key::secp256k1::kms::aws::Cmk::from_arn(
-        kms_manager.clone(),
-        &kms_cmk_arn,
-        tokio::time::Duration::from_secs(300),
-        tokio::time::Duration::from_secs(10),
-    )
-    .await
-    .unwrap();
+    let k1 =
+        avalanche_types::key::secp256k1::kms::aws::Cmk::from_arn(kms_manager.clone(), &kms_cmk_arn)
+            .await
+            .unwrap();
 
     let key_info1 = k1.to_info(1).unwrap();
     log::info!("loaded CMK\n\n{}\n(network Id 1)\n", key_info1);

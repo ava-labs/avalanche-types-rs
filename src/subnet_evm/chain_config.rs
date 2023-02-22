@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// To be persisted in "chain_config_dir".
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/plugin/evm#Config>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/plugin/evm#Config.SetDefaults>
-/// ref. <https://github.com/ava-labs/subnet-evm/blob/v0.4.7/plugin/evm/config.go>
+/// ref. <https://github.com/ava-labs/subnet-evm/blob/v0.4.8/plugin/evm/config.go>
 /// ref. <https://serde.rs/container-attrs.html>
 ///
 /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
@@ -45,16 +45,27 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rpc_tx_fee_cap: Option<f64>,
 
+    /// Size of the clean cache of the EVM merkle trie,
+    /// so that everything can happen in memory instead of hitting the disk.
+    /// Generally increasing these to be large enough to fit the full state size in them
+    /// will make a huge difference in performance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trie_clean_cache: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trie_clean_journal: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trie_clean_rejournal: Option<i64>,
+    /// Size of the dirty cache of the EVM merkle trie,
+    /// so that everything can happen in memory instead of hitting the disk.
+    /// Generally increasing these to be large enough to fit the full state size in them
+    /// will make a huge difference in performance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trie_dirty_cache: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trie_dirty_commit_target: Option<i64>,
+    /// Provides a flat lookup of the EVM storage.
+    /// Generally increasing these to be large enough to fit the full state size in them
+    /// will make a huge difference in performance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub snapshot_cache: Option<i64>,
 
@@ -225,12 +236,12 @@ impl Config {
             rpc_gas_cap: Some(50_000_000), // default to 50M gas limit
             rpc_tx_fee_cap: Some(100f64),  // 100 AVAX
 
-            trie_clean_cache: Some(512),
+            trie_clean_cache: Some(4096),
             trie_clean_journal: None,
             trie_clean_rejournal: None,
-            trie_dirty_cache: Some(256),
+            trie_dirty_cache: Some(4096),
             trie_dirty_commit_target: Some(20),
-            snapshot_cache: Some(256),
+            snapshot_cache: Some(2048),
 
             preimages_enabled: None,
             snapshot_async: Some(true),
@@ -327,7 +338,7 @@ impl Config {
     }
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib -- subnet_evm::chain_config::test_config --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="subnet_evm" -- subnet_evm::chain_config::test_config --exact --show-output
 #[test]
 fn test_config() {
     let _ = env_logger::builder().is_test(true).try_init();

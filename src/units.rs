@@ -55,3 +55,35 @@ fn test_cast_navax_to_avax_i64() {
     assert_eq!(cast_navax_to_avax_i64(U256::from(i64::MAX)), 9);
     assert_eq!(cast_navax_to_avax_i64(U256::from(100)), 0);
 }
+
+/// Converts the AVAX unit to nano-AVAX.
+/// On the C-Chain, one AVAX is 10^18 units.
+/// ref. <https://snowtrace.io/unitconverter>
+/// If it overflows, it resets to U256::MAX.
+pub fn cast_avax_to_navax(avax: U256) -> U256 {
+    // ref. "ethers::utils::Units::Ether"
+    let avax_unit = U256::from(10).checked_pow(U256::from(18)).unwrap();
+    if let Some(navaxs) = avax.checked_mul(avax_unit) {
+        navaxs
+    } else {
+        U256::max_value()
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- units::test_cast_avax_to_navax --exact --show-output
+#[test]
+fn test_cast_avax_to_navax() {
+    assert_eq!(cast_avax_to_navax(U256::max_value()), U256::max_value());
+    assert_eq!(
+        cast_avax_to_navax(U256::from(1)),
+        U256::from_dec_str("1000000000000000000").unwrap()
+    );
+    assert_eq!(
+        cast_avax_to_navax(U256::from(10)),
+        U256::from_dec_str("10000000000000000000").unwrap()
+    );
+    assert_eq!(
+        cast_avax_to_navax(U256::from(500)),
+        U256::from_dec_str("500000000000000000000").unwrap()
+    );
+}
