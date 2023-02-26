@@ -15,7 +15,7 @@ use ethers::{
     },
     utils::Units::Gwei,
 };
-use ethers_providers::{Http, Provider};
+use ethers_providers::{Http, Provider, RetryClient};
 use lazy_static::lazy_static;
 use primitive_types::U256;
 
@@ -41,20 +41,26 @@ where
         S: ethers_signers::Signer + Clone,
         S::Error: 'static,
     {
+        // TODO: make this configurable
+        let max_retries = 10;
+        let backoff_timeout = 3000; // in ms
+
         // do not create multiple providers for the ease of nonce management
-        let provider = Provider::<Http>::try_from(chain_rpc_url)
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("failed to create provider '{}'", e),
-                )
-            })?
-            .interval(Duration::from_millis(2000u64));
+        let provider =
+            Provider::<RetryClient<Http>>::new_client(chain_rpc_url, max_retries, backoff_timeout)
+                .map_err(|e| {
+                    Error::new(
+                        ErrorKind::Other,
+                        format!("failed to create provider '{}'", e),
+                    )
+                })?
+                .interval(Duration::from_millis(2000u64));
+        let provider_arc = Arc::new(provider);
 
         // TODO: make this configurable
         let escalator = GeometricGasPrice::new(5.0, 10u64, None::<u64>);
         let gas_escalator_middleware =
-            GasEscalatorMiddleware::new(provider.clone(), escalator, Frequency::PerBlock);
+            GasEscalatorMiddleware::new(Arc::clone(&provider_arc), escalator, Frequency::PerBlock);
         let signer_middleware = SignerMiddleware::new(
             gas_escalator_middleware,
             eth_signer.clone().with_chain_id(chain_id.as_u64()),
@@ -67,7 +73,7 @@ where
             eth_signer,
 
             chain_rpc_url: chain_rpc_url.to_string(),
-            provider,
+            provider: provider_arc,
             middleware,
 
             chain_id,
@@ -86,7 +92,7 @@ where
     pub eth_signer: &'a S,
 
     pub chain_rpc_url: String,
-    pub provider: Provider<Http>,
+    pub provider: Arc<Provider<RetryClient<Http>>>,
 
     /// Middleware created on the picked RPC endpoint and signer address.
     /// ref. "ethers-middleware::signer::SignerMiddleware"
@@ -96,7 +102,10 @@ where
     /// ref. <https://github.com/giantbrain0216/ethers_rs/blob/master/ethers-middleware/tests/nonce_manager.rs>
     pub middleware: Arc<
         NonceManagerMiddleware<
-            SignerMiddleware<GasEscalatorMiddleware<Provider<Http>, GeometricGasPrice>, S>,
+            SignerMiddleware<
+                GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>, GeometricGasPrice>,
+                S,
+            >,
         >,
     >,
 

@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.264" # https://crates.io/crates/avalanche-types
+version = "0.0.269" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -44,9 +44,9 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.26.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.24.13", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.24.16", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
-aws-smithy-types = { version = "0.54.3", optional = true } # https://github.com/awslabs/smithy-rs/releases
+aws-smithy-types = { version = "0.54.4", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
@@ -77,13 +77,13 @@ ethers-signers = { version = "1.0.2", optional = true }
 
 # [OPTIONAL] for "subnet"
 futures = { version = "0.3.26", optional = true }
-http = { version = "0.2.8", optional = true }
+http = { version = "0.2.9", optional = true }
 hyper = { version = "0.14.24", optional = true }
 jsonrpc-core = { version = "18.0.0", optional = true }
 jsonrpc-http-server = { version = "18.0.0", optional = true }
 num-derive = { version = "0.3.3", optional = true }
 num-traits = { version = "0.2.15", optional = true }
-prost = { version = "0.11.6", optional = true } # prost-build requires "cmake", https://github.com/tokio-rs/prost/releases
+prost = { version = "0.11.8", optional = true } # prost-build requires "cmake", https://github.com/tokio-rs/prost/releases
 semver = { version = "1.0.16", optional = true }
 tokio-stream = { version = "0.1.12", features = ["net"], optional = true }
 tonic = { version = "0.8.3", features = ["gzip"], optional = true } # https://github.com/hyperium/tonic/tags
@@ -106,7 +106,7 @@ protoc-gen-tonic = "0.2.1"
 env_logger = "0.10.0"
 id-manager = "0.0.3"
 random-manager = "0.0.5"
-tempfile = "3.3.0"
+tempfile = "3.4.0"
 tokio-stream = { version = "0.1.12", features = ["net"] }
 tokio-test = "0.4.2"
 

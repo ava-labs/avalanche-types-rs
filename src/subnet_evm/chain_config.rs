@@ -264,10 +264,10 @@ impl Config {
             tx_pool_rejournal: Some(3600000000000), // 1-hour
             tx_pool_price_limit: Some(1),
             tx_pool_price_bump: Some(10),
-            tx_pool_account_slots: Some(16),
-            tx_pool_global_slots: Some(4096 + 1024),
-            tx_pool_account_queue: Some(64),
-            tx_pool_global_queue: Some(1024),
+            tx_pool_account_slots: Some(64),
+            tx_pool_global_slots: Some(100_000),
+            tx_pool_account_queue: Some(128),
+            tx_pool_global_queue: Some(100_000),
 
             api_max_duration: Some(0),
             ws_cpu_refill_rate: Some(0),

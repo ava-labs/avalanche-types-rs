@@ -4,6 +4,7 @@ use std::{
     convert::TryFrom,
     io::{self, Error, ErrorKind},
     str::FromStr,
+    sync::Arc,
 };
 
 use ethers::prelude::Eip1559TransactionRequest;
@@ -14,7 +15,7 @@ use ethers_core::types::{
     },
     RecoveryMessage, Signature, H160, H256, U256,
 };
-use ethers_providers::{Http, Middleware, Provider};
+use ethers_providers::{Http, Middleware, Provider, RetryClient};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tokio::time::{sleep, Duration, Instant};
@@ -43,7 +44,7 @@ impl super::Tx {
     pub async fn sign_to_request_with_estimated_gas(
         &mut self,
         eth_signer: impl ethers_signers::Signer + Clone,
-        chain_rpc_provider: Provider<Http>,
+        chain_rpc_provider: Arc<Provider<RetryClient<Http>>>,
     ) -> io::Result<Request> {
         // as if a user sends EIP-1559 to the recipient contract
         let eip1559_tx = Eip1559TransactionRequest::new()
@@ -74,7 +75,7 @@ impl super::Tx {
     pub async fn sign_to_request_with_estimated_gas_with_retries(
         &mut self,
         eth_signer: impl ethers_signers::Signer + Clone,
-        chain_rpc_provider: Provider<Http>,
+        chain_rpc_provider: Arc<Provider<RetryClient<Http>>>,
         retry_timeout: Duration,
         retry_interval: Duration,
         retry_increment_gas: U256,
@@ -107,7 +108,7 @@ impl super::Tx {
                 Ok(req) => return Ok(req),
                 Err(e) => {
                     log::warn!(
-                        "[retries {}] failed to estimate gas {} with gas {} (incrementing, elapsed {:?})",
+                        "[retry {:02}] failed to estimate gas {} with gas {} (incrementing, elapsed {:?})",
                         retries,
                         e,
                         self.gas,

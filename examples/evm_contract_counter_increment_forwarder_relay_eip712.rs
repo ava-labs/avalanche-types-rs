@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use std::{env::args, io, str::FromStr};
+use std::{env::args, io, str::FromStr, sync::Arc};
 
 use avalanche_types::{
     evm::{abi, eip712::gsn::Tx},
@@ -13,7 +13,7 @@ use ethers_core::{
     types::transaction::eip2718::TypedTransaction,
     types::{H160, U256},
 };
-use ethers_providers::{Http, Middleware, Provider};
+use ethers_providers::{Http, Middleware, Provider, RetryClient};
 use tokio::time::Duration;
 
 /// cargo run --example evm_contract_counter_increment_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS]
@@ -26,12 +26,13 @@ async fn main() -> io::Result<()> {
     );
 
     let relay_server_rpc_url = args().nth(1).expect("no relay server RPC URL given");
-    let relay_server_provider = Provider::<Http>::try_from(relay_server_rpc_url.clone())
-        .expect("could not instantiate HTTP Provider");
+    let relay_server_provider =
+        Provider::<RetryClient<Http>>::new_client(&relay_server_rpc_url, 10, 3000)
+            .expect("could not instantiate HTTP Provider");
     log::info!("created relay server provider for {relay_server_rpc_url}");
 
     let chain_rpc_url = args().nth(2).expect("no chain RPC URL given");
-    let chain_rpc_provider = Provider::<Http>::try_from(chain_rpc_url.clone())
+    let chain_rpc_provider = Provider::<RetryClient<Http>>::new_client(&chain_rpc_url, 10, 3000)
         .expect("could not instantiate HTTP Provider");
     log::info!("created chain rpc server provider for {chain_rpc_url}");
 
@@ -123,10 +124,11 @@ async fn main() -> io::Result<()> {
         //
         .type_suffix_data(&type_suffix_data);
 
+    let chain_rpc_provider_arc = Arc::new(chain_rpc_provider);
     let relay_tx_request = relay_tx
         .sign_to_request_with_estimated_gas_with_retries(
             no_gas_key_signer,
-            chain_rpc_provider,
+            Arc::clone(&chain_rpc_provider_arc),
             Duration::from_secs(30),
             Duration::from_millis(100),
             U256::from(10000),
