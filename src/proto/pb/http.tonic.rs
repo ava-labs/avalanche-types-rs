@@ -111,7 +111,7 @@ pub mod http_client {
 pub mod http_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with HttpServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with HttpServer.
     #[async_trait]
     pub trait Http: Send + Sync + 'static {
         async fn handle(

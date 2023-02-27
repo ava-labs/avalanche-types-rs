@@ -131,7 +131,7 @@ pub mod alias_reader_client {
 pub mod alias_reader_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with AliasReaderServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with AliasReaderServer.
     #[async_trait]
     pub trait AliasReader: Send + Sync + 'static {
         async fn lookup(

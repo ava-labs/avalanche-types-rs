@@ -1,4 +1,5 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendAppRequestMsg {
     /// The nodes to send this request to
@@ -11,6 +12,7 @@ pub struct SendAppRequestMsg {
     #[prost(bytes="bytes", tag="3")]
     pub request: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendAppResponseMsg {
     /// The node to send a response to
@@ -23,12 +25,14 @@ pub struct SendAppResponseMsg {
     #[prost(bytes="bytes", tag="3")]
     pub response: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendAppGossipMsg {
     /// The message body
     #[prost(bytes="bytes", tag="1")]
     pub msg: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendAppGossipSpecificMsg {
     /// The nodes to send this request to
@@ -38,6 +42,7 @@ pub struct SendAppGossipSpecificMsg {
     #[prost(bytes="bytes", tag="2")]
     pub msg: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendCrossChainAppRequestMsg {
     /// The chain to send this request to
@@ -50,6 +55,7 @@ pub struct SendCrossChainAppRequestMsg {
     #[prost(bytes="bytes", tag="3")]
     pub request: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendCrossChainAppResponseMsg {
     /// The chain to send this response to

@@ -1,6 +1,7 @@
 // @generated
 /// Represents peer-to-peer messages.
 /// Only one type can be non-null.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
     /// NOTES
@@ -14,7 +15,8 @@ pub mod message {
     /// NOTES
     /// Use "oneof" for each message type and set rest to null if not used.
     /// That is because when the compression is enabled, we don't want to include uncompressed fields.
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Message {
         /// Gzip-compressed bytes of a "p2p.Message" whose "oneof" "message" field is
         /// NOT compressed_* BUT one of the message types (e.g. ping, pong, etc.).
@@ -83,11 +85,13 @@ pub mod message {
 ///
 /// On receiving "ping", the remote peer responds with the observed
 /// uptime value of the message sender in "pong" message.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ping {
 }
 /// Contains subnet id and the related observed subnet uptime of the message
 /// receiver (remote peer).
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubnetUptime {
     #[prost(bytes="bytes", tag="1")]
@@ -98,6 +102,7 @@ pub struct SubnetUptime {
 /// Contains the uptime percentage of the message receiver (remote peer)
 /// from the sender's point of view, in response to "ping" message.
 /// Uptimes are expected to be provided as integers ranging in [0, 100].
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pong {
     /// uptime is the primary network uptime percentage.
@@ -114,6 +119,7 @@ pub struct Pong {
 /// Otherwise, the remote peer closes the connection.
 /// ref. "avalanchego/network/peer#handleVersion"
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/network#Network> "Dispatch"
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(uint32, tag="1")]
@@ -134,6 +140,7 @@ pub struct Version {
     pub tracked_subnets: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/ips#ClaimedIPPort>
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClaimedIpPort {
     #[prost(bytes="bytes", tag="1")]
@@ -156,6 +163,7 @@ pub struct ClaimedIpPort {
 ///
 /// On receiving "peer_list", the engine starts/updates the tracking information
 /// of the remote peer.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PeerList {
     #[prost(message, repeated, tag="1")]
@@ -168,6 +176,7 @@ pub struct PeerList {
 ///
 /// Upon receipt, the "tx_id" and "timestamp" will determine if the receiptent
 /// can forgo future gossip of the node's IP to the sender of this message.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PeerAck {
     #[prost(bytes="bytes", tag="1")]
@@ -177,11 +186,13 @@ pub struct PeerAck {
 }
 /// Message that responds to a peer_list message containing the AddValidatorTxIDs
 /// from the peer_list message that we currently have in our validator set.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PeerListAck {
     #[prost(message, repeated, tag="2")]
     pub peer_acks: ::prost::alloc::vec::Vec<PeerAck>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetStateSummaryFrontier {
     #[prost(bytes="bytes", tag="1")]
@@ -191,6 +202,7 @@ pub struct GetStateSummaryFrontier {
     #[prost(uint64, tag="3")]
     pub deadline: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StateSummaryFrontier {
     #[prost(bytes="bytes", tag="1")]
@@ -200,6 +212,7 @@ pub struct StateSummaryFrontier {
     #[prost(bytes="bytes", tag="3")]
     pub summary: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAcceptedStateSummary {
     #[prost(bytes="bytes", tag="1")]
@@ -211,6 +224,7 @@ pub struct GetAcceptedStateSummary {
     #[prost(uint64, repeated, tag="4")]
     pub heights: ::prost::alloc::vec::Vec<u64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcceptedStateSummary {
     #[prost(bytes="bytes", tag="1")]
@@ -229,6 +243,7 @@ pub struct AcceptedStateSummary {
 /// And the expected response is "accepted_frontier".
 ///
 /// See "snow/engine/common/bootstrapper.go#AcceptedFrontier".
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAcceptedFrontier {
     #[prost(bytes="bytes", tag="1")]
@@ -245,6 +260,7 @@ pub struct GetAcceptedFrontier {
 /// the X-chain engine responds with the accepted frontier of X-chain DAG.
 ///
 /// See "snow/engine/common/bootstrapper.go#AcceptedFrontier".
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AcceptedFrontier {
     #[prost(bytes="bytes", tag="1")]
@@ -263,6 +279,7 @@ pub struct AcceptedFrontier {
 ///
 /// See "avalanchego/snow/engine/common/bootstrapper.Startup" and "sendGetAccepted".
 /// See "snow/engine/common/bootstrapper.go#AcceptedFrontier".
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAccepted {
     #[prost(bytes="bytes", tag="1")]
@@ -283,6 +300,7 @@ pub struct GetAccepted {
 ///
 /// See "snow/engine/avalanche#GetAccepted" and "SendAccepted".
 /// See "snow/engine/common/bootstrapper.go#Accepted".
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Accepted {
     #[prost(bytes="bytes", tag="1")]
@@ -300,6 +318,7 @@ pub struct Accepted {
 ///
 /// On receiving "get_ancestors", it responds with the ancestors' container bytes
 /// in "ancestors" message.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAncestors {
     #[prost(bytes="bytes", tag="1")]
@@ -318,6 +337,7 @@ pub struct GetAncestors {
 ///
 /// On receiving "ancestors", the engine parses the containers and queues them
 /// to be accepted once we've received the entire chain history.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ancestors {
     #[prost(bytes="bytes", tag="1")]
@@ -333,6 +353,7 @@ pub struct Ancestors {
 ///
 /// On receiving "get", the engine looks up the container from the storage.
 /// If the container is found, it sends out the container data in "put" message.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Get {
     #[prost(bytes="bytes", tag="1")]
@@ -349,6 +370,7 @@ pub struct Get {
 /// Message that contains the container ID and its bytes in response to "get".
 ///
 /// On receiving "put", the engine parses the container and tries to issue it to consensus.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Put {
     #[prost(bytes="bytes", tag="1")]
@@ -369,6 +391,7 @@ pub struct Put {
 /// On receiving the "push_query", the engine parses the incoming container
 /// and tries to issue the container and all of its parents to the consensus,
 /// and calls "pull_query" handler to send "chits" for voting.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushQuery {
     #[prost(bytes="bytes", tag="1")]
@@ -387,6 +410,7 @@ pub struct PushQuery {
 /// For example, when a new container is issued, the engine sends out
 /// "push_query" and "pull_query" queries to ask other peers their preferences.
 /// See "avalanchego/snow/engine/common#SendMixedQuery".
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PullQuery {
     #[prost(bytes="bytes", tag="1")]
@@ -406,6 +430,7 @@ pub struct PullQuery {
 /// On receiving "chits", the engine issues those preferred containers of vertices/blocks
 /// to the consensus. If the received container is not found, it responds back with
 /// "get" message to fetch the missing container from the remote peer.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Chits {
     #[prost(bytes="bytes", tag="1")]
@@ -423,6 +448,7 @@ pub struct Chits {
     #[prost(enumeration="EngineType", tag="5")]
     pub engine_type: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -434,6 +460,7 @@ pub struct AppRequest {
     #[prost(bytes="bytes", tag="4")]
     pub app_bytes: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppResponse {
     #[prost(bytes="bytes", tag="1")]
@@ -443,6 +470,7 @@ pub struct AppResponse {
     #[prost(bytes="bytes", tag="3")]
     pub app_bytes: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppGossip {
     #[prost(bytes="bytes", tag="1")]
@@ -467,6 +495,15 @@ impl EngineType {
             EngineType::Unspecified => "ENGINE_TYPE_UNSPECIFIED",
             EngineType::Avalanche => "ENGINE_TYPE_AVALANCHE",
             EngineType::Snowman => "ENGINE_TYPE_SNOWMAN",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "ENGINE_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "ENGINE_TYPE_AVALANCHE" => Some(Self::Avalanche),
+            "ENGINE_TYPE_SNOWMAN" => Some(Self::Snowman),
+            _ => None,
         }
     }
 }

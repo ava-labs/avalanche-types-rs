@@ -206,7 +206,7 @@ pub mod app_sender_client {
 pub mod app_sender_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with AppSenderServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with AppSenderServer.
     #[async_trait]
     pub trait AppSender: Send + Sync + 'static {
         async fn send_app_request(

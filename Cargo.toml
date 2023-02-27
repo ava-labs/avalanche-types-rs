@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.269" # https://crates.io/crates/avalanche-types
+version = "0.0.270" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -36,7 +36,7 @@ serde_with = { version = "2.2.0", features = ["hex"] }
 serde_yaml = "0.9.17" # https://github.com/dtolnay/serde-yaml/releases
 sha2 = "0.10.6"
 sha3 = "0.10.6" # https://github.com/RustCrypto/hashes
-spki = "0.6.0"
+spki = "0.7.0" # https://github.com/RustCrypto/formats/tree/master/spki
 thiserror = "1.0.38"
 zerocopy = "0.6.1"
 
@@ -99,8 +99,8 @@ base64 = { version = "0.21.0", optional = true } # https://github.com/marshallpi
 num-bigint = { version = "0.4.3", optional = true }
 
 [build-dependencies]
-protoc-gen-prost = "0.2.1"
-protoc-gen-tonic = "0.2.1"
+protoc-gen-prost = "0.2.2"
+protoc-gen-tonic = "0.2.2"
 
 [dev-dependencies]
 env_logger = "0.10.0"

@@ -1,4 +1,5 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     /// key is a element key in a key value pair
@@ -8,6 +9,7 @@ pub struct Header {
     #[prost(string, repeated, tag="2")]
     pub values: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WriteRequest {
     /// headers represents the key-value pairs in an HTTP header
@@ -17,12 +19,14 @@ pub struct WriteRequest {
     #[prost(bytes="bytes", tag="2")]
     pub payload: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WriteResponse {
     /// written is the number of bytes written in body
     #[prost(int32, tag="1")]
     pub written: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WriteHeaderRequest {
     /// headers represents the key-value pairs in an HTTP header
@@ -32,6 +36,7 @@ pub struct WriteHeaderRequest {
     #[prost(int32, tag="2")]
     pub status_code: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HijackResponse {
     /// local_network is the name of the network (for example, "tcp", "udp")

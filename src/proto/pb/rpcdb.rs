@@ -1,9 +1,11 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HasRequest {
     #[prost(bytes="bytes", tag="1")]
     pub key: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HasResponse {
     #[prost(bool, tag="1")]
@@ -11,11 +13,13 @@ pub struct HasResponse {
     #[prost(enumeration="Error", tag="2")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetRequest {
     #[prost(bytes="bytes", tag="1")]
     pub key: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetResponse {
     #[prost(bytes="bytes", tag="1")]
@@ -23,6 +27,7 @@ pub struct GetResponse {
     #[prost(enumeration="Error", tag="2")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PutRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -30,21 +35,25 @@ pub struct PutRequest {
     #[prost(bytes="bytes", tag="2")]
     pub value: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PutResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DeleteRequest {
     #[prost(bytes="bytes", tag="1")]
     pub key: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DeleteResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -52,19 +61,23 @@ pub struct CompactRequest {
     #[prost(bytes="bytes", tag="2")]
     pub limit: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CloseRequest {
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CloseResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WriteBatchRequest {
     #[prost(message, repeated, tag="1")]
@@ -72,14 +85,17 @@ pub struct WriteBatchRequest {
     #[prost(message, repeated, tag="2")]
     pub deletes: ::prost::alloc::vec::Vec<DeleteRequest>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WriteBatchResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewIteratorRequest {
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewIteratorWithStartAndPrefixRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -87,41 +103,49 @@ pub struct NewIteratorWithStartAndPrefixRequest {
     #[prost(bytes="bytes", tag="2")]
     pub prefix: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewIteratorWithStartAndPrefixResponse {
     #[prost(uint64, tag="1")]
     pub id: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorNextRequest {
     #[prost(uint64, tag="1")]
     pub id: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorNextResponse {
     #[prost(message, repeated, tag="1")]
     pub data: ::prost::alloc::vec::Vec<PutRequest>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorErrorRequest {
     #[prost(uint64, tag="1")]
     pub id: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorErrorResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorReleaseRequest {
     #[prost(uint64, tag="1")]
     pub id: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IteratorReleaseResponse {
     #[prost(enumeration="Error", tag="1")]
     pub err: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HealthCheckResponse {
     #[prost(bytes="bytes", tag="1")]
@@ -145,6 +169,15 @@ impl Error {
             Error::Unspecified => "ERROR_UNSPECIFIED",
             Error::Closed => "ERROR_CLOSED",
             Error::NotFound => "ERROR_NOT_FOUND",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "ERROR_UNSPECIFIED" => Some(Self::Unspecified),
+            "ERROR_CLOSED" => Some(Self::Closed),
+            "ERROR_NOT_FOUND" => Some(Self::NotFound),
+            _ => None,
         }
     }
 }

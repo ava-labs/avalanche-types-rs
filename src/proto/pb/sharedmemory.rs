@@ -1,4 +1,5 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchPut {
     #[prost(bytes="bytes", tag="1")]
@@ -6,11 +7,13 @@ pub struct BatchPut {
     #[prost(bytes="bytes", tag="2")]
     pub value: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchDelete {
     #[prost(bytes="bytes", tag="1")]
     pub key: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Batch {
     #[prost(message, repeated, tag="1")]
@@ -18,6 +21,7 @@ pub struct Batch {
     #[prost(message, repeated, tag="2")]
     pub deletes: ::prost::alloc::vec::Vec<BatchDelete>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AtomicRequest {
     #[prost(bytes="bytes", repeated, tag="1")]
@@ -27,6 +31,7 @@ pub struct AtomicRequest {
     #[prost(bytes="bytes", tag="3")]
     pub peer_chain_id: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Element {
     #[prost(bytes="bytes", tag="1")]
@@ -36,6 +41,7 @@ pub struct Element {
     #[prost(bytes="bytes", repeated, tag="3")]
     pub traits: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -43,11 +49,13 @@ pub struct GetRequest {
     #[prost(bytes="bytes", repeated, tag="2")]
     pub keys: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetResponse {
     #[prost(bytes="bytes", repeated, tag="1")]
     pub values: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexedRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -61,6 +69,7 @@ pub struct IndexedRequest {
     #[prost(int32, tag="5")]
     pub limit: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexedResponse {
     #[prost(bytes="bytes", repeated, tag="1")]
@@ -70,6 +79,7 @@ pub struct IndexedResponse {
     #[prost(bytes="bytes", tag="3")]
     pub last_key: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ApplyRequest {
     #[prost(message, repeated, tag="1")]
@@ -77,6 +87,7 @@ pub struct ApplyRequest {
     #[prost(message, repeated, tag="2")]
     pub batches: ::prost::alloc::vec::Vec<Batch>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ApplyResponse {
 }

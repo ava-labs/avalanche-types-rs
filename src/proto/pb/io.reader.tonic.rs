@@ -91,7 +91,7 @@ pub mod reader_client {
 pub mod reader_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ReaderServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ReaderServer.
     #[async_trait]
     pub trait Reader: Send + Sync + 'static {
         async fn read(

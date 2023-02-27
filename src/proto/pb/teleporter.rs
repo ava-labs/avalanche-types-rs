@@ -1,4 +1,5 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignRequest {
     #[prost(bytes="bytes", tag="1")]
@@ -8,6 +9,7 @@ pub struct SignRequest {
     #[prost(bytes="bytes", tag="3")]
     pub payload: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignResponse {
     #[prost(bytes="bytes", tag="1")]

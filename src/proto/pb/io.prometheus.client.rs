@@ -1,4 +1,5 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LabelPair {
     #[prost(string, optional, tag="1")]
@@ -6,11 +7,13 @@ pub struct LabelPair {
     #[prost(string, optional, tag="2")]
     pub value: ::core::option::Option<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Gauge {
     #[prost(double, optional, tag="1")]
     pub value: ::core::option::Option<f64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Counter {
     #[prost(double, optional, tag="1")]
@@ -18,6 +21,7 @@ pub struct Counter {
     #[prost(message, optional, tag="2")]
     pub exemplar: ::core::option::Option<Exemplar>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Quantile {
     #[prost(double, optional, tag="1")]
@@ -25,6 +29,7 @@ pub struct Quantile {
     #[prost(double, optional, tag="2")]
     pub value: ::core::option::Option<f64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Summary {
     #[prost(uint64, optional, tag="1")]
@@ -34,11 +39,13 @@ pub struct Summary {
     #[prost(message, repeated, tag="3")]
     pub quantile: ::prost::alloc::vec::Vec<Quantile>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Untyped {
     #[prost(double, optional, tag="1")]
     pub value: ::core::option::Option<f64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Histogram {
     #[prost(uint64, optional, tag="1")]
@@ -49,6 +56,7 @@ pub struct Histogram {
     #[prost(message, repeated, tag="3")]
     pub bucket: ::prost::alloc::vec::Vec<Bucket>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Bucket {
     /// Cumulative in increasing order.
@@ -60,6 +68,7 @@ pub struct Bucket {
     #[prost(message, optional, tag="3")]
     pub exemplar: ::core::option::Option<Exemplar>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Exemplar {
     #[prost(message, repeated, tag="1")]
@@ -70,6 +79,7 @@ pub struct Exemplar {
     #[prost(message, optional, tag="3")]
     pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Metric {
     #[prost(message, repeated, tag="1")]
@@ -87,6 +97,7 @@ pub struct Metric {
     #[prost(int64, optional, tag="6")]
     pub timestamp_ms: ::core::option::Option<i64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MetricFamily {
     #[prost(string, optional, tag="1")]
@@ -119,6 +130,17 @@ impl MetricType {
             MetricType::Summary => "SUMMARY",
             MetricType::Untyped => "UNTYPED",
             MetricType::Histogram => "HISTOGRAM",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "COUNTER" => Some(Self::Counter),
+            "GAUGE" => Some(Self::Gauge),
+            "SUMMARY" => Some(Self::Summary),
+            "UNTYPED" => Some(Self::Untyped),
+            "HISTOGRAM" => Some(Self::Histogram),
+            _ => None,
         }
     }
 }

@@ -272,13 +272,13 @@ fn test_public_key() {
 /// Same as "from_public_key_der".
 /// ref. <https://github.com/gakonst/ethers-rs/tree/master/ethers-signers/src/aws> "decode_pubkey"
 pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<VerifyingKey> {
-    let spk = spki::SubjectPublicKeyInfo::try_from(b).map_err(|e| {
+    let spk = spki::SubjectPublicKeyInfoRef::try_from(b).map_err(|e| {
         Error::new(
             ErrorKind::InvalidInput,
-            format!("failed to load spki::SubjectPublicKeyInfo {}", e),
+            format!("failed to load spki::SubjectPublicKeyInfoRef {}", e),
         )
     })?;
-    VerifyingKey::from_sec1_bytes(spk.subject_public_key).map_err(|e| {
+    VerifyingKey::from_sec1_bytes(spk.subject_public_key.raw_bytes()).map_err(|e| {
         Error::new(
             ErrorKind::InvalidInput,
             format!(

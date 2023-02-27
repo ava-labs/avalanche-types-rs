@@ -709,7 +709,7 @@ pub mod vm_client {
 pub mod vm_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with VmServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with VmServer.
     #[async_trait]
     pub trait Vm: Send + Sync + 'static {
         async fn initialize(

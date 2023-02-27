@@ -91,7 +91,7 @@ pub mod writer_client {
 pub mod writer_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with WriterServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with WriterServer.
     #[async_trait]
     pub trait Writer: Send + Sync + 'static {
         async fn write(

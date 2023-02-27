@@ -93,7 +93,7 @@ pub mod keystore_client {
 pub mod keystore_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with KeystoreServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with KeystoreServer.
     #[async_trait]
     pub trait Keystore: Send + Sync + 'static {
         async fn get_database(

@@ -1,5 +1,6 @@
 // @generated
 /// URL is a net.URL see: <https://pkg.go.dev/net/url#URL>
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Url {
     /// scheme is the url scheme name
@@ -31,6 +32,7 @@ pub struct Url {
     pub fragment: ::prost::alloc::string::String,
 }
 /// UserInfo is net.Userinfo see: <https://pkg.go.dev/net/url#Userinfo>
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Userinfo {
     /// username is the username for the user
@@ -43,6 +45,7 @@ pub struct Userinfo {
     #[prost(bool, tag="3")]
     pub password_set: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Element {
     /// key is a element key in a key value pair
@@ -52,6 +55,7 @@ pub struct Element {
     #[prost(string, repeated, tag="2")]
     pub values: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Certificates {
     /// cert is the certificate body
@@ -59,6 +63,7 @@ pub struct Certificates {
     pub cert: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
 /// ConnectionState is tls.ConnectionState see: <https://pkg.go.dev/crypto/tls#ConnectionState>
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionState {
     /// version is the TLS version used by the connection (e.g. VersionTLS12)
@@ -100,6 +105,7 @@ pub struct ConnectionState {
     pub ocsp_response: ::prost::bytes::Bytes,
 }
 /// Request is an http.Request see: <https://pkg.go.dev/net/http#Request>
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     /// method specifies the HTTP method (GET, POST, PUT, etc.)
@@ -157,6 +163,7 @@ pub struct Request {
     #[prost(message, optional, tag="16")]
     pub tls: ::core::option::Option<ConnectionState>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseWriter {
     /// header returns the header map that will be sent by
@@ -167,6 +174,7 @@ pub struct ResponseWriter {
     #[prost(string, tag="2")]
     pub server_addr: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HttpRequest {
     /// response_writer is used by an HTTP handler to construct an HTTP response
@@ -176,6 +184,7 @@ pub struct HttpRequest {
     #[prost(message, optional, tag="2")]
     pub request: ::core::option::Option<Request>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HandleSimpleHttpRequest {
     /// method specifies the HTTP method (GET, POST, PUT, etc.)
@@ -192,6 +201,7 @@ pub struct HandleSimpleHttpRequest {
     #[prost(bytes="bytes", tag="4")]
     pub body: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HandleSimpleHttpResponse {
     /// code is the response code

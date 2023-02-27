@@ -1,9 +1,11 @@
 // @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotifyRequest {
     #[prost(enumeration="Message", tag="1")]
     pub message: i32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotifyResponse {
 }
@@ -24,6 +26,15 @@ impl Message {
             Message::Unspecified => "MESSAGE_UNSPECIFIED",
             Message::BuildBlock => "MESSAGE_BUILD_BLOCK",
             Message::StateSyncFinished => "MESSAGE_STATE_SYNC_FINISHED",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "MESSAGE_UNSPECIFIED" => Some(Self::Unspecified),
+            "MESSAGE_BUILD_BLOCK" => Some(Self::BuildBlock),
+            "MESSAGE_STATE_SYNC_FINISHED" => Some(Self::StateSyncFinished),
+            _ => None,
         }
     }
 }
