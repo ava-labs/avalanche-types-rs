@@ -36,7 +36,7 @@ serde_with = { version = "2.2.0", features = ["hex"] }
 serde_yaml = "0.9.17" # https://github.com/dtolnay/serde-yaml/releases
 sha2 = "0.10.6"
 sha3 = "0.10.6" # https://github.com/RustCrypto/hashes
-spki = "0.6.0"
+spki = "0.7.0"
 thiserror = "1.0.38"
 zerocopy = "0.6.1"
 
