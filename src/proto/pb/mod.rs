@@ -72,11 +72,6 @@ pub mod p2p {
     include!("p2p.rs");
     // @@protoc_insertion_point(p2p)
 }
-// @@protoc_insertion_point(attribute:plugin)
-pub mod plugin {
-    include!("plugin.rs");
-    // @@protoc_insertion_point(plugin)
-}
 // @@protoc_insertion_point(attribute:rpcdb)
 pub mod rpcdb {
     include!("rpcdb.rs");
@@ -87,11 +82,6 @@ pub mod sharedmemory {
     include!("sharedmemory.rs");
     // @@protoc_insertion_point(sharedmemory)
 }
-// @@protoc_insertion_point(attribute:teleporter)
-pub mod teleporter {
-    include!("teleporter.rs");
-    // @@protoc_insertion_point(teleporter)
-}
 // @@protoc_insertion_point(attribute:validatorstate)
 pub mod validatorstate {
     include!("validatorstate.rs");
@@ -101,4 +91,14 @@ pub mod validatorstate {
 pub mod vm {
     include!("vm.rs");
     // @@protoc_insertion_point(vm)
+    // @@protoc_insertion_point(attribute:vm.runtime)
+    pub mod runtime {
+        include!("vm.runtime.rs");
+        // @@protoc_insertion_point(vm.runtime)
+    }
+}
+// @@protoc_insertion_point(attribute:warp)
+pub mod warp {
+    include!("warp.rs");
+    // @@protoc_insertion_point(warp)
 }

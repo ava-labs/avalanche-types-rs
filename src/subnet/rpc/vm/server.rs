@@ -3,18 +3,15 @@ use std::sync::Arc;
 
 use crate::{
     ids,
-    proto::{
-        grpcutil::timestamp_from_time,
-        pb::{
-            self,
-            aliasreader::alias_reader_client::AliasReaderClient,
-            google::protobuf::Empty,
-            io::prometheus::client::MetricFamily,
-            keystore::keystore_client::KeystoreClient,
-            messenger::{messenger_client::MessengerClient, NotifyRequest},
-            sharedmemory::shared_memory_client::SharedMemoryClient,
-            vm,
-        },
+    proto::pb::{
+        self,
+        aliasreader::alias_reader_client::AliasReaderClient,
+        google::protobuf::Empty,
+        io::prometheus::client::MetricFamily,
+        keystore::keystore_client::KeystoreClient,
+        messenger::{messenger_client::MessengerClient, NotifyRequest},
+        sharedmemory::shared_memory_client::SharedMemoryClient,
+        vm,
     },
     subnet::rpc::{
         context::Context,
@@ -28,7 +25,7 @@ use crate::{
             engine::common::{appsender, message::Message},
             State,
         },
-        utils,
+        utils::{self, grpc::timestamp_from_time},
     },
 };
 use chrono::{TimeZone, Utc};
@@ -72,17 +69,15 @@ where
         log::info!("initialize called");
 
         let req = req.into_inner();
-        let server_addr = &format!("http://{}", req.server_addr);
-        let client_conn = Endpoint::from_shared(server_addr.to_owned())
+        let client_conn = utils::grpc::default_client(&req.server_addr)?
+            .connect()
+            .await
             .map_err(|e| {
                 tonic::Status::unknown(format!(
                     "failed to create client conn from {}: {}",
-                    server_addr, e
+                    &req.server_addr, e
                 ))
-            })?
-            .connect()
-            .await
-            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+            })?;
 
         // Multiplexing in tonic is done by cloning the client which is very cheap.
         // ref. https://docs.rs/tonic/latest/tonic/transport/struct.Channel.html#multiplexing-requests

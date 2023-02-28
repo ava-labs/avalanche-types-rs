@@ -1,14 +1,14 @@
 // @generated
 /// Generated client implementations.
-pub mod signer_client {
+pub mod runtime_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct SignerClient<T> {
+    pub struct RuntimeClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl SignerClient<tonic::transport::Channel> {
+    impl RuntimeClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -19,7 +19,7 @@ pub mod signer_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> SignerClient<T>
+    impl<T> RuntimeClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -37,7 +37,7 @@ pub mod signer_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> SignerClient<InterceptedService<T, F>>
+        ) -> RuntimeClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -51,7 +51,7 @@ pub mod signer_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            SignerClient::new(InterceptedService::new(inner, interceptor))
+            RuntimeClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -68,10 +68,13 @@ pub mod signer_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        pub async fn sign(
+        pub async fn initialize(
             &mut self,
-            request: impl tonic::IntoRequest<super::SignRequest>,
-        ) -> Result<tonic::Response<super::SignResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::InitializeRequest>,
+        ) -> Result<
+            tonic::Response<super::super::super::google::protobuf::Empty>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -82,31 +85,36 @@ pub mod signer_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/teleporter.Signer/Sign");
+            let path = http::uri::PathAndQuery::from_static(
+                "/vm.runtime.Runtime/Initialize",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod signer_server {
+pub mod runtime_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with SignerServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with RuntimeServer.
     #[async_trait]
-    pub trait Signer: Send + Sync + 'static {
-        async fn sign(
+    pub trait Runtime: Send + Sync + 'static {
+        async fn initialize(
             &self,
-            request: tonic::Request<super::SignRequest>,
-        ) -> Result<tonic::Response<super::SignResponse>, tonic::Status>;
+            request: tonic::Request<super::InitializeRequest>,
+        ) -> Result<
+            tonic::Response<super::super::super::google::protobuf::Empty>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
-    pub struct SignerServer<T: Signer> {
+    pub struct RuntimeServer<T: Runtime> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: Signer> SignerServer<T> {
+    impl<T: Runtime> RuntimeServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -140,9 +148,9 @@ pub mod signer_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for SignerServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for RuntimeServer<T>
     where
-        T: Signer,
+        T: Runtime,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -158,22 +166,24 @@ pub mod signer_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/teleporter.Signer/Sign" => {
+                "/vm.runtime.Runtime/Initialize" => {
                     #[allow(non_camel_case_types)]
-                    struct SignSvc<T: Signer>(pub Arc<T>);
-                    impl<T: Signer> tonic::server::UnaryService<super::SignRequest>
-                    for SignSvc<T> {
-                        type Response = super::SignResponse;
+                    struct InitializeSvc<T: Runtime>(pub Arc<T>);
+                    impl<
+                        T: Runtime,
+                    > tonic::server::UnaryService<super::InitializeRequest>
+                    for InitializeSvc<T> {
+                        type Response = super::super::super::google::protobuf::Empty;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::SignRequest>,
+                            request: tonic::Request<super::InitializeRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).sign(request).await };
+                            let fut = async move { (*inner).initialize(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -182,7 +192,7 @@ pub mod signer_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = SignSvc(inner);
+                        let method = InitializeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -209,7 +219,7 @@ pub mod signer_server {
             }
         }
     }
-    impl<T: Signer> Clone for SignerServer<T> {
+    impl<T: Runtime> Clone for RuntimeServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -219,7 +229,7 @@ pub mod signer_server {
             }
         }
     }
-    impl<T: Signer> Clone for _Inner<T> {
+    impl<T: Runtime> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone())
         }
@@ -229,7 +239,7 @@ pub mod signer_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Signer> tonic::server::NamedService for SignerServer<T> {
-        const NAME: &'static str = "teleporter.Signer";
+    impl<T: Runtime> tonic::server::NamedService for RuntimeServer<T> {
+        const NAME: &'static str = "vm.runtime.Runtime";
     }
 }

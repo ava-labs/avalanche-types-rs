@@ -1,10 +1,10 @@
-use avalanche_types::proto::{
-    grpcutil,
-    pb::helloworld::{
+use avalanche_types::{
+    proto::pb::helloworld::{
         self,
         greeter_server::{Greeter, GreeterServer},
         HelloReply, HelloRequest,
     },
+    subnet::rpc::utils,
 };
 use tonic::{Request, Response, Status};
 
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let greeter_svc = GreeterServer::new(MyGreeter::default());
 
-    grpcutil::default_server()
+    utils::grpc::default_server()
         .add_service(reflection_svc)
         .add_service(greeter_svc)
         .serve(addr)

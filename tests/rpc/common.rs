@@ -1,13 +1,13 @@
 #[cfg(any(test, feature = "proto"))]
 use std::io::{self, Error, ErrorKind};
 
-use avalanche_types::proto::{
-    grpcutil::default_server,
-    pb::{
+use avalanche_types::{
+    proto::pb::{
         self,
         http::http_server::{Http, HttpServer},
         rpcdb::database_server::{Database, DatabaseServer},
     },
+    subnet::rpc::utils::grpc::default_server,
 };
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
