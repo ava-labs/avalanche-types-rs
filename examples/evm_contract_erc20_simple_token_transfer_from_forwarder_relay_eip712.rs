@@ -6,6 +6,7 @@ use avalanche_types::{
     evm::{abi, eip712::gsn::Tx},
     jsonrpc::client::evm as json_client_evm,
     key,
+    wallet::evm as wallet_evm,
 };
 use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::{
@@ -13,7 +14,8 @@ use ethers_core::{
     types::transaction::eip2718::TypedTransaction,
     types::{H160, U256},
 };
-use ethers_providers::{Http, Middleware, Provider, RetryClient};
+use ethers_providers::Middleware;
+use tokio::time::Duration;
 
 /// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- [RELAY SERVER HTTP RPC ENDPOINT] [EVM HTTP RPC ENDPOINT] [FORWARDER CONTRACT ADDRESS] [DOMAIN NAME] [DOMAIN VERSION] [TYPE NAME] [TYPE SUFFIX DATA] [RECIPIENT CONTRACT ADDRESS] [ORIGINAL SIGNER PRIVATE KEY] [FROM ADDRESS] [TO ADDRESS] [TRANSFER AMOUNT]
 /// cargo run --example evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 1af42b797a6bfbd3cf7554bed261e876db69190f5eb1b806acbd72046ee957c3 0xb513578fAb80487a7Af50e0b2feC381D0BD8fa9D 0xAa32FeF56d76a600CBF6dA252c67eFe56703ac1b 500000
@@ -25,14 +27,25 @@ async fn main() -> io::Result<()> {
     );
 
     let relay_server_rpc_url = args().nth(1).expect("no relay server RPC URL given");
-    let relay_server_provider =
-        Provider::<RetryClient<Http>>::new_client(&relay_server_rpc_url, 10, 3000)
-            .expect("could not instantiate HTTP Provider");
+    let relay_server_provider = wallet_evm::new_provider(
+        &relay_server_rpc_url,
+        Duration::from_secs(15),
+        Duration::from_secs(30),
+        10,
+        Duration::from_secs(3),
+    )
+    .unwrap();
     log::info!("created relay server provider for {relay_server_rpc_url}");
 
     let chain_rpc_url = args().nth(2).expect("no chain RPC URL given");
-    let chain_rpc_provider = Provider::<RetryClient<Http>>::new_client(&chain_rpc_url, 10, 3000)
-        .expect("could not instantiate HTTP Provider");
+    let chain_rpc_provider = wallet_evm::new_provider(
+        &chain_rpc_url,
+        Duration::from_secs(15),
+        Duration::from_secs(30),
+        10,
+        Duration::from_secs(3),
+    )
+    .unwrap();
     log::info!("created chain rpc server provider for {chain_rpc_url}");
 
     let forwarder_contract_addr = args().nth(3).expect("no forwarder contract address given");

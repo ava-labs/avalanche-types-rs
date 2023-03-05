@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.272" # https://crates.io/crates/avalanche-types
+version = "0.0.276" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.67" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -17,7 +17,7 @@ bs58 = "0.4.0"
 bytes = "1.4.0"
 chrono = "0.4.23"
 cmp-manager = "0.0.1"
-ethers-core = { version = "1.0.2", features = ["eip712"] }
+ethers-core = { version = "1.5.0", features = ["eip712"] }
 hex = "0.4.3"
 hmac = "0.12.1"
 k256 = "0.12.0" # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
@@ -44,13 +44,13 @@ zerocopy = "0.6.1"
 secp256k1 = { version = "0.26.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.24.17", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.24.19", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 aws-smithy-types = { version = "0.54.4", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
-rsa = { version = "0.8.1", features = ["pem"], optional = true } # https://crates.io/crates/rsa
+rsa = { version = "0.8.2", features = ["pem"], optional = true } # https://crates.io/crates/rsa
 rustls = { version = "0.20.8", optional = true } # https://github.com/rustls/rustls/tags
 
 # [OPTIONAL] for "message"
@@ -62,7 +62,7 @@ rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "evm", "jsonrpc_client"
 reqwest = { version = "0.11.14", optional = true }
-tokio = { version = "1.25.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
+tokio = { version = "1.26.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
 
 # [OPTIONAL] for "utils"
 url = { version = "2.3.1", optional = true }
@@ -71,9 +71,9 @@ url = { version = "2.3.1", optional = true }
 rlp = { version = "0.5.2", default-features = false, features = ["std"], optional = true }
 
 # [OPTIONAL] for "wallet_evm"
-ethers = { version = "1.0.2", features = ["eip712"], optional = true }
-ethers-providers = { version = "1.0.2", optional = true }
-ethers-signers = { version = "1.0.2", optional = true }
+ethers = { version = "1.5.0", features = ["eip712"], optional = true } # https://github.com/gakonst/ethers-rs/releases
+ethers-providers = { version = "1.5.0", optional = true } # https://github.com/gakonst/ethers-rs/releases
+ethers-signers = { version = "1.5.0", optional = true } # https://github.com/gakonst/ethers-rs/releases
 
 # [OPTIONAL] for "subnet"
 futures = { version = "0.3.26", optional = true }
@@ -147,7 +147,7 @@ libsecp256k1 = ["secp256k1"]
 mnemonic = ["bip32", "rand_core"]
 subnet_evm = []
 wallet = ["reqwest", "tokio", "utils"]
-wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client"]
+wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client", "reqwest", "url"]
 xsvm = []
 utils = ["url"]
 
@@ -223,12 +223,12 @@ required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_counter_increment_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 
 [[example]]
 name = "evm_contract_voter_vote_a_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 
 [[example]]
@@ -241,29 +241,29 @@ required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_simple_registry_register_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 
 [[example]]
 name = "evm_contract_erc20_simple_token_increase_allowance_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_erc20_simple_token_transfer_from_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 
 [[example]]
 name = "evm_contract_erc721_my_token_mint_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_erc721_my_token_approve_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 [[example]]
 name = "evm_contract_erc721_my_token_transfer_from_forwarder_relay_eip712"
-required-features = ["jsonrpc_client", "evm"]
+required-features = ["jsonrpc_client", "evm", "wallet", "wallet_evm"]
 
 
 [[example]]
@@ -314,6 +314,7 @@ required-features = ["proto", "subnet"]
 [[example]]
 name = "proto_server"
 required-features = ["proto", "subnet"]
+
 
 [[test]]
 name = "integration"

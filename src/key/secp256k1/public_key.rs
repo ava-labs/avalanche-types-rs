@@ -13,6 +13,7 @@ use k256::{
     pkcs8::DecodePublicKey,
     PublicKey,
 };
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The size (in bytes) of a public key.
 /// ref. "secp256k1::constants::PUBLIC_KEY_SIZE"
@@ -22,7 +23,8 @@ pub const LEN: usize = 33;
 /// ref. "secp256k1::constants::UNCOMPRESSED_PUBLIC_KEY_SIZE"
 pub const UNCOMPRESSED_LEN: usize = 65;
 
-/// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey".
+/// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey". By default
+/// serializes as hex string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Key(pub PublicKey);
 
@@ -151,6 +153,28 @@ impl Key {
 
         // ref. "formatting.FormatAddress(chainIDAlias, hrp, pubBytes)"
         formatting::address(chain_id_alias, hrp, &short_address_bytes)
+    }
+}
+
+impl<'de> Deserialize<'de> for Key {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        let val = String::deserialize(deserializer)
+            .and_then(|s| hex::decode(s).map_err(Error::custom))?;
+        Self::from_sec1_bytes(&val).map_err(Error::custom)
+    }
+}
+
+impl Serialize for Key {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&hex::encode(self.to_compressed_bytes()))
     }
 }
 
@@ -287,4 +311,24 @@ pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<Verifyin
             ),
         )
     })
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::signature::test_key_serialization --exact --show-output
+#[test]
+fn test_key_serialization() {
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+    struct Data {
+        key: Key,
+    }
+
+    let pk = crate::key::secp256k1::private_key::Key::generate().unwrap();
+    let pubkey = pk.to_public_key();
+    let d = Data {
+        key: pubkey.clone(),
+    };
+
+    let json_encoded = serde_json::to_string(&d).unwrap();
+    println!("json_encoded:\n{}", json_encoded);
+    let json_decoded = serde_json::from_str::<Data>(&json_encoded).unwrap();
+    assert_eq!(pubkey, json_decoded.key);
 }

@@ -5,6 +5,7 @@ use ethers_core::k256::ecdsa::{
     Signature as KSig,
 };
 use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::AsBytes;
 
 /// The length of recoverable ECDSA signature.
@@ -15,7 +16,9 @@ use zerocopy::AsBytes;
 /// ref. "secp256k1::constants::SCHNORR_SIGNATURE_SIZE" + 1
 pub const LEN: usize = 65;
 
-/// Represents Ethereum-style "recoverable signatures".
+/// Represents Ethereum-style "recoverable signatures". By default
+/// serializes as hex string.
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sig(pub (Signature, RecoveryId));
 
@@ -76,6 +79,28 @@ impl Sig {
     pub fn v(&self) -> u64 {
         // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recovery_id"
         u8::from(self.0 .1) as u64
+    }
+}
+
+impl<'de> Deserialize<'de> for Sig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        let val = String::deserialize(deserializer)
+            .and_then(|s| hex::decode(s).map_err(Error::custom))?;
+        Self::from_bytes(val.as_bytes()).map_err(Error::custom)
+    }
+}
+
+impl Serialize for Sig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&hex::encode(self.to_bytes()))
     }
 }
 
@@ -197,4 +222,30 @@ pub fn rsig_to_ethsig(sig: &RSig) -> ethers_core::types::Signature {
 pub fn apply_eip155(sig: &mut ethers_core::types::Signature, chain_id: u64) {
     let v = (chain_id * 2 + 35) + ((sig.v - 1) % 2);
     sig.v = v;
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::secp256k1::signature::test_signature_serialization --exact --show-output
+#[test]
+fn test_signature_serialization() {
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+    struct Data {
+        sig: Sig,
+    }
+
+    let pk = crate::key::secp256k1::private_key::Key::generate().unwrap();
+    let pubkey = pk.to_public_key();
+
+    let msg: Vec<u8> = random_manager::secure_bytes(100).unwrap();
+    let hashed = crate::hash::sha256(&msg);
+    let sig = pk.sign_digest(&hashed).unwrap();
+    let d = Data { sig: sig.clone() };
+
+    let json_encoded = serde_json::to_string(&d).unwrap();
+    println!("json_encoded:\n{}", json_encoded);
+    let json_decoded = serde_json::from_str::<Data>(&json_encoded).unwrap();
+    assert_eq!(sig, json_decoded.sig);
+
+    let (recovered_pubkey, _) = json_decoded.sig.recover_public_key(&hashed).unwrap();
+    assert_eq!(pubkey.to_eth_address(), recovered_pubkey.to_eth_address());
+    assert_eq!(pubkey, recovered_pubkey);
 }
