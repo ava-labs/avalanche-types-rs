@@ -15,7 +15,17 @@ pub struct PrivateKey(libsecp256k1::SecretKey);
 impl PrivateKey {
     /// Loads the private key from the raw bytes.
     pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
-        assert_eq!(raw.len(), key::secp256k1::private_key::LEN);
+        if raw.len() != key::secp256k1::private_key::LEN {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!(
+                    "libsecp256k1::SecretKey must be {}-byte, got {}-byte",
+                    key::secp256k1::private_key::LEN,
+                    raw.len()
+                ),
+            ));
+        }
+
         let sk = libsecp256k1::SecretKey::from_slice(raw).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
@@ -26,7 +36,9 @@ impl PrivateKey {
     }
 
     pub fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
-        k256::ecdsa::SigningKey::from_bytes(&self.to_bytes()).map_err(|e| {
+        let b = self.to_bytes();
+        let ga = k256::elliptic_curve::generic_array::GenericArray::from_slice(&b);
+        k256::ecdsa::SigningKey::from_bytes(&ga).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
                 format!("failed k256::ecdsa::SigningKey::from_bytes '{}'", e),

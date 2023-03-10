@@ -14,6 +14,7 @@ use crate::{
 use async_trait::async_trait;
 use k256::{
     ecdsa::{hazmat::SignPrimitive, SigningKey},
+    elliptic_curve::generic_array::GenericArray,
     SecretKey,
 };
 use lazy_static::lazy_static;
@@ -32,7 +33,7 @@ pub const CB58_ENCODE_PREFIX: &str = "PrivateKey-";
 
 /// Represents "k256::SecretKey" and "k256::ecdsa::SigningKey".
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Key(SecretKey);
+pub struct Key((SecretKey, SigningKey));
 
 #[cfg(all(not(windows)))]
 fn secure_random() -> &'static dyn SecureRandom {
@@ -61,23 +62,35 @@ impl Key {
 
     /// Loads the private key from the raw scalar bytes.
     pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
-        assert_eq!(raw.len(), LEN);
-        let sk = SecretKey::from_be_bytes(raw).map_err(|e| {
+        if raw.len() != LEN {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!(
+                    "k256::SecretKey must be {}-byte, got {}-byte",
+                    LEN,
+                    raw.len()
+                ),
+            ));
+        }
+
+        let sk = SecretKey::from_slice(raw).map_err(|e| {
             Error::new(
                 ErrorKind::Other,
-                format!("failed k256::SecretKey::from_be_bytes {}", e),
+                format!("failed k256::SecretKey::from_slice {}", e),
             )
         })?;
-        Ok(Self(sk))
+        let signing_key = SigningKey::from(sk.clone());
+
+        Ok(Self((sk, signing_key)))
     }
 
     pub fn signing_key(&self) -> SigningKey {
-        SigningKey::from(self.0.clone())
+        self.0 .1.clone()
     }
 
     /// Converts the private key to raw scalar bytes.
     pub fn to_bytes(&self) -> [u8; LEN] {
-        let b = self.0.to_be_bytes();
+        let b = self.0 .0.to_bytes();
 
         let mut bb = [0u8; LEN];
         bb.copy_from_slice(&b);
@@ -86,7 +99,7 @@ impl Key {
 
     /// Hex-encodes the raw private key to string with "0x" prefix (e.g., Ethereum).
     pub fn to_hex(&self) -> String {
-        let b = self.0.to_be_bytes();
+        let b = self.0 .0.to_bytes();
         let enc = hex::encode(&b);
 
         let mut s = String::from(HEX_ENCODE_PREFIX);
@@ -109,7 +122,7 @@ impl Key {
 
     /// Encodes the raw private key to string with "PrivateKey-" prefix (e.g., Avalanche).
     pub fn to_cb58(&self) -> String {
-        let b = self.0.to_be_bytes();
+        let b = self.0 .0.to_bytes();
         let enc = formatting::encode_cb58_with_checksum_string(&b);
 
         let mut s = String::from(CB58_ENCODE_PREFIX);
@@ -133,7 +146,7 @@ impl Key {
 
     /// Derives the public key from this private key.
     pub fn to_public_key(&self) -> PublicKey {
-        PublicKey::from(self.0.public_key())
+        PublicKey::from(self.0 .0.public_key())
     }
 
     /// Converts to Info.
@@ -177,28 +190,39 @@ impl Key {
     /// ref. <https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs>
     pub fn sign_digest(&self, digest: &[u8]) -> io::Result<Sig> {
         // ref. "crypto/sha256.Size"
-        assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
+        if digest.len() != hash::SHA256_OUTPUT_LEN {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!(
+                    "sign_digest only takes {}-byte, got {}-byte",
+                    hash::SHA256_OUTPUT_LEN,
+                    digest.len()
+                ),
+            ));
+        }
+
+        let secret_scalar = self.0 .1.as_nonzero_scalar();
 
         // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "PrehashSigner"
         let prehash = <[u8; 32]>::try_from(digest).map_err(|e| {
             Error::new(
-                ErrorKind::Other,
-                format!("failed <[u8; 32]>::try_from(digest) '{}'", e),
+                ErrorKind::InvalidData,
+                format!("failed to convert prehash '{}'", e),
             )
         })?;
+        let prehash = GenericArray::from_slice(&prehash);
 
-        let signing_key = self.signing_key();
-        let secret_scalar = signing_key.as_nonzero_scalar();
-
+        // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.13.0/k256/src/ecdsa.rs>
         // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "sign_prehash"
         let (sig, recid) = secret_scalar
-            .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])
+            .try_sign_prehashed_rfc6979::<Sha256>(&prehash, &[])
             .map_err(|e| {
                 Error::new(
                     ErrorKind::Other,
                     format!("failed try_sign_prehashed_rfc6979 '{}'", e),
                 )
             })?;
+
         let recid = if let Some(ri) = recid {
             ri
         } else {
@@ -222,15 +246,16 @@ impl Key {
     }
 }
 
-impl From<SecretKey> for Key {
-    fn from(s: SecretKey) -> Self {
-        Self(s)
+impl From<&SecretKey> for Key {
+    fn from(s: &SecretKey) -> Self {
+        let signing_key = SigningKey::from(s);
+        Self((s.clone(), signing_key))
     }
 }
 
 impl From<Key> for SecretKey {
     fn from(s: Key) -> Self {
-        s.0
+        s.0 .0
     }
 }
 
