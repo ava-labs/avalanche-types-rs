@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs::{self, File},
     io::{self, Error, ErrorKind, Write},
     path::Path,
@@ -143,18 +144,19 @@ pub struct Config {
     pub track_subnets: Option<String>,
 
     /// Plugin directory.
-    /// Default to "/usr/local/bin/plugin".
+    /// Default to "/data/avalanche-plugins".
     #[serde(default)]
     pub plugin_dir: String,
-
-    /// Chain configuration directory (e.g., /data/avalanche-configs/chains/C/config.json).
-    /// Default to "/data/avalanche-configs/chains".
-    #[serde(default)]
-    pub chain_config_dir: String,
     /// Subnet configuration directory (e.g., /data/avalanche-configs/subnets/C.json).
-    /// Default to "/data/avalanche-configs/subnets".
+    /// If a subnet id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
+    /// the config file for this subnet is located at {subnet-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt.json.
     #[serde(default)]
     pub subnet_config_dir: String,
+    /// Chain configuration directory (e.g., /data/avalanche-configs/chains/C/config.json).
+    /// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
+    /// the config file for this chain is located at {chain-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json.
+    #[serde(default)]
+    pub chain_config_dir: String,
 
     /// A comma separated string of explicit nodeID and IPs
     /// to contact for starting state sync. Useful for testing.
@@ -257,13 +259,20 @@ pub const DEFAULT_API_METRICS_ENABLED: bool = true;
 pub const DEFAULT_API_HEALTH_ENABLED: bool = true;
 pub const DEFAULT_API_IPCS_ENABLED: bool = false;
 
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.7/config/flags.go>
-pub const DEFAULT_PLUGIN_DIR: &str = "/usr/local/bin/plugin";
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.11/config/flags.go>
+pub const DEFAULT_PLUGIN_DIR: &str = "/data/avalanche-plugins";
 
-/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.7.18/config/flags.go#L35-L52>
+/// If a subnet id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
+/// the config file for this subnet is located at {subnet-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt.json.
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.11/config/flags.go>
+/// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
+pub const DEFAULT_SUBNET_CONFIG_DIR: &str = "/data/avalanche-configs/subnets";
+
+/// If a Subnet's chain id is 2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt,
+/// the config file for this chain is located at {chain-config-dir}/2ebCneCbwthjQ1rYT41nhd7M76Hc6YmosMAQrTFhBq8qeqh6tt/config.json.
+/// ref. <https://github.com/ava-labs/avalanchego/blob/v1.9.11/config/flags.go>
 /// ref. <https://docs.avax.network/subnets/customize-a-subnet#chain-configs>
 pub const DEFAULT_CHAIN_CONFIG_DIR: &str = "/data/avalanche-configs/chains";
-pub const DEFAULT_SUBNET_CONFIG_DIR: &str = "/data/avalanche-configs/subnets";
 
 /// MUST BE a valid path in remote host machine.
 pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanche-profile/avalanche";
@@ -336,8 +345,8 @@ impl Config {
             track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
-            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
+            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,
@@ -420,8 +429,8 @@ impl Config {
             track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
-            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
+            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,
@@ -504,8 +513,8 @@ impl Config {
             track_subnets: None,
 
             plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
-            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
             subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
+            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
 
             state_sync_ids: None,
             state_sync_ips: None,
@@ -545,6 +554,32 @@ impl Config {
         !self.is_mainnet() && (self.network_id == 0 || self.network_id > 5)
     }
 
+    pub fn add_track_subnets(&mut self, ids: Option<String>) {
+        let mut all_ids = BTreeSet::new();
+        if let Some(existing) = &self.track_subnets {
+            let ss: Vec<&str> = existing.split(",").collect();
+            for id in ss {
+                all_ids.insert(id.trim().to_string());
+            }
+        }
+
+        if let Some(new_ids) = &ids {
+            let ss: Vec<&str> = new_ids.split(",").collect();
+            for id in ss {
+                all_ids.insert(id.trim().to_string());
+            }
+        }
+
+        let mut ids = Vec::new();
+        for id in all_ids.iter() {
+            ids.push(id.trim().to_string());
+        }
+
+        if !ids.is_empty() {
+            self.track_subnets = Some(ids.join(","))
+        }
+    }
+
     /// Converts to string with JSON encoder.
     pub fn encode_json(&self) -> io::Result<String> {
         serde_json::to_string(&self)
@@ -568,8 +603,10 @@ impl Config {
 
         log::info!("mkdir avalanchego configuration dir for '{}'", p);
         let path = Path::new(&p);
-        let parent_dir = path.parent().expect("unexpected None parent");
-        fs::create_dir_all(parent_dir)?;
+        if let Some(parent_dir) = path.parent() {
+            log::info!("creating parent dir '{}'", parent_dir.display());
+            fs::create_dir_all(parent_dir)?;
+        }
 
         let d = serde_json::to_vec(self)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
@@ -735,6 +772,10 @@ fn test_config() {
 
     let config_loaded = Config::load(&p).unwrap();
     assert_eq!(config, config_loaded);
+
+    config.add_track_subnets(Some("x,y,a,b,d,f".to_string()));
+    println!("{}", config.track_subnets.clone().unwrap());
+    assert_eq!(config.track_subnets.unwrap(), "a,b,d,f,x,y");
 
     fs::remove_file(p).unwrap();
 }

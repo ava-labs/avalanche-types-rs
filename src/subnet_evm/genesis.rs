@@ -5,7 +5,6 @@ use std::{
     path::Path,
 };
 
-use crate::key;
 use serde::{Deserialize, Serialize};
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core#Genesis>
@@ -115,10 +114,10 @@ impl Genesis {
     }
 
     /// Creates a new Genesis object with "keys" number of generated pre-funded keys.
-    pub fn new<T: key::secp256k1::ReadOnly>(seed_keys: &[T]) -> io::Result<Self> {
+    pub fn new(seed_eth_addrs: Vec<String>) -> io::Result<Self> {
         // maximize total supply
         let max_total_alloc = i128::MAX;
-        let total_keys = seed_keys.len();
+        let total_keys = seed_eth_addrs.len();
         let alloc_per_key = if total_keys > 0 {
             max_total_alloc / total_keys as i128
         } else {
@@ -131,8 +130,7 @@ impl Genesis {
         default_alloc.balance = primitive_types::U256::from(alloc_per_key);
 
         let mut allocs = BTreeMap::new();
-        for k in seed_keys.iter() {
-            let eth_addr = k.eth_address();
+        for eth_addr in seed_eth_addrs.iter() {
             allocs.insert(
                 eth_addr.trim_start_matches("0x").to_string(),
                 default_alloc.clone(),
@@ -161,8 +159,10 @@ impl Genesis {
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing Genesis to '{}'", file_path);
         let path = Path::new(file_path);
-        let parent_dir = path.parent().expect("unexpected None parent");
-        fs::create_dir_all(parent_dir)?;
+        if let Some(parent_dir) = path.parent() {
+            log::info!("creating parent dir '{}'", parent_dir.display());
+            fs::create_dir_all(parent_dir)?;
+        }
 
         let d = serde_json::to_vec(self)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;

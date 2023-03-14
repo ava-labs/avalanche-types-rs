@@ -108,8 +108,10 @@ impl Genesis {
     pub fn sync(&self, file_path: &str) -> io::Result<()> {
         log::info!("syncing Genesis to '{}'", file_path);
         let path = Path::new(file_path);
-        let parent_dir = path.parent().expect("unexpected None parent");
-        fs::create_dir_all(parent_dir)?;
+        if let Some(parent_dir) = path.parent() {
+            log::info!("creating parent dir '{}'", parent_dir.display());
+            fs::create_dir_all(parent_dir)?;
+        }
 
         let d = serde_json::to_vec(self)
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;

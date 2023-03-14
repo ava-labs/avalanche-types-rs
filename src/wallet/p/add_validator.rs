@@ -115,6 +115,29 @@ where
         self
     }
 
+    /// Sets the validate start/end time in days from 'offset_seconds' later.
+    #[must_use]
+    pub fn validate_period_in_days(mut self, offset_seconds: u64, days: u64) -> Self {
+        let now_unix = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("unexpected None duration_since")
+            .as_secs();
+
+        let start_time = now_unix + offset_seconds;
+        let native_dt = NaiveDateTime::from_timestamp_opt(start_time as i64, 0).unwrap();
+        let start_time = DateTime::<Utc>::from_utc(native_dt, Utc);
+
+        // must be smaller than the primary network default
+        // otherwise "staking period must be a subset of the primary network"
+        let end_time = now_unix + days * 24 * 60 * 60;
+        let native_dt = NaiveDateTime::from_timestamp_opt(end_time as i64, 0).unwrap();
+        let end_time = DateTime::<Utc>::from_utc(native_dt, Utc);
+
+        self.start_time = start_time;
+        self.end_time = end_time;
+        self
+    }
+
     /// Sets the validate reward in percent.
     #[must_use]
     pub fn reward_fee_percent(mut self, reward_fee_percent: u32) -> Self {
@@ -166,7 +189,7 @@ where
         log::info!(
             "adding primary network validator {} with stake amount {} AVAX ({} nAVAX) via {}",
             self.node_id,
-            units::convert_navax_for_x_and_p(self.stake_amount),
+            units::cast_xp_navax_to_avax(primitive_types::U256::from(self.stake_amount)),
             self.stake_amount,
             picked_http_rpc.1
         );
