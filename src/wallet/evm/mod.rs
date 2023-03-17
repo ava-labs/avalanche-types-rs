@@ -64,9 +64,9 @@ pub fn new_provider(
 }
 
 /// Make sure to not create multiple providers for the ease of nonce management.
-pub fn new_middleware<'a, S>(
+pub fn new_middleware<S>(
     provider: Arc<Provider<RetryClient<Http>>>,
-    eth_signer: &'a S,
+    eth_signer: &S,
     chain_id: U256,
 ) -> io::Result<
     NonceManagerMiddleware<
@@ -83,6 +83,8 @@ where
     // TODO: make this configurable
     let escalator = GeometricGasPrice::new(5.0, 10u64, None::<u64>);
 
+    // TODO: this can lead to file descriptor leaks!!!
+    // ref. <https://github.com/gakonst/ethers-rs/issues/2269>
     let gas_escalator_middleware =
         GasEscalatorMiddleware::new(Arc::clone(&provider), escalator, Frequency::PerBlock);
 
@@ -107,12 +109,12 @@ where
     /// e.g., "{base_http_url}/ext/bc/{chain_id_alias}/rpc"
     /// Set "chain_id_alias" to either "C" or subnet-evm chain Id.
     #[must_use]
-    pub fn evm<'a, S>(
+    pub fn evm<S>(
         &self,
-        eth_signer: &'a S,
+        eth_signer: &S,
         chain_rpc_url: &str,
         chain_id: U256,
-    ) -> io::Result<Evm<'a, T, S>>
+    ) -> io::Result<Evm<T, S>>
     where
         S: ethers_signers::Signer + Clone,
         S::Error: 'static,
@@ -130,9 +132,8 @@ where
         let nonce_middleware = new_middleware(Arc::clone(&provider_arc), eth_signer, chain_id)?;
         let middleware = Arc::new(nonce_middleware);
 
-        Ok(Evm::<'a, T, S> {
+        Ok(Evm::<T, S> {
             inner: self.clone(),
-            eth_signer,
 
             chain_rpc_url: chain_rpc_url.to_string(),
             provider: provider_arc,
@@ -144,14 +145,13 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct Evm<'a, T, S>
+pub struct Evm<T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
     S: ethers_signers::Signer + Clone,
     S::Error: 'static,
 {
     pub inner: wallet::Wallet<T>,
-    pub eth_signer: &'a S,
 
     pub chain_rpc_url: String,
     pub provider: Arc<Provider<RetryClient<Http>>>,
@@ -174,7 +174,7 @@ where
     pub chain_id: U256,
 }
 
-impl<'a, T, S> Evm<'a, T, S>
+impl<T, S> Evm<T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
     S: ethers_signers::Signer + Clone,

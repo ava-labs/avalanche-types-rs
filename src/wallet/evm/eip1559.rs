@@ -33,14 +33,14 @@ lazy_static! {
     };
 }
 
-impl<'a, T, S> evm::Evm<'a, T, S>
+impl<T, S> evm::Evm<T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
     S: ethers_signers::Signer + Clone,
     S::Error: 'static,
 {
     #[must_use]
-    pub fn eip1559(&self) -> Tx<'a, T, S> {
+    pub fn eip1559(&self) -> Tx<T, S> {
         Tx::new(self)
     }
 }
@@ -51,13 +51,13 @@ where
 /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/subnet-evm/core/types#DynamicFeeTx>
 #[derive(Clone, Debug)]
-pub struct Tx<'a, T, S>
+pub struct Tx<T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
     S: ethers_signers::Signer + Clone,
     S::Error: 'static,
 {
-    pub inner: wallet::evm::Evm<'a, T, S>,
+    pub inner: wallet::evm::Evm<T, S>,
 
     /// Sequence number originated from this account to prevent message replay attack
     /// ref. <https://eips.ethereum.org/EIPS/eip-155>
@@ -148,13 +148,13 @@ where
     pub dry_mode: bool,
 }
 
-impl<'a, T, S> Tx<'a, T, S>
+impl<T, S> Tx<T, S>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
     S: ethers_signers::Signer + Clone,
     S::Error: 'static,
 {
-    pub fn new(ev: &wallet::evm::Evm<'a, T, S>) -> Self {
+    pub fn new(ev: &wallet::evm::Evm<T, S>) -> Self {
         Self {
             inner: ev.clone(),
 

@@ -17,7 +17,7 @@ fn main() {
     }
 
     log::info!("creating AWS KMS resources!");
-    let shared_config = ab!(aws_manager::load_config(None)).unwrap();
+    let shared_config = ab!(aws_manager::load_config(None, None)).unwrap();
     let kms_manager = kms::Manager::new(&shared_config);
 
     let mut key_name = id_manager::time::with_prefix("test");

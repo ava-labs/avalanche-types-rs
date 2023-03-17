@@ -218,7 +218,7 @@ pub const DEFAULT_DB_DIR: &str = "/data";
 /// Default "log-dir" directory path for remote linux machines.
 /// MUST BE a valid path in remote host machine.
 /// ref. See "cfn-templates/avalanche-node/asg_amd64_ubuntu.yaml" "ASGLaunchTemplate"
-pub const DEFAULT_LOG_DIR: &str = "/var/log/avalanche";
+pub const DEFAULT_LOG_DIR: &str = "/var/log/avalanchego";
 pub const DEFAULT_LOG_LEVEL: &str = "INFO";
 pub const DEFAULT_LOG_FORMAT: &str = "json";
 
@@ -275,7 +275,7 @@ pub const DEFAULT_SUBNET_CONFIG_DIR: &str = "/data/avalanche-configs/subnets";
 pub const DEFAULT_CHAIN_CONFIG_DIR: &str = "/data/avalanche-configs/chains";
 
 /// MUST BE a valid path in remote host machine.
-pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanche-profile/avalanche";
+pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanchego-profile/avalanche";
 
 pub const DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE: u64 = 6291456;
 pub const DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES: u64 = 2097152;

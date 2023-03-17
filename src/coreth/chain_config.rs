@@ -146,7 +146,7 @@ pub struct Config {
 pub const DEFAULT_CORETH_ADMIN_API_ENABLED: bool = true;
 
 /// MUST BE a valid path in remote host machine.
-pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanche-profile/coreth";
+pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanchego-profile/coreth";
 pub const DEFAULT_PROFILE_FREQUENCY: i64 = 15 * 60 * 1000 * 1000 * 1000; // 15-min
 pub const DEFAULT_PROFILE_MAX_FILES: i64 = 5;
 
