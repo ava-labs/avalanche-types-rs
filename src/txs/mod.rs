@@ -23,10 +23,10 @@ pub struct Tx {
     #[serde(rename = "blockchainID")]
     pub blockchain_id: ids::Id,
 
-    #[serde(rename = "outputs")]
-    pub transferable_outputs: Option<Vec<transferable::Output>>,
     #[serde(rename = "inputs")]
     pub transferable_inputs: Option<Vec<transferable::Input>>,
+    #[serde(rename = "outputs")]
+    pub transferable_outputs: Option<Vec<transferable::Output>>,
 
     #[serde_as(as = "Option<Hex0xBytes>")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -45,8 +45,8 @@ impl Tx {
             metadata: None,
             network_id: 0,
             blockchain_id: ids::Id::empty(),
-            transferable_outputs: None,
             transferable_inputs: None,
+            transferable_outputs: None,
             memo: None,
         }
     }
@@ -164,6 +164,9 @@ impl Tx {
 
                         // marshal "platformvm::txs::StakeableLockOut.locktime" field
                         packer.pack_u64(stakeable_lock_out.locktime)?;
+
+                        // secp256k1fx.TransferOutput type ID
+                        packer.pack_u32(7)?;
 
                         // "platformvm.StakeableLockOut.TransferOutput" is struct and serialize:"true"
                         // but embedded inline in the struct "StakeableLockOut"

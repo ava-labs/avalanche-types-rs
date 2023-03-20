@@ -57,7 +57,7 @@ impl Key {
 
     #[cfg(all(windows))]
     pub fn generate() -> io::Result<Self> {
-        Err(Error::new(ErrorKind::Unsupported, "not implemented"))
+        unimplemented!("not implemented")
     }
 
     /// Loads the private key from the raw scalar bytes.

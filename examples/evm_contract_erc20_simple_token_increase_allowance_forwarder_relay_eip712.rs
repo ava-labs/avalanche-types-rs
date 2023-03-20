@@ -21,7 +21,7 @@ use tokio::time::Duration;
 /// cargo run --example evm_contract_erc20_simple_token_increase_allowance_forwarder_relay_eip712 --features="jsonrpc_client evm" -- http://127.0.0.1:9876/rpc http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 "my domain name" "1" "my type name" "my suffix data" 0x5DB9A7629912EBF95876228C24A848de0bfB43A9 1af42b797a6bfbd3cf7554bed261e876db69190f5eb1b806acbd72046ee957c3 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC 50000000
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

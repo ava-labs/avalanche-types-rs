@@ -1,3 +1,4 @@
+pub mod add_permissionless_validator;
 pub mod add_subnet_validator;
 pub mod add_validator;
 pub mod create_chain;

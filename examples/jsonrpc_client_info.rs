@@ -1,77 +1,114 @@
-use std::env::args;
+use std::{env::args, io};
 
-use avalanche_types::jsonrpc::client::info;
-use tokio::runtime::Runtime;
+use avalanche_types::jsonrpc::client::info as jsonrpc_client_info;
 
-/// cargo run --example jsonrpc_client_info -- [HTTP RPC ENDPOINT]
-/// cargo run --example jsonrpc_client_info -- http://localhost:9650
-/// cargo run --example jsonrpc_client_info -- http://54.180.73.56:9650
-fn main() {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+/// cargo run --all-features --example jsonrpc_client_info -- [HTTP RPC ENDPOINT]
+/// cargo run --all-features --example jsonrpc_client_info -- http://localhost:9650
+/// cargo run --all-features --example jsonrpc_client_info -- http://44.230.236.23:9650
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
     let url = args().nth(1).expect("no url given");
-    let rt = Runtime::new().unwrap();
 
-    let resp = rt
-        .block_on(info::get_network_name(&url))
-        .expect("failed get_network_name");
-    log::info!("get_network_name response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_network_name(&url).await.unwrap();
+    log::info!(
+        "get_network_name response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
 
-    let resp = rt
-        .block_on(info::get_network_id(&url))
-        .expect("failed get_network_id");
-    log::info!("get_network_id response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_network_id(&url).await.unwrap();
+    log::info!(
+        "get_network_id response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
 
-    let resp = rt
-        .block_on(info::get_blockchain_id(&url, "X"))
-        .expect("failed get_blockchain_id");
-    log::info!("get_blockchain_id for X response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_blockchain_id(&url, "X")
+        .await
+        .unwrap();
+    log::info!(
+        "get_blockchain_id for X response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
     log::info!(
         "blockchain_id for X: {}",
         resp.result.unwrap().blockchain_id
     );
 
-    let resp = rt
-        .block_on(info::get_blockchain_id(&url, "P"))
-        .expect("failed get_blockchain_id");
+    println!();
+    let resp = jsonrpc_client_info::get_blockchain_id(&url, "P")
+        .await
+        .unwrap();
     log::info!("get_blockchain_id for P response: {:?}", resp);
     log::info!(
         "blockchain_id for P: {}",
         resp.result.unwrap().blockchain_id
     );
 
-    let resp = rt
-        .block_on(info::get_blockchain_id(&url, "C"))
-        .expect("failed get_blockchain_id");
-    log::info!("get_blockchain_id for C response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_blockchain_id(&url, "C")
+        .await
+        .unwrap();
+    log::info!(
+        "get_blockchain_id for C response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
     log::info!(
         "blockchain_id for C: {}",
         resp.result.unwrap().blockchain_id
     );
 
-    let resp = rt
-        .block_on(info::get_node_id(&url))
-        .expect("failed get_node_id");
-    log::info!("get_node_id response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_node_id(&url).await.unwrap();
+    log::info!(
+        "get_node_id response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
+    assert_eq!(
+        resp.result
+            .unwrap()
+            .node_pop
+            .unwrap()
+            .pubkey
+            .unwrap()
+            .to_compressed_bytes()
+            .len(),
+        48
+    );
 
-    let resp = rt
-        .block_on(info::get_node_version(&url))
-        .expect("failed get_node_version");
-    log::info!("get_node_version response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_node_version(&url).await.unwrap();
+    log::info!(
+        "get_node_version response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
 
-    let resp = rt.block_on(info::get_vms(&url)).expect("failed get_vms");
-    log::info!("get_vms response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_vms(&url).await.unwrap();
+    log::info!(
+        "get_vms response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
 
-    let resp = rt
-        .block_on(info::is_bootstrapped(&url))
-        .expect("failed get_bootstrapped");
-    log::info!("get_bootstrapped response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::is_bootstrapped(&url).await.unwrap();
+    log::info!(
+        "get_bootstrapped response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
 
-    let resp = rt
-        .block_on(info::get_tx_fee(&url))
-        .expect("failed get_tx_fee");
-    log::info!("get_tx_fee response: {:?}", resp);
+    println!();
+    let resp = jsonrpc_client_info::get_tx_fee(&url).await.unwrap();
+    log::info!(
+        "get_tx_fee response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
+
+    Ok(())
 }

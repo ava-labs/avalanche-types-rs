@@ -91,6 +91,10 @@ pub struct Config {
     /// MUST BE a valid path in remote host machine.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub staking_tls_cert_file: Option<String>,
+    /// MUST BE a valid path in remote host machine.
+    /// Path to the BLS key.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub staking_signer_key_file: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bootstrap_ips: Option<String>,
@@ -241,6 +245,8 @@ pub const DEFAULT_STAKING_PORT: u32 = 9651;
 pub const DEFAULT_STAKING_TLS_KEY_FILE: &str = "/data/staking.key";
 /// MUST BE a valid path in remote host machine.
 pub const DEFAULT_STAKING_TLS_CERT_FILE: &str = "/data/staking.crt";
+/// MUST BE a valid path in remote host machine.
+pub const DEFAULT_STAKING_SIGNER_KEY_FILE: &str = "/data/staking-signer.bls.key";
 
 /// Default snow sample size.
 /// NOTE: keep this in sync with "avalanchego/config/flags.go".
@@ -318,6 +324,7 @@ impl Config {
             staking_port: DEFAULT_STAKING_PORT,
             staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
             staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
+            staking_signer_key_file: Some(String::from(DEFAULT_STAKING_SIGNER_KEY_FILE)),
 
             bootstrap_ips: None,
             bootstrap_ids: None,
@@ -402,6 +409,7 @@ impl Config {
             staking_port: DEFAULT_STAKING_PORT,
             staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
             staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
+            staking_signer_key_file: Some(String::from(DEFAULT_STAKING_SIGNER_KEY_FILE)),
 
             bootstrap_ips: None,
             bootstrap_ids: None,
@@ -486,6 +494,7 @@ impl Config {
             staking_port: DEFAULT_STAKING_PORT,
             staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
             staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
+            staking_signer_key_file: Some(String::from(DEFAULT_STAKING_SIGNER_KEY_FILE)),
 
             bootstrap_ips: None,
             bootstrap_ids: None,
@@ -711,6 +720,12 @@ impl Config {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 "'staking-tls-key-file' not defined",
+            ));
+        }
+        if self.staking_signer_key_file.is_none() {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "'staking-signer-key-file' not defined",
             ));
         }
 

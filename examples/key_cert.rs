@@ -4,7 +4,7 @@ use avalanche_types::{ids::node, key::cert};
 
 /// cargo run --example key_cert -- /tmp/test.insecure.key /tmp/test.insecure.cert
 fn main() {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

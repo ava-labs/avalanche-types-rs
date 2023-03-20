@@ -9,7 +9,7 @@ use std::env::args;
 /// cargo run --example key_secp256k1_info_load_eth -- e73b5812225f2e1c62de93fb6ec35a9338882991577f9a6d5651dce61cecd852 9999
 /// cargo run --example key_secp256k1_info_load_eth -- 0xe73b5812225f2e1c62de93fb6ec35a9338882991577f9a6d5651dce61cecd852 9999
 fn main() {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

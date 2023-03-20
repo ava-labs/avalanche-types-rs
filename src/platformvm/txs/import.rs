@@ -3,8 +3,8 @@ use std::io::{self, Error, ErrorKind};
 use crate::{codec, hash, ids, key, platformvm, txs};
 use serde::{Deserialize, Serialize};
 
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#ImportTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
@@ -56,7 +56,7 @@ impl Tx {
     }
 
     pub fn type_name() -> String {
-        "platformvm.UnsignedImportTx".to_string()
+        "platformvm.ImportTx".to_string()
     }
 
     pub fn type_id() -> u32 {
@@ -198,8 +198,8 @@ impl Tx {
         packer.set_bytes(&tx_bytes_with_no_signature);
 
         // compute sha256 for marshaled "unsigned tx" bytes
-        // IMPORTANT: take the hash only for the type "platformvm.UnsignedImportTx" unsigned tx
-        // not other fields -- only hash "platformvm.UnsignedImportTx.*" but not "platformvm.Tx.Creds"
+        // IMPORTANT: take the hash only for the type "platformvm.ImportTx" unsigned tx
+        // not other fields -- only hash "platformvm.ImportTx.*" but not "platformvm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#UnsignedImportTx
         let tx_bytes_hash = hash::sha256(&tx_bytes_with_no_signature);
 

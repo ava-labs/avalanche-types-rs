@@ -155,6 +155,9 @@ impl Tx {
                         // marshal "platformvm::txs::StakeableLockOut.locktime" field
                         packer.pack_u64(stakeable_lock_out.locktime)?;
 
+                        // secp256k1fx.TransferOutput type ID
+                        packer.pack_u32(7)?;
+
                         // "platformvm.StakeableLockOut.TransferOutput" is struct and serialize:"true"
                         // but embedded inline in the struct "StakeableLockOut"
                         // so no need to encode type ID

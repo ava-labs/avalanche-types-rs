@@ -1,3 +1,4 @@
+pub mod add_permissionless_validator;
 pub mod add_subnet_validator;
 pub mod add_validator;
 pub mod create_chain;
@@ -410,6 +411,11 @@ where
     #[must_use]
     pub fn add_validator(&self) -> add_validator::Tx<T> {
         add_validator::Tx::new(self)
+    }
+
+    #[must_use]
+    pub fn add_permissionless_validator(&self) -> add_permissionless_validator::Tx<T> {
+        add_permissionless_validator::Tx::new(self)
     }
 
     /// Once subnet is created, the avalanche node must whitelist the subnet Id

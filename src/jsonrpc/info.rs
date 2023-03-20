@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ids::{self, node};
+use crate::{
+    ids::{self, node},
+    key::bls,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -173,6 +176,8 @@ pub struct GetNodeIdResponse {
 pub struct GetNodeIdResult {
     #[serde(rename = "nodeID")]
     pub node_id: node::Id,
+    #[serde(rename = "nodePOP")]
+    pub node_pop: Option<bls::ProofOfPossession>,
 }
 
 impl Default for GetNodeIdResult {
@@ -185,16 +190,16 @@ impl GetNodeIdResult {
     pub fn default() -> Self {
         Self {
             node_id: node::Id::default(),
+            node_pop: None,
         }
     }
 }
-
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_get_node_id --exact --show-output
 #[test]
 fn test_get_node_id() {
     use std::str::FromStr;
 
-    // ref. https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid
+    // ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
     let resp: GetNodeIdResponse = serde_json::from_str(
         "
 
@@ -214,6 +219,39 @@ fn test_get_node_id() {
         id: 1,
         result: Some(GetNodeIdResult {
             node_id: node::Id::from_str("NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD").unwrap(),
+            ..Default::default()
+        }),
+    };
+    assert_eq!(resp, expected);
+
+    let resp: GetNodeIdResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"nodeID\": \"NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD\",
+        \"nodePOP\": {
+            \"publicKey\": \"0x8f95423f7142d00a48e1014a3de8d28907d420dc33b3052a6dee03a3f2941a393c2351e354704ca66a3fc29870282e15\",
+            \"proofOfPossession\": \"0x86a3ab4c45cfe31cae34c1d06f212434ac71b1be6cfe046c80c162e057614a94a5bc9f1ded1a7029deb0ba4ca7c9b71411e293438691be79c2dbf19d1ca7c3eadb9c756246fc5de5b7b89511c7d7302ae051d9e03d7991138299b5ed6a570a98\"
+        }
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+    let expected = GetNodeIdResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetNodeIdResult {
+            node_id: node::Id::from_str("NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD").unwrap(),
+            node_pop: Some(bls::ProofOfPossession {
+                public_key: hex::decode("0x8f95423f7142d00a48e1014a3de8d28907d420dc33b3052a6dee03a3f2941a393c2351e354704ca66a3fc29870282e15".trim_start_matches("0x")).unwrap(),
+                proof_of_possession: hex::decode("0x86a3ab4c45cfe31cae34c1d06f212434ac71b1be6cfe046c80c162e057614a94a5bc9f1ded1a7029deb0ba4ca7c9b71411e293438691be79c2dbf19d1ca7c3eadb9c756246fc5de5b7b89511c7d7302ae051d9e03d7991138299b5ed6a570a98".trim_start_matches("0x")).unwrap(),
+                ..Default::default()
+            }),
         }),
     };
     assert_eq!(resp, expected);

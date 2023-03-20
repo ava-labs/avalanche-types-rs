@@ -229,8 +229,29 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getNodeID '{}'", e)))
+    let resp: info::GetNodeIdResponse = serde_json::from_slice(&out)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getNodeID '{}'", e)))?;
+
+    if let Some(res) = &resp.result {
+        if let Some(pop) = &res.node_pop {
+            let pubkey = pop.load_pubkey()?;
+
+            let mut cloned_pop = pop.clone();
+            cloned_pop.pubkey = Some(pubkey);
+
+            let mut cloned_result = res.clone();
+            cloned_result.node_pop = Some(cloned_pop);
+
+            let mut cloned_resp = resp.clone();
+            cloned_resp.result = Some(cloned_result);
+
+            Ok(cloned_resp)
+        } else {
+            return Err(Error::new(ErrorKind::Other, "no result.node_pop found"));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Other, "no result found"));
+    }
 }
 
 /// e.g., "info.getNodeVersion".

@@ -7,7 +7,7 @@ use ethers_core::types::{H160, U256};
 /// cargo run --example evm_eip712_gsn_domain_separator --features="evm" -- "my domain name" "1" 1234567 0x17aB05351fC94a1a67Bf3f56DdbB941aE6c63E25
 /// ref. <https://github.com/opengsn/gsn/blob/master/packages/contracts/src/forwarder/Forwarder.sol> "registerDomainSeparator"
 fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

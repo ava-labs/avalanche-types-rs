@@ -3,7 +3,7 @@ use std::{env::args, fs::File, io::Write};
 /// cargo run --example key_secp256k1_info_gen --  1 1 9999 /tmp/key.json
 /// cargo run --example key_secp256k1_info_gen -- 50 1 9999 /tmp/key.json
 fn main() {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

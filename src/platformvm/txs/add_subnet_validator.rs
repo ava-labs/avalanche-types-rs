@@ -24,8 +24,8 @@ impl Validator {
     }
 }
 
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#AddSubnetValidatorTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
@@ -77,7 +77,7 @@ impl Tx {
     }
 
     pub fn type_name() -> String {
-        "platformvm.UnsignedAddSubnetValidatorTx".to_string()
+        "platformvm.AddSubnetValidatorTx".to_string()
     }
 
     pub fn type_id() -> u32 {
@@ -124,8 +124,8 @@ impl Tx {
         packer.set_bytes(&tx_bytes_with_no_signature);
 
         // compute sha256 for marshaled "unsigned tx" bytes
-        // IMPORTANT: take the hash only for the type "platformvm.UnsignedAddValidatorTx" unsigned tx
-        // not other fields -- only hash "platformvm.UnsignedAddValidatorTx.*" but not "platformvm.Tx.Creds"
+        // IMPORTANT: take the hash only for the type "platformvm.AddValidatorTx" unsigned tx
+        // not other fields -- only hash "platformvm.AddValidatorTx.*" but not "platformvm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#UnsignedAddValidatorTx
         let tx_bytes_hash = hash::sha256(&tx_bytes_with_no_signature);
 

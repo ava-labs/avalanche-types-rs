@@ -14,7 +14,7 @@ use ethers_core::{
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x95CA0a568236fC7413Cd2b794A7da24422c2BBb6 "getName(address addr)" "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC" | sed -r '/^\s*$/d' | tail -1 | xxd -r -p
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

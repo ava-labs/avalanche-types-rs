@@ -3,9 +3,9 @@ use std::io::{self, Error, ErrorKind};
 use crate::{codec, hash, ids, key, platformvm, txs};
 use serde::{Deserialize, Serialize};
 
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#ExportTx
-/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#ExportTx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#UnsignedTx>
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Tx {
     /// The transaction ID is empty for unsigned tx
@@ -56,7 +56,7 @@ impl Tx {
     }
 
     pub fn type_name() -> String {
-        "platformvm.UnsignedExportTx".to_string()
+        "platformvm.ExportTx".to_string()
     }
 
     pub fn type_id() -> u32 {
@@ -154,6 +154,9 @@ impl Tx {
                         // marshal "platformvm::txs::StakeableLockOut.locktime" field
                         packer.pack_u64(stakeable_lock_out.locktime)?;
 
+                        // secp256k1fx.TransferOutput type ID
+                        packer.pack_u32(7)?;
+
                         // "platformvm.StakeableLockOut.TransferOutput" is struct and serialize:"true"
                         // but embedded inline in the struct "StakeableLockOut"
                         // so no need to encode type ID
@@ -203,8 +206,8 @@ impl Tx {
         packer.set_bytes(&tx_bytes_with_no_signature);
 
         // compute sha256 for marshaled "unsigned tx" bytes
-        // IMPORTANT: take the hash only for the type "platformvm.UnsignedExportTx" unsigned tx
-        // not other fields -- only hash "platformvm.UnsignedExportTx.*" but not "platformvm.Tx.Creds"
+        // IMPORTANT: take the hash only for the type "platformvm.ExportTx" unsigned tx
+        // not other fields -- only hash "platformvm.ExportTx.*" but not "platformvm.Tx.Creds"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#UnsignedExportTx
         let tx_bytes_hash = hash::sha256(&tx_bytes_with_no_signature);
 

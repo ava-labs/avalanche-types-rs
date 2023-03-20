@@ -10,7 +10,7 @@ use primitive_types::U256;
 /// cargo run --example wallet_evm_send_transaction_hot_key -- http://3.37.240.20:9650/ext/bc/jyMffWvvB6Jd6C3ZqSuz67dMQUsMSmvZyLKLu26MrgFhjinst/rpc 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

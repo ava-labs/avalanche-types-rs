@@ -230,6 +230,7 @@ impl PartialEq for SigIndices {
     }
 }
 
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/fx#Owner>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/secp256k1fx#OutputOwners>
 #[derive(Debug, Serialize, Deserialize, Eq, Clone)]
 pub struct OutputOwners {

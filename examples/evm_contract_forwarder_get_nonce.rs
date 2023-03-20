@@ -15,7 +15,7 @@ use ethers_providers::{Http, Middleware, Provider};
 /// cargo run --example evm_contract_forwarder_get_nonce --features="jsonrpc_client evm" -- http://127.0.0.1:9650/ext/bc/C/rpc 0x52C84043CD9c865236f11d9Fc9F56aa003c1f922 0x52aE9944e80F7Fa6b6F79294F736b5e7c1671f7A
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

@@ -16,7 +16,7 @@ use ethers_core::{
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x41a24Bc2AE2eFF7CA3a2562374F339eAd168a5dB "getLast()"
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

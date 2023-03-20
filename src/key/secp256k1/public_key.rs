@@ -23,8 +23,8 @@ pub const LEN: usize = 33;
 /// ref. "secp256k1::constants::UNCOMPRESSED_PUBLIC_KEY_SIZE"
 pub const UNCOMPRESSED_LEN: usize = 65;
 
-/// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey". By default
-/// serializes as hex string.
+/// Represents "k256::PublicKey" and "k256::ecdsa::VerifyingKey".
+/// By default serializes as hex string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Key(pub PublicKey);
 
@@ -185,8 +185,8 @@ impl From<PublicKey> for Key {
 }
 
 impl From<Key> for PublicKey {
-    fn from(pubkey: Key) -> Self {
-        pubkey.0
+    fn from(k: Key) -> Self {
+        k.0
     }
 }
 
@@ -197,8 +197,8 @@ impl From<VerifyingKey> for Key {
 }
 
 impl From<Key> for VerifyingKey {
-    fn from(pubkey: Key) -> Self {
-        pubkey.0.into()
+    fn from(k: Key) -> Self {
+        k.0.into()
     }
 }
 

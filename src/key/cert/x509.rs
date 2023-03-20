@@ -274,7 +274,7 @@ pub fn load_or_generate_pem(key_path: &str, cert_path: &str) -> io::Result<(node
     let mut generated = false;
     if !tls_key_exists || !tls_cert_exists {
         log::info!(
-            "generating TLS certs (key exists {}, cert exists {})",
+            "generating staking TLS certs (key exists {}, cert exists {})",
             tls_key_exists,
             tls_cert_exists
         );

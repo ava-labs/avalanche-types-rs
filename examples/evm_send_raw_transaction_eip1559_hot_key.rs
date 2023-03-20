@@ -7,7 +7,7 @@ use ethers_providers::{Http, Middleware, Provider};
 /// cargo run --example evm_send_raw_transaction_eip1559_hot_key -- http://localhost:9876/rpc
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );

@@ -6,7 +6,7 @@ use std::env::args;
 /// cargo run --example key_secp256k1_mnemonic_derive_load "m/44'/9000'/0'/0/0" "vehicle arrive more spread busy regret onion fame argue nice grocery humble vocal slot quit toss learn artwork theory fault tip belt cloth disorder"
 /// cargo run --example key_secp256k1_mnemonic_derive_load "m/44'/9000'/0'/0/1" "vehicle arrive more spread busy regret onion fame argue nice grocery humble vocal slot quit toss learn artwork theory fault tip belt cloth disorder"
 fn main() {
-    // ref. https://github.com/env-logger-rs/env_logger/issues/47
+    // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
