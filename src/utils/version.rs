@@ -56,7 +56,7 @@ impl ApplicationVersion {
     }
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="utils" -- utils::version::test_version --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- utils::version::test_version --exact --show-output
 #[test]
 fn test_version() {
     // lengths of individual ids do not matter since all are fixed-sized

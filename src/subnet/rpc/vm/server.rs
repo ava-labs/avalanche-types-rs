@@ -7,13 +7,13 @@ use crate::{
         self,
         aliasreader::alias_reader_client::AliasReaderClient,
         google::protobuf::Empty,
-        io::prometheus::client::MetricFamily,
         keystore::keystore_client::KeystoreClient,
         messenger::{messenger_client::MessengerClient, NotifyRequest},
         sharedmemory::shared_memory_client::SharedMemoryClient,
         vm,
     },
     subnet::rpc::{
+        consensus::snowman::{Block, Decidable},
         context::Context,
         database::rpcdb::{client::DatabaseClient, error_to_error_code},
         database::{
@@ -22,19 +22,24 @@ use crate::{
         },
         http::server::Server as HttpServer,
         snow::{
-            engine::common::{appsender, message::Message},
+            engine::common::{appsender::client::AppSenderClient, message::Message},
             State,
         },
-        utils::{self, grpc::timestamp_from_time},
+        snowman::block::ChainVm,
+        utils::{
+            self,
+            grpc::{self, timestamp_from_time},
+        },
     },
 };
 use chrono::{TimeZone, Utc};
+use pb::vm::vm_server::Vm;
 use prost::bytes::Bytes;
 use semver::Version;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tonic::{transport::Endpoint, Request, Response};
 
-pub struct Server<V: super::Vm> {
+pub struct Server<V> {
     /// Underlying Vm implementation.
     pub vm: Arc<RwLock<V>>,
 
@@ -46,7 +51,7 @@ pub struct Server<V: super::Vm> {
     pub stop_ch: broadcast::Sender<()>,
 }
 
-impl<V: super::Vm> Server<V> {
+impl<V: ChainVm> Server<V> {
     pub fn new(vm: V, stop_ch: broadcast::Sender<()>) -> Self {
         Self {
             vm: Arc::new(RwLock::new(vm)),
@@ -58,9 +63,12 @@ impl<V: super::Vm> Server<V> {
 }
 
 #[tonic::async_trait]
-impl<V> pb::vm::vm_server::Vm for Server<V>
+impl<V> Vm for Server<V>
 where
-    V: super::Vm + Send + Sync + 'static,
+    V: ChainVm<DatabaseManager = DatabaseManager, AppSender = AppSenderClient>
+        + Send
+        + Sync
+        + 'static,
 {
     async fn initialize(
         &self,
@@ -85,7 +93,6 @@ where
         let keystore = KeystoreClient::new(client_conn.clone());
         let shared_memory = SharedMemoryClient::new(client_conn.clone());
         let bc_lookup = AliasReaderClient::new(client_conn.clone());
-        let app_sender = appsender::client::Client::new(client_conn.clone());
 
         let ctx = Some(Context {
             network_id: req.network_id,
@@ -121,14 +128,13 @@ where
             );
             versioned_dbs.push(vdb);
         }
-        let db_manager = DatabaseManager::from_databases(versioned_dbs);
 
         let (tx_engine, mut rx_engine): (mpsc::Sender<Message>, mpsc::Receiver<Message>) =
             mpsc::channel(100);
         tokio::spawn(async move {
             loop {
                 if let Some(msg) = rx_engine.recv().await {
-                    log::debug!("message received: {:?}", msg);
+                    log::debug!("message received: {msg:?}");
                     let _ = message
                         .notify(NotifyRequest {
                             message: msg as i32,
@@ -147,13 +153,13 @@ where
         inner_vm
             .initialize(
                 ctx,
-                db_manager,
+                DatabaseManager::from_databases(versioned_dbs),
                 &req.genesis_bytes,
                 &req.upgrade_bytes,
                 &req.config_bytes,
                 tx_engine,
                 &[()],
-                app_sender,
+                AppSenderClient::new(client_conn.clone()),
             )
             .await
             .map_err(|e| tonic::Status::unknown(e.to_string()))?;
@@ -166,7 +172,7 @@ where
             .await
             .map_err(|e| tonic::Status::unknown(e.to_string()))?;
 
-        log::debug!("last_accepted_block id: {:?}", last_accepted);
+        log::debug!("last_accepted_block id: {last_accepted:?}");
 
         Ok(Response::new(vm::InitializeResponse {
             last_accepted_id: Bytes::from(last_accepted.to_vec()),
@@ -213,33 +219,28 @@ where
 
         // get handlers from underlying vm
         let mut inner_vm = self.vm.write().await;
-        let handlers = inner_vm.create_handlers().await.map_err(|e| {
-            tonic::Status::unknown(format!("failed to create handlers: {:?}", e.to_string()))
-        })?;
+        let handlers = inner_vm
+            .create_handlers()
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("failed to create handlers: {e}")))?;
 
         // create and start gRPC server serving HTTP service for each handler
         let mut resp_handlers: Vec<vm::Handler> = Vec::with_capacity(handlers.keys().len());
-        for (prefix, handler) in handlers {
+        for (prefix, http_handler) in handlers {
             let server_addr = utils::new_socket_addr();
-            if handler.handler.clone().is_none() {
-                log::error!("handler did not provide an IoHandler: {}", prefix);
-                continue;
-            }
-            let http_service = HttpServer::new(handler.handler.clone().expect("IoHandler"));
+            let server = grpc::Server::new(server_addr, self.stop_ch.subscribe());
 
-            let server = utils::grpc::Server::new(server_addr, self.stop_ch.subscribe());
             server
-                .serve(pb::http::http_server::HttpServer::new(http_service))
+                .serve(pb::http::http_server::HttpServer::new(HttpServer::new(
+                    http_handler.handler,
+                )))
                 .map_err(|e| {
-                    tonic::Status::unknown(format!(
-                        "failed to create http service: {:?}",
-                        e.to_string()
-                    ))
+                    tonic::Status::unknown(format!("failed to create http service: {e}"))
                 })?;
 
             let resp_handler = vm::Handler {
-                prefix,
-                lock_options: handler.lock_option as u32,
+                prefix: prefix,
+                lock_options: http_handler.lock_option as u32,
                 server_addr: server_addr.to_string(),
             };
             resp_handlers.push(resp_handler);
@@ -266,37 +267,32 @@ where
         &self,
         _req: Request<Empty>,
     ) -> std::result::Result<Response<vm::CreateStaticHandlersResponse>, tonic::Status> {
-        log::debug!("create_handlers called");
+        log::debug!("create_static_handlers called");
 
         // get handlers from underlying vm
         let mut inner_vm = self.vm.write().await;
-        let handlers = inner_vm.create_static_handlers().await.map_err(|e| {
-            tonic::Status::unknown(format!("failed to create handlers: {:?}", e.to_string()))
-        })?;
+        let handlers = inner_vm
+            .create_handlers()
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("failed to create handlers: {e}")))?;
 
         // create and start gRPC server serving HTTP service for each handler
         let mut resp_handlers: Vec<vm::Handler> = Vec::with_capacity(handlers.keys().len());
-        for (prefix, handler) in handlers {
+        for (prefix, http_handler) in handlers {
             let server_addr = utils::new_socket_addr();
-            if handler.handler.clone().is_none() {
-                log::error!("handler did not provide an IoHandler: {}", prefix);
-                continue;
-            }
-            let http_service = HttpServer::new(handler.handler.clone().expect("IoHandler"));
+            let server = grpc::Server::new(server_addr, self.stop_ch.subscribe());
 
-            let server = utils::grpc::Server::new(server_addr, self.stop_ch.subscribe());
             server
-                .serve(pb::http::http_server::HttpServer::new(http_service))
+                .serve(pb::http::http_server::HttpServer::new(HttpServer::new(
+                    http_handler.handler,
+                )))
                 .map_err(|e| {
-                    tonic::Status::unknown(format!(
-                        "failed to create http service: {:?}",
-                        e.to_string()
-                    ))
+                    tonic::Status::unknown(format!("failed to create http service: {e}"))
                 })?;
 
             let resp_handler = vm::Handler {
                 prefix,
-                lock_options: handler.lock_option as u32,
+                lock_options: http_handler.lock_option as u32,
                 server_addr: server_addr.to_string(),
             };
             resp_handlers.push(resp_handler);
@@ -696,17 +692,27 @@ where
         Err(tonic::Status::unimplemented("batched_parse_block"))
     }
 
+    #[cfg(not(feature = "subnet_metrics"))]
     async fn gather(
         &self,
         _req: Request<Empty>,
     ) -> std::result::Result<Response<vm::GatherResponse>, tonic::Status> {
         log::debug!("gather called");
 
-        #[cfg(not(feature = "subnet_metrics"))]
-        let metric_families = vec![MetricFamily::default()];
+        let metric_families =
+            vec![crate::proto::pb::io::prometheus::client::MetricFamily::default()];
+
+        Ok(Response::new(vm::GatherResponse { metric_families }))
+    }
+
+    #[cfg(feature = "subnet_metrics")]
+    async fn gather(
+        &self,
+        _req: Request<Empty>,
+    ) -> std::result::Result<Response<vm::GatherResponse>, tonic::Status> {
+        log::debug!("gather called");
 
         // ref. <https://prometheus.io/docs/instrumenting/writing_clientlibs/#process-metrics>
-        #[cfg(feature = "subnet_metrics")]
         let metric_families = crate::subnet::rpc::metrics::MetricsFamilies::from(
             &self.process_metrics.read().await.gather(),
         )

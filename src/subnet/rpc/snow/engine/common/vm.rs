@@ -6,6 +6,7 @@ use crate::{
         context::Context,
         database::manager::Manager,
         health::Checkable,
+        http::handle::Handle,
         snow::engine::common::{
             appsender::AppSender, engine::AppHandler, http_handler::HttpHandler, message::Message,
         },
@@ -18,26 +19,31 @@ use tokio::sync::mpsc::Sender;
 ///
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#Vm>
 #[tonic::async_trait]
-pub trait Vm: AppHandler + Connector + Checkable {
-    // type Manager;
-    // type AppSender;
+pub trait CommonVm: AppHandler + Connector + Checkable {
+    type DatabaseManager: Manager;
+    type AppSender: AppSender;
+    type ChainHandler: Handle;
+    type StaticHandler: Handle;
 
     async fn initialize(
         &mut self,
         ctx: Option<Context>,
-        db_manager: Box<dyn Manager + Send + Sync>,
+        db_manager: Self::DatabaseManager,
         genesis_bytes: &[u8],
         upgrade_bytes: &[u8],
         config_bytes: &[u8],
         to_engine: Sender<Message>,
         fxs: &[Fx],
-        app_sender: Box<dyn AppSender + Send + Sync>,
+        app_sender: Self::AppSender,
     ) -> Result<()>;
     async fn set_state(&self, state: State) -> Result<()>;
     async fn shutdown(&self) -> Result<()>;
     async fn version(&self) -> Result<String>;
-    async fn create_static_handlers(&mut self) -> Result<HashMap<String, HttpHandler>>;
-    async fn create_handlers(&mut self) -> Result<HashMap<String, HttpHandler>>;
+    async fn create_static_handlers(
+        &mut self,
+    ) -> Result<HashMap<String, HttpHandler<Self::StaticHandler>>>;
+    async fn create_handlers(&mut self)
+        -> Result<HashMap<String, HttpHandler<Self::ChainHandler>>>;
 }
 
 /// snow.validators.Connector

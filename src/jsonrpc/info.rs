@@ -1,9 +1,14 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io::{self, Error, ErrorKind},
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+};
 
 use crate::{
     ids::{self, node},
     key::bls,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -586,6 +591,248 @@ fn test_uptime() {
         result: Some(UptimeResult {
             rewarding_stake_percentage: 100.0000_f64,
             weighted_average_percentage: 99.0000_f64,
+        }),
+    };
+    assert_eq!(resp, expected);
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct PeersRequest {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<PeersParams>,
+}
+
+impl Default for PeersRequest {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl PeersRequest {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: String::from(super::DEFAULT_VERSION),
+            id: super::DEFAULT_ID,
+            method: String::new(),
+            params: None,
+        }
+    }
+
+    pub fn encode_json(&self) -> io::Result<String> {
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct PeersParams {
+    #[serde(rename = "nodeIDs")]
+    pub node_ids: Option<Vec<ids::node::Id>>,
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct PeersResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<PeersResult>,
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PeersResult {
+    #[serde(rename = "numPeers")]
+    #[serde_as(as = "DisplayFromStr")]
+    pub num_peers: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub peers: Option<Vec<Peer>>,
+}
+
+impl Default for PeersResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl PeersResult {
+    pub fn default() -> Self {
+        Self {
+            num_peers: 0,
+            peers: None,
+        }
+    }
+}
+
+/// TODO: add "benched"
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Peer {
+    #[serde_as(as = "crate::codec::serde::ip_port::IpPort")]
+    pub ip: SocketAddr,
+    #[serde(rename = "publicIP")]
+    #[serde_as(as = "crate::codec::serde::ip_port::IpPort")]
+    pub public_ip: SocketAddr,
+    #[serde(rename = "nodeID")]
+    pub node_id: node::Id,
+    pub version: String,
+    #[serde_as(as = "crate::codec::serde::rfc_3339::DateTimeUtc")]
+    pub last_sent: DateTime<Utc>,
+    #[serde_as(as = "crate::codec::serde::rfc_3339::DateTimeUtc")]
+    pub last_received: DateTime<Utc>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub observed_uptime: u32,
+    #[serde_as(as = "HashMap<_, DisplayFromStr>")]
+    pub observed_subnet_uptimes: HashMap<ids::Id, u32>,
+    pub tracked_subnets: Vec<ids::Id>,
+}
+
+impl Default for Peer {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl Peer {
+    pub fn default() -> Self {
+        Self {
+            ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
+            public_ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
+            node_id: node::Id::empty(),
+            version: String::new(),
+            last_sent: DateTime::<Utc>::MIN_UTC,
+            last_received: DateTime::<Utc>::MIN_UTC,
+            observed_uptime: 0,
+            observed_subnet_uptimes: HashMap::new(),
+            tracked_subnets: Vec::new(),
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_peers --exact --show-output
+#[test]
+fn test_peers() {
+    use std::str::FromStr;
+
+    use chrono::TimeZone;
+
+    // ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
+    let resp: PeersResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"numPeers\": \"3\",
+        \"peers\": [
+            {
+                \"ip\": \"206.189.137.87:9651\",
+                \"publicIP\": \"206.189.137.87:9651\",
+                \"nodeID\": \"NodeID-8PYXX47kqLDe2wD4oPbvRRchcnSzMA4J4\",
+                \"version\": \"avalanche/1.9.4\",
+                \"lastSent\": \"2020-06-01T15:23:02Z\",
+                \"lastReceived\": \"2020-06-01T15:22:57Z\",
+                \"benched\": [],
+                \"observedUptime\": \"99\",
+                \"observedSubnetUptimes\": {},
+                \"trackedSubnets\": [],
+                \"benched\": []
+            },
+            {
+                \"ip\": \"158.255.67.151:9651\",
+                \"publicIP\": \"158.255.67.151:9651\",
+                \"nodeID\": \"NodeID-C14fr1n8EYNKyDfYixJ3rxSAVqTY3a8BP\",
+                \"version\": \"avalanche/1.9.4\",
+                \"lastSent\": \"2020-06-01T15:23:02Z\",
+                \"lastReceived\": \"2020-06-01T15:22:34Z\",
+                \"benched\": [],
+                \"observedUptime\": \"75\",
+                \"observedSubnetUptimes\": {
+                    \"29uVeLPJB1eQJkzRemU8g8wZDw5uJRqpab5U2mX9euieVwiEbL\": \"100\"
+                },
+                \"trackedSubnets\": [
+                    \"29uVeLPJB1eQJkzRemU8g8wZDw5uJRqpab5U2mX9euieVwiEbL\"
+                ],
+                \"benched\": []
+            }
+        ]
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+
+    let uptimes: HashMap<ids::Id, u32> = [(
+        ids::Id::from_str("29uVeLPJB1eQJkzRemU8g8wZDw5uJRqpab5U2mX9euieVwiEbL").unwrap(),
+        100,
+    )]
+    .iter()
+    .cloned()
+    .collect();
+    let expected = PeersResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(PeersResult {
+            num_peers: 3,
+            peers: Some(vec![
+                Peer {
+                    ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(206, 189, 137, 87)), 9651),
+                    public_ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(206, 189, 137, 87)), 9651),
+                    node_id: node::Id::from_str("NodeID-8PYXX47kqLDe2wD4oPbvRRchcnSzMA4J4")
+                        .unwrap(),
+                    version: String::from("avalanche/1.9.4"),
+                    last_sent: Utc.from_utc_datetime(
+                        &DateTime::parse_from_rfc3339("2020-06-01T15:23:02Z")
+                            .unwrap()
+                            .naive_utc(),
+                    ),
+                    last_received: Utc.from_utc_datetime(
+                        &DateTime::parse_from_rfc3339("2020-06-01T15:22:57Z")
+                            .unwrap()
+                            .naive_utc(),
+                    ),
+                    observed_uptime: 99,
+                    ..Peer::default()
+                },
+                Peer {
+                    ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(158, 255, 67, 151)), 9651),
+                    public_ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(158, 255, 67, 151)), 9651),
+                    node_id: node::Id::from_str("NodeID-C14fr1n8EYNKyDfYixJ3rxSAVqTY3a8BP")
+                        .unwrap(),
+                    version: String::from("avalanche/1.9.4"),
+                    last_sent: Utc.from_utc_datetime(
+                        &DateTime::parse_from_rfc3339("2020-06-01T15:23:02Z")
+                            .unwrap()
+                            .naive_utc(),
+                    ),
+                    last_received: Utc.from_utc_datetime(
+                        &DateTime::parse_from_rfc3339("2020-06-01T15:22:34Z")
+                            .unwrap()
+                            .naive_utc(),
+                    ),
+                    observed_uptime: 75,
+                    observed_subnet_uptimes: uptimes,
+                    tracked_subnets: vec![ids::Id::from_str(
+                        "29uVeLPJB1eQJkzRemU8g8wZDw5uJRqpab5U2mX9euieVwiEbL",
+                    )
+                    .unwrap()],
+                    ..Peer::default()
+                },
+            ]),
+            ..PeersResult::default()
         }),
     };
     assert_eq!(resp, expected);

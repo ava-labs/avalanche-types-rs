@@ -4,13 +4,28 @@ use std::{
     time::Duration,
 };
 
-use crate::jsonrpc::{self, platformvm};
+use crate::{
+    ids,
+    jsonrpc::{self, platformvm},
+    utils,
+};
 use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 
-/// e.g., "platform.issueTx" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.issueTx" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
 pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<platformvm::IssueTxResponse> {
-    log::debug!("issuing a transaction via {http_rpc}/ext/P");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("issuing a transaction via {u}");
 
     let mut data = platformvm::IssueTxRequest::default();
     data.method = String::from("platform.issueTx");
@@ -34,7 +49,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<platformvm::IssueT
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -52,10 +67,21 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<platformvm::IssueT
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed platform.issueTx '{}'", e)))
 }
 
-/// e.g., "platform.getTx" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getTx" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettx>
 pub async fn get_tx(http_rpc: &str, tx_id: &str) -> io::Result<platformvm::GetTxResponse> {
-    log::debug!("getting tx via {http_rpc}/ext/P");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting tx via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getTx");
@@ -78,7 +104,7 @@ pub async fn get_tx(http_rpc: &str, tx_id: &str) -> io::Result<platformvm::GetTx
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -96,13 +122,24 @@ pub async fn get_tx(http_rpc: &str, tx_id: &str) -> io::Result<platformvm::GetTx
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed platform.getTx '{}'", e)))
 }
 
-/// e.g., "platform.getTxStatus" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getTxStatus" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain/#platformgettxstatus>
 pub async fn get_tx_status(
     http_rpc: &str,
     tx_id: &str,
 ) -> io::Result<platformvm::GetTxStatusResponse> {
-    log::debug!("getting tx status via {http_rpc}/ext/P");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting tx status via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getTxStatus");
@@ -124,7 +161,7 @@ pub async fn get_tx_status(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -146,10 +183,21 @@ pub async fn get_tx_status(
     })
 }
 
-/// e.g., "platform.getHeight" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getHeight" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetheight>
 pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightResponse> {
-    log::debug!("getting height for {http_rpc}/ext/P");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting height via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getHeight");
@@ -171,7 +219,7 @@ pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightRespo
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -193,14 +241,25 @@ pub async fn get_height(http_rpc: &str) -> io::Result<platformvm::GetHeightRespo
     })
 }
 
-/// e.g., "platform.getBalance" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getBalance" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetbalance>
 /// ref. <https://github.com/ava-labs/avalanchego/blob/45ec88151f8a0e3bca1d43fe902fd632c41cd956/vms/platformvm/service.go#L192-L194>
 pub async fn get_balance(
     http_rpc: &str,
     paddr: &str,
 ) -> io::Result<platformvm::GetBalanceResponse> {
-    log::debug!("getting balances for {} via {http_rpc}/ext/P", paddr);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting balance via {u} for {}", paddr);
 
     let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
     data.method = String::from("platform.getBalance");
@@ -222,7 +281,7 @@ pub async fn get_balance(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -244,10 +303,21 @@ pub async fn get_balance(
     })
 }
 
-/// e.g., "platform.getUTXOs" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getUTXOs" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetutxos>
 pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::GetUtxosResponse> {
-    log::debug!("getting UTXOs for {} via {http_rpc}/ext/P", paddr);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting UTXOs via {u} for {}", paddr);
 
     let mut data = platformvm::GetUtxosRequest::default();
     data.method = String::from("platform.getUTXOs");
@@ -272,7 +342,7 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::Ge
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -294,13 +364,24 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> io::Result<platformvm::Ge
     })
 }
 
-/// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 pub async fn get_primary_network_validators(
     http_rpc: &str,
 ) -> io::Result<platformvm::GetCurrentValidatorsResponse> {
-    log::debug!("getting primary network validators via {http_rpc}/ext/P");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting primary network validators via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getCurrentValidators");
@@ -321,7 +402,7 @@ pub async fn get_primary_network_validators(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -343,17 +424,25 @@ pub async fn get_primary_network_validators(
     })
 }
 
-/// e.g., "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
+/// "platform.getCurrentValidators" on "http://[ADDR]:9650" and "/ext/P" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 pub async fn get_subnet_validators(
     http_rpc: &str,
     subnet_id: &str,
 ) -> io::Result<platformvm::GetCurrentValidatorsResponse> {
-    log::debug!(
-        "getting subnet {} validators via {http_rpc}/ext/P",
-        subnet_id
-    );
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting subnet validators via {u} for {subnet_id}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getCurrentValidators");
@@ -375,7 +464,7 @@ pub async fn get_subnet_validators(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/P").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -393,6 +482,191 @@ pub async fn get_subnet_validators(
         Error::new(
             ErrorKind::Other,
             format!("failed platform.getCurrentValidators '{}'", e),
+        )
+    })
+}
+
+/// "platform.getSubnets" on "http://[ADDR]:9650" and "/ext/P" path.
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetsubnets>
+pub async fn get_subnets(
+    http_rpc: &str,
+    subnet_ids: Option<Vec<ids::Id>>,
+) -> io::Result<platformvm::GetSubnetsResponse> {
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting subnets via {u}");
+
+    let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
+    data.method = String::from("platform.getSubnets");
+    let mut ids = Vec::new();
+    if let Some(ss) = &subnet_ids {
+        for id in ss.iter() {
+            ids.push(id.to_string());
+        }
+    }
+    let mut params = HashMap::new();
+    params.insert(String::from("ids"), ids);
+    data.params = Some(params);
+    let d = data.encode_json()?;
+
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(&u)
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed platform.getSubnets '{}'", e),
+        )
+    })
+}
+
+/// "platform.getBlockchains" on "http://[ADDR]:9650" and "/ext/P" path.
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetblockchains>
+pub async fn get_blockchains(http_rpc: &str) -> io::Result<platformvm::GetBlockchainsResponse> {
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting blockchain via {u}");
+
+    let mut data = jsonrpc::Request::default();
+    data.method = String::from("platform.getBlockchains");
+    let params = HashMap::new();
+    data.params = Some(params);
+    let d = data.encode_json()?;
+
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(&u)
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed platform.getBlockchains '{}'", e),
+        )
+    })
+}
+
+/// "platform.getBlockchainStatus" on "http://[ADDR]:9650" and "/ext/P" path.
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetblockchainstatus>
+pub async fn get_blockchain_status(
+    http_rpc: &str,
+    blockchain_id: ids::Id,
+) -> io::Result<platformvm::GetBlockchainStatusResponse> {
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/P")
+        } else {
+            format!("{scheme}://{host}/ext/P")
+        }
+    } else {
+        format!("http://{host}/ext/P")
+    };
+    log::info!("getting blockchain status via {u} for {blockchain_id}");
+
+    let mut data = jsonrpc::Request::default();
+    data.method = String::from("platform.getBlockchainStatus");
+    let mut params = HashMap::new();
+    params.insert(String::from("blockchainID"), blockchain_id.to_string());
+    data.params = Some(params);
+    let d = data.encode_json()?;
+
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(&u)
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed platform.getBlockchainStatus '{}'", e),
         )
     })
 }

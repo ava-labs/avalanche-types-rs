@@ -29,9 +29,7 @@ impl Signer {
         digest: ethers_core::types::H256,
         chain_id: u64,
     ) -> Result<Signature, aws_manager::errors::Error> {
-        let sig = self.inner.sign_digest(digest.as_ref()).await?;
-
-        let mut sig = key::secp256k1::signature::rsig_to_ethsig(&sig);
+        let mut sig = self.inner.sign_digest(digest.as_ref()).await?;
         key::secp256k1::signature::apply_eip155(&mut sig, chain_id);
         Ok(sig)
     }
@@ -77,10 +75,7 @@ impl<'a> ethers_signers::Signer for Signer {
             message: format!("failed encode_eip712 {}", e),
             is_retryable: false,
         })?;
-
-        let sig = self.inner.sign_digest(digest.as_ref()).await?;
-        let sig = key::secp256k1::signature::rsig_to_ethsig(&sig);
-        Ok(sig)
+        self.inner.sign_digest(digest.as_ref()).await
     }
 
     fn address(&self) -> Address {

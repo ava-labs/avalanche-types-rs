@@ -1,10 +1,11 @@
 use std::io::{self, Error, ErrorKind};
 
-use ethers_core::k256::ecdsa::{
-    recoverable::{Id as RId, Signature as RSig},
-    Signature as KSig,
+use ecdsa::RecoveryId as EcdsaRecoveryId;
+use ethers_core::{k256::ecdsa::Signature as KSig, types::Signature as EthSig};
+use k256::{
+    ecdsa::{RecoveryId, Signature, VerifyingKey},
+    FieldBytes,
 };
-use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::AsBytes;
 
@@ -159,9 +160,13 @@ fn test_signature() {
 /// as defined by ANS X9.62–2005 and RFC 3279 Section 2.2.3.
 /// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "decode_signature"
-pub fn decode_signature(b: &[u8]) -> io::Result<KSig> {
-    let sig = KSig::from_der(b)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed KSig::from_der {}", e)))?;
+pub fn decode_signature(b: &[u8]) -> io::Result<Signature> {
+    let sig = Signature::from_der(b).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed Signature::from_der {}", e),
+        )
+    })?;
 
     // EIP-2, not all elliptic curve signatures are accepted
     // "s" needs to be smaller than half of the curve
@@ -171,50 +176,36 @@ pub fn decode_signature(b: &[u8]) -> io::Result<KSig> {
 
 /// Converts to recoverable signature of 65-byte.
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "rsig_from_digest_bytes_trial_recovery"
-pub fn rsig_from_digest_bytes_trial_recovery(
-    sig: &KSig,
-    digest: [u8; 32],
-    verifying_key: &k256::ecdsa::VerifyingKey,
-) -> RSig {
-    let sig_0 = RSig::new(sig, RId::new(0).unwrap()).unwrap();
-    let sig_1 = RSig::new(sig, RId::new(1).unwrap()).unwrap();
-
-    if check_candidate(&sig_0, digest, verifying_key) {
-        sig_0
-    } else if check_candidate(&sig_1, digest, verifying_key) {
-        sig_1
-    } else {
-        panic!("bad sig");
-    }
-}
-
-/// Checks whether the specified recoverable signature can derive
-/// the expected verifying key from the digest bytes.
-/// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "check_candidate"
-fn check_candidate(sig: &RSig, digest: [u8; 32], vk: &k256::ecdsa::VerifyingKey) -> bool {
-    if let Ok(old_k256_recovered_vk) =
-        sig.recover_verifying_key_from_digest_bytes(digest.as_ref().into())
-    {
-        old_k256_recovered_vk.to_bytes().as_bytes() == vk.to_encoded_point(true).as_bytes()
-    } else {
-        false
-    }
-}
-
-/// Converts a recoverable signature to an ethers signature.
-/// Combine signature with recovery ID to recover the public key of the signer later.
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "rsig_to_ethsig"
-pub fn rsig_to_ethsig(sig: &RSig) -> ethers_core::types::Signature {
-    let v: u8 = sig.recovery_id().into();
-    let v = (v + 27) as u64;
+/// ref. <https://github.com/gakonst/ethers-rs/pull/2260>
+/// ref. <https://docs.rs/ecdsa/latest/ecdsa/struct.RecoveryId.html#method.trial_recovery_from_prehash>
+pub fn sig_from_digest_bytes_trial_recovery(
+    sig: &KSig,
+    digest: &[u8; 32],
+    vk: &VerifyingKey,
+) -> io::Result<EthSig> {
+    // Checks whether the specified recoverable signature can derive
+    // the expected verifying key from the digest bytes.
+    // ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "check_candidate"
+    let recid =
+        EcdsaRecoveryId::trial_recovery_from_prehash(vk, digest.as_bytes(), sig).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed EcdsaRecoveryId::trial_recovery_from_prehash {}", e),
+            )
+        })?;
 
-    let r_bytes: ethers_core::k256::FieldBytes = sig.r().into();
-    let s_bytes: ethers_core::k256::FieldBytes = sig.s().into();
+    let r_bytes: FieldBytes = sig.r().into();
+    let s_bytes: FieldBytes = sig.s().into();
 
-    let r = ethers_core::types::U256::from_big_endian(r_bytes.as_slice());
-    let s = ethers_core::types::U256::from_big_endian(s_bytes.as_slice());
+    let r = primitive_types::U256::from_big_endian(r_bytes.as_slice());
+    let s = primitive_types::U256::from_big_endian(s_bytes.as_slice());
 
-    ethers_core::types::Signature { r, s, v }
+    Ok(EthSig {
+        r,
+        s,
+        v: recid.to_byte() as u64,
+    })
 }
 
 /// Modify the v value of a signature to conform to eip155

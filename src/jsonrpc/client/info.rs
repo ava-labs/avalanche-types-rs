@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::{
+    ids,
     jsonrpc::{self, info},
     utils,
 };
@@ -420,7 +421,18 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 /// ref. "genesi/genesis_mainnet.go" requires 1 * units::AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
 /// ref. "genesi/genesis_fuji/local.go" requires 100 * units::MILLI_AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
 pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
-    log::info!("getting tx fee for {}", http_rpc);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting tx fee for {u}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getTxFee");
@@ -439,7 +451,7 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/info").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -455,4 +467,67 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
 
     serde_json::from_slice(&out)
         .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getTxFee '{}'", e)))
+}
+
+/// e.g., "info.peers".
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infopeers>
+pub async fn peers(
+    http_rpc: &str,
+    node_ids: Option<Vec<ids::node::Id>>,
+) -> io::Result<info::PeersResponse> {
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/info")
+        } else {
+            format!("{scheme}://{host}/ext/info")
+        }
+    } else {
+        format!("http://{host}/ext/info")
+    };
+    log::info!("getting peers for {u}");
+
+    let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
+    data.method = String::from("info.peers");
+    let mut ids = Vec::new();
+    if let Some(ss) = &node_ids {
+        for id in ss.iter() {
+            ids.push(id.to_string());
+        }
+    }
+    let mut params = HashMap::new();
+    params.insert(String::from("nodeIDs"), ids);
+    data.params = Some(params);
+    let d = data.encode_json()?;
+
+    let req_cli_builder = ClientBuilder::new()
+        .user_agent(env!("CARGO_PKG_NAME"))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(15))
+        .connection_verbose(true)
+        .build()
+        .map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed ClientBuilder build {}", e),
+            )
+        })?;
+    let resp = req_cli_builder
+        .post(&u)
+        .header(CONTENT_TYPE, "application/json")
+        .body(d)
+        .send()
+        .await
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+    let out = resp.bytes().await.map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed ClientBuilder bytes {}", e),
+        )
+    })?;
+    let out: Vec<u8> = out.into();
+
+    serde_json::from_slice(&out)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.peers '{}'", e)))
 }

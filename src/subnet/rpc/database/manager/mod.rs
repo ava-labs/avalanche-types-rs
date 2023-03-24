@@ -25,10 +25,10 @@ pub struct DatabaseManager {
 
 impl DatabaseManager {
     /// Returns a database manager from a Vec of versioned database.
-    pub fn from_databases(dbs: Vec<VersionedDatabase>) -> Box<dyn Manager + Send + Sync> {
-        Box::new(Self {
+    pub fn from_databases(dbs: Vec<VersionedDatabase>) -> Self {
+        Self {
             inner: Arc::new(RwLock::new(dbs)),
-        })
+        }
     }
 }
 

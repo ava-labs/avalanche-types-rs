@@ -47,7 +47,7 @@ fn main() {
         Ok(sig) => {
             log::info!(
                 "successfully signed with signature output {} bytes",
-                sig.as_ref().len()
+                sig.to_vec().len()
             );
         }
         Err(e) => {

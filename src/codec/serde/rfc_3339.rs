@@ -7,7 +7,7 @@ pub fn serialize<S>(x: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    // ref. https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html#method.to_rfc3339_opts
+    // ref. <https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html#method.to_rfc3339_opts>
     serializer.serialize_str(&x.to_rfc3339_opts(SecondsFormat::Millis, true))
 }
 
@@ -18,7 +18,7 @@ where
 {
     let s = String::deserialize(deserializer)?;
 
-    // ref. https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html#method.to_rfc3339_opts
+    // ref. <https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html#method.to_rfc3339_opts>
     match DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom) {
         Ok(dt) => Ok(Utc.from_utc_datetime(&dt.naive_utc())),
         Err(e) => Err(e),

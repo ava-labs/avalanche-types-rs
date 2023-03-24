@@ -130,7 +130,7 @@ where
 
     /// Sets the validate start/end time in days from 'offset_seconds' later.
     #[must_use]
-    pub fn validate_period_in_days(mut self, offset_seconds: u64, days: u64) -> Self {
+    pub fn validate_period_in_days(mut self, days: u64, offset_seconds: u64) -> Self {
         let now_unix = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("unexpected None duration_since")

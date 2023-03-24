@@ -73,7 +73,7 @@ fn parse_url(
     ))
 }
 
-/// RUST_LOG=debug cargo test --package avalanche-types --lib --features="utils" -- utils::urls::test_extract_scheme_host_port_path_chain_alias --exact --show-output
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- utils::urls::test_extract_scheme_host_port_path_chain_alias --exact --show-output
 #[test]
 fn test_extract_scheme_host_port_path_chain_alias() {
     let (scheme, host, port, path, chain_alias) =

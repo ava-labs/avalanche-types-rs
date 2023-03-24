@@ -214,6 +214,7 @@ async fn test_rpcdb_corruptible() {
 
 #[tokio::test]
 async fn test_db_manager() {
+    use avalanche_types::subnet::rpc::database::manager::Manager;
     let _ = env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .is_test(true)

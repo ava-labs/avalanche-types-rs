@@ -12,20 +12,7 @@ use tonic::transport::Endpoint;
 
 #[tokio::test]
 async fn test_http_service() {
-    let mut handler = jsonrpc_core::IoHandler::new();
-    handler.add_method("foo", |_params: jsonrpc_core::Params| async move {
-        Ok(jsonrpc_core::Value::String(format!("Hello, from foo")))
-    });
-
-    handler.add_method("bar", |params: jsonrpc_core::Params| async move {
-        let params: HttpBarParams = params.parse().unwrap();
-
-        Ok(jsonrpc_core::Value::String(format!(
-            "Hello, {}, from bar",
-            params.name
-        )))
-    });
-
+    let handler = TestHandler::new();
     let http_server = HttpServer::new(handler);
     let listener = TcpListener::bind("127.0.0.1:1234").await.unwrap();
 

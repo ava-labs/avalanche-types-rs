@@ -70,10 +70,7 @@ pub fn new_middleware<S>(
     chain_id: U256,
 ) -> io::Result<
     NonceManagerMiddleware<
-        SignerMiddleware<
-            GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>, GeometricGasPrice>,
-            S,
-        >,
+        SignerMiddleware<GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>>, S>,
     >,
 >
 where
@@ -164,10 +161,7 @@ where
     /// ref. <https://github.com/giantbrain0216/ethers_rs/blob/master/ethers-middleware/tests/nonce_manager.rs>
     pub middleware: Arc<
         NonceManagerMiddleware<
-            SignerMiddleware<
-                GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>, GeometricGasPrice>,
-                S,
-            >,
+            SignerMiddleware<GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>>, S>,
         >,
     >,
 

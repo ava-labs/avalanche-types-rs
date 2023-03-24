@@ -3,30 +3,29 @@ use std::io::{Error, ErrorKind, Result};
 use crate::{
     ids,
     proto::pb::appsender::{
-        app_sender_client::AppSenderClient, SendAppGossipMsg, SendAppGossipSpecificMsg,
-        SendAppRequestMsg, SendAppResponseMsg, SendCrossChainAppRequestMsg,
-        SendCrossChainAppResponseMsg,
+        app_sender_client, SendAppGossipMsg, SendAppGossipSpecificMsg, SendAppRequestMsg,
+        SendAppResponseMsg, SendCrossChainAppRequestMsg, SendCrossChainAppResponseMsg,
     },
 };
 use prost::bytes::Bytes;
 use tonic::transport::Channel;
 
 #[derive(Clone)]
-pub struct Client {
-    inner: AppSenderClient<Channel>,
+pub struct AppSenderClient {
+    inner: app_sender_client::AppSenderClient<Channel>,
 }
 
 /// A gRPC client which manages the app sender server instances.
-impl Client {
-    pub fn new(client_conn: Channel) -> Box<dyn super::AppSender + Send + Sync> {
-        Box::new(Client {
-            inner: AppSenderClient::new(client_conn),
-        })
+impl AppSenderClient {
+    pub fn new(client_conn: Channel) -> Self {
+        Self {
+            inner: app_sender_client::AppSenderClient::new(client_conn),
+        }
     }
 }
 
 #[tonic::async_trait]
-impl super::AppSender for Client {
+impl super::AppSender for AppSenderClient {
     /// Send an application-level request.
     /// A nil return value guarantees that for each nodeID in [nodeIDs],
     /// the VM corresponding to this AppSender eventually receives either:

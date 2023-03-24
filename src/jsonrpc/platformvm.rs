@@ -716,7 +716,7 @@ fn test_get_balance() {
     assert_eq!(resp, expected);
 }
 
-/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetcurrentvalidators>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct GetCurrentValidatorsResponse {
     pub jsonrpc: String,
@@ -742,7 +742,7 @@ impl GetCurrentValidatorsResponse {
     }
 }
 
-/// ref. <https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators>
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetcurrentvalidators>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct GetCurrentValidatorsResult {
@@ -926,7 +926,7 @@ impl ApiPrimaryDelegator {
 fn test_get_current_validators() {
     use std::str::FromStr;
 
-    // ref. https://docs.avax.network/build/avalanchego-apis/p-chain/#platformgetcurrentvalidators
+    // ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetcurrentvalidators>
     let resp: GetCurrentValidatorsResponse = serde_json::from_str(
         "
 {
@@ -1062,4 +1062,374 @@ impl ApiUtxo {
             message: None,
         }
     }
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetsubnets>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetSubnetsResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetSubnetsResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetsubnets>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetSubnetsResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subnets: Option<Vec<Subnet>>,
+}
+
+impl Default for GetSubnetsResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetSubnetsResult {
+    pub fn default() -> Self {
+        Self { subnets: None }
+    }
+}
+
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct Subnet {
+    pub id: ids::Id,
+
+    #[serde(rename = "controlKeys", skip_serializing_if = "Option::is_none")]
+    pub control_keys: Option<Vec<ids::short::Id>>,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub threshold: u32,
+}
+
+impl Default for Subnet {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl Subnet {
+    pub fn default() -> Self {
+        Self {
+            id: ids::Id::empty(),
+            control_keys: None,
+            threshold: 0,
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_subnets --exact --show-output
+#[test]
+fn test_get_subnets() {
+    use crate::ids;
+    use std::str::FromStr;
+
+    // ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetsubnets>
+    let resp: GetSubnetsResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"subnets\": [
+            {
+                \"id\": \"hW8Ma7dLMA7o4xmJf3AXBbo17bXzE7xnThUd3ypM4VAWo1sNJ\",
+                \"controlKeys\": [
+                    \"KNjXsaA1sZsaKCD1cd85YXauDuxshTes2\",
+                    \"Aiz4eEt5xv9t4NCnAWaQJFNz5ABqLtJkR\"
+                ],
+                \"threshold\": \"2\"
+            }
+        ]
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+
+    let expected = GetSubnetsResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetSubnetsResult {
+            subnets: Some(vec![Subnet {
+                id: ids::Id::from_str("hW8Ma7dLMA7o4xmJf3AXBbo17bXzE7xnThUd3ypM4VAWo1sNJ").unwrap(),
+                control_keys: Some(vec![
+                    ids::short::Id::from_str("KNjXsaA1sZsaKCD1cd85YXauDuxshTes2").unwrap(),
+                    ids::short::Id::from_str("Aiz4eEt5xv9t4NCnAWaQJFNz5ABqLtJkR").unwrap(),
+                ]),
+                threshold: 2,
+                ..Subnet::default()
+            }]),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetblockchains>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainsResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetBlockchainsResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetblockchains>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainsResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blockchains: Option<Vec<Blockchain>>,
+}
+
+impl Default for GetBlockchainsResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetBlockchainsResult {
+    pub fn default() -> Self {
+        Self { blockchains: None }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord, Hash)]
+pub struct Blockchain {
+    pub id: ids::Id,
+    pub name: String,
+    #[serde(rename = "subnetID")]
+    pub subnet_id: ids::Id,
+    #[serde(rename = "vmID")]
+    pub vm_id: ids::Id,
+}
+
+impl Default for Blockchain {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl Blockchain {
+    pub fn default() -> Self {
+        Self {
+            id: ids::Id::empty(),
+            name: String::new(),
+            subnet_id: ids::Id::empty(),
+            vm_id: ids::Id::empty(),
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_blockchains --exact --show-output
+#[test]
+fn test_get_blockchains() {
+    use crate::ids;
+    use std::str::FromStr;
+
+    // ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetblockchains>
+    let resp: GetBlockchainsResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"blockchains\": [
+            {
+                \"id\": \"yC7LZEwfaYhEvreNm48iGMtASiukPaT4899N9df2rkhWUzDeQ\",
+                \"name\": \"subnetevm\",
+                \"subnetID\": \"268FZNRqAUwE4baMPkEQj48gnbGz34pgocWZvHQaUpnwb9Cp7i\",
+                \"vmID\": \"srEXiWaHuhNyGwPUi444Tu47ZEDwxTWrbQiuD7FmgSAQ6X7Dy\"
+            },
+            {
+                \"id\": \"27sJotKt62mibBwKFAwxvCKn8KEbdvk4Bn3nFSVJSZebrxMfdU\",
+                \"name\": \"C-Chain\",
+                \"subnetID\": \"11111111111111111111111111111111LpoYY\",
+                \"vmID\": \"mgj786NP7uDwBCcq6YwThhaN8FLyybkCa4zBWTQbNgmK6k9A6\"
+            },
+            {
+                \"id\": \"2oYMBNV4eNHyqk2fjjV5nVQLDbtmNJzq5s3qs3Lo6ftnC6FByM\",
+                \"name\": \"X-Chain\",
+                \"subnetID\": \"11111111111111111111111111111111LpoYY\",
+                \"vmID\": \"jvYyfQTxGMJLuGWa55kdP2p2zSUYsQ5Raupu4TW34ZAUBAbtq\"
+            }
+        ]
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+
+    let expected = GetBlockchainsResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetBlockchainsResult {
+            blockchains: Some(vec![
+                Blockchain {
+                    id: ids::Id::from_str("yC7LZEwfaYhEvreNm48iGMtASiukPaT4899N9df2rkhWUzDeQ")
+                        .unwrap(),
+                    name: String::from("subnetevm"),
+                    subnet_id: ids::Id::from_str(
+                        "268FZNRqAUwE4baMPkEQj48gnbGz34pgocWZvHQaUpnwb9Cp7i",
+                    )
+                    .unwrap(),
+                    vm_id: ids::Id::from_str("srEXiWaHuhNyGwPUi444Tu47ZEDwxTWrbQiuD7FmgSAQ6X7Dy")
+                        .unwrap(),
+                    ..Blockchain::default()
+                },
+                Blockchain {
+                    id: ids::Id::from_str("27sJotKt62mibBwKFAwxvCKn8KEbdvk4Bn3nFSVJSZebrxMfdU")
+                        .unwrap(),
+                    name: String::from("C-Chain"),
+                    subnet_id: ids::Id::empty(),
+                    vm_id: ids::Id::from_str("mgj786NP7uDwBCcq6YwThhaN8FLyybkCa4zBWTQbNgmK6k9A6")
+                        .unwrap(),
+                    ..Blockchain::default()
+                },
+                Blockchain {
+                    id: ids::Id::from_str("2oYMBNV4eNHyqk2fjjV5nVQLDbtmNJzq5s3qs3Lo6ftnC6FByM")
+                        .unwrap(),
+                    name: String::from("X-Chain"),
+                    subnet_id: ids::Id::empty(),
+                    vm_id: ids::Id::from_str("jvYyfQTxGMJLuGWa55kdP2p2zSUYsQ5Raupu4TW34ZAUBAbtq")
+                        .unwrap(),
+                    ..Blockchain::default()
+                },
+            ]),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainStatusRequest {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<GetBlockchainStatusParams>,
+}
+
+impl Default for GetBlockchainStatusRequest {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetBlockchainStatusRequest {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: String::from(super::DEFAULT_VERSION),
+            id: super::DEFAULT_ID,
+            method: String::new(),
+            params: None,
+        }
+    }
+
+    pub fn encode_json(&self) -> io::Result<String> {
+        serde_json::to_string(&self)
+            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainStatusParams {
+    #[serde(rename = "blockchainID")]
+    pub blockchain_id: ids::Id,
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainStatusResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetBlockchainStatusResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<super::ResponseError>,
+}
+
+impl Default for GetBlockchainStatusResponse {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetBlockchainStatusResponse {
+    pub fn default() -> Self {
+        Self {
+            jsonrpc: "2.0".to_string(),
+            id: 1,
+            result: None,
+            error: None,
+        }
+    }
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformissuetx>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetBlockchainStatusResult {
+    pub status: String,
+}
+
+impl Default for GetBlockchainStatusResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetBlockchainStatusResult {
+    pub fn default() -> Self {
+        Self {
+            status: String::new(),
+        }
+    }
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_blockchain_status --exact --show-output
+#[test]
+fn test_get_blockchain_status() {
+    let resp: GetBlockchainStatusResponse = serde_json::from_str(
+        "
+    
+    {
+        \"jsonrpc\": \"2.0\",
+        \"result\": {
+            \"status\": \"Created\"
+        },
+        \"id\": 1
+    }
+    
+    ",
+    )
+    .unwrap();
+
+    let expected = GetBlockchainStatusResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetBlockchainStatusResult {
+            status: String::from("Created"),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
 }

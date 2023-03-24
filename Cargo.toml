@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.307" # https://crates.io/crates/avalanche-types
+version = "0.0.321" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.68" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -18,8 +18,8 @@ bs58 = "0.4.0"
 bytes = "1.4.0"
 chrono = "0.4.24"
 cmp-manager = "0.0.1"
-ecdsa = { version = "0.16.1", features = ["rfc6979"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
-ethers-core = { version = "2.0.0", features = ["eip712"] }
+ecdsa = { version = "0.16.1", features = ["rfc6979", "verifying"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
+ethers-core = { version = "=2.0.1", features = ["eip712"] }
 hex = "0.4.3"
 hmac = "0.12.1"
 k256 = { version = "0.13.0", features = ["ecdsa"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
@@ -32,7 +32,7 @@ ring = "0.16.20"
 ripemd = "0.1.3"
 rust-embed = "6.6.0" # https://github.com/pyrossh/rust-embed
 rustls-pemfile = "1.0.2"
-serde = { version = "1.0.157", features = ["derive"] } # https://github.com/serde-rs/serde/releases
+serde = { version = "1.0.158", features = ["derive"] } # https://github.com/serde-rs/serde/releases
 serde_json = "1.0.94" # https://github.com/serde-rs/json/releases
 serde_with = { version = "2.3.1", features = ["hex"] }
 serde_yaml = "0.9.19" # https://github.com/dtolnay/serde-yaml/releases
@@ -40,6 +40,7 @@ sha2 = "0.10.6"
 sha3 = "0.10.6" # https://github.com/RustCrypto/hashes
 spki = "0.7.0" # https://github.com/RustCrypto/formats/tree/master/spki
 thiserror = "1.0.40"
+url = "2.3.1" # for "codec::serde::ip_port", "utils"
 zerocopy = "0.6.1"
 zeroize = "1.5.7" # for "BLS
 
@@ -47,9 +48,8 @@ zeroize = "1.5.7" # for "BLS
 secp256k1 = { version = "0.27.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.24.27", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.24.29", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.24.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
-aws-smithy-types = { version = "0.54.4", optional = true } # https://github.com/awslabs/smithy-rs/releases
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
@@ -64,19 +64,16 @@ bip32 = { version = "0.4.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "evm", "jsonrpc_client"
-reqwest = { version = "0.11.14", optional = true }
+reqwest = { version = "0.11.15", optional = true } # https://github.com/seanmonstar/reqwest/releases
 tokio = { version = "1.26.0", features = ["full"], optional = true } # https://github.com/tokio-rs/tokio/releases
-
-# [OPTIONAL] for "utils"
-url = { version = "2.3.1", optional = true }
 
 # [OPTIONAL] for "evm"
 rlp = { version = "0.5.2", default-features = false, features = ["std"], optional = true }
 
 # [OPTIONAL] for "wallet_evm"
-ethers = { version = "2.0.0", features = ["eip712"], optional = true } # https://github.com/gakonst/ethers-rs/releases
-ethers-providers = { version = "2.0.0", optional = true } # https://github.com/gakonst/ethers-rs/releases
-ethers-signers = { version = "2.0.0", optional = true } # https://github.com/gakonst/ethers-rs/releases
+ethers = { version = "=2.0.1", features = ["eip712"], optional = true } # https://github.com/gakonst/ethers-rs/releases
+ethers-providers = { version = "=2.0.1", optional = true } # https://github.com/gakonst/ethers-rs/releases
+ethers-signers = { version = "=2.0.1", optional = true } # https://github.com/gakonst/ethers-rs/releases
 
 # [OPTIONAL] for "subnet"
 futures = { version = "0.3.27", optional = true }
@@ -133,7 +130,6 @@ default = [
     # "subnet",
     # "subnet_evm",
     # "subnet_metrics",
-    # "utils",
     # "wallet",
     # "wallet_evm",
     # "xsvm",
@@ -144,15 +140,14 @@ cert = ["rcgen", "rsa", "rustls"]
 codec_base64 = ["base64"]
 codec_big_int = ["num-bigint"]
 evm = ["ethers", "ethers-providers", "ethers-signers", "rlp", "tokio"]
-jsonrpc_client = ["ethers-providers", "reqwest", "tokio", "utils"]
-kms_aws = ["aws-manager", "aws-sdk-kms", "aws-smithy-types", "ethers-signers"]
+jsonrpc_client = ["ethers-providers", "reqwest", "tokio"]
+kms_aws = ["aws-manager", "aws-sdk-kms", "ethers-signers"]
 libsecp256k1 = ["secp256k1"]
 mnemonic = ["bip32", "rand_core"]
 subnet_evm = []
-wallet = ["reqwest", "tokio", "utils"]
-wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client", "reqwest", "url"]
+wallet = ["reqwest", "tokio"]
+wallet_evm = ["ethers", "ethers-providers", "ethers-signers", "tokio", "jsonrpc_client", "reqwest"]
 xsvm = []
-utils = ["url"]
 
 proto = [
     "prost",

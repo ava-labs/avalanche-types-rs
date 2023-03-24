@@ -4,13 +4,27 @@ use std::{
     time::Duration,
 };
 
-use crate::jsonrpc::{self, avm};
+use crate::{
+    jsonrpc::{self, avm},
+    utils,
+};
 use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 
 /// e.g., "avm.issueTx" on "http://[ADDR]:9650" and "/ext/bc/X" path.
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmissuetx>
 pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<avm::IssueTxResponse> {
-    log::debug!("issuing a transaction via {http_rpc}/ext/bc/X");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("issuing a transaction via {u}");
 
     let mut data = avm::IssueTxRequest::default();
     data.method = String::from("avm.issueTx");
@@ -34,7 +48,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<avm::IssueTxRespon
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -55,7 +69,18 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> io::Result<avm::IssueTxRespon
 /// e.g., "avm.getTxStatus" on "http://[ADDR]:9650" and "/ext/bc/X" path.
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgettxstatus>
 pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> io::Result<avm::GetTxStatusResponse> {
-    log::debug!("getting tx status via {http_rpc}/ext/bc/X");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("getting tx status via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getTxStatus");
@@ -77,7 +102,7 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> io::Result<avm::GetTx
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -98,7 +123,18 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> io::Result<avm::GetTx
 /// e.g., "avm.getBalance" on "http://[ADDR]:9650" and "/ext/bc/X" path.
 /// ref. <https://docs.avax.network/build/avalanchego-apis/x-chain#avmgetbalance>
 pub async fn get_balance(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetBalanceResponse> {
-    log::debug!("getting balances for {} via {http_rpc}/ext/bc/X", xaddr);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("getting balance via {u} for {xaddr}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getBalance");
@@ -121,7 +157,7 @@ pub async fn get_balance(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetBala
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -145,11 +181,18 @@ pub async fn get_asset_description(
     http_rpc: &str,
     asset_id: &str,
 ) -> io::Result<avm::GetAssetDescriptionResponse> {
-    log::debug!(
-        "getting asset description from {} for {}",
-        http_rpc,
-        asset_id
-    );
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("getting asset description via {u}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getAssetDescription");
@@ -171,7 +214,7 @@ pub async fn get_asset_description(
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -197,7 +240,18 @@ pub async fn get_asset_description(
 /// TODO: support paginated calls
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/x-chain/#avmgetutxos>
 pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetUtxosResponse> {
-    log::debug!("getting UTXOs for {} via {http_rpc}/ext/bc/X", xaddr);
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("getting UTXOs via {u} for {xaddr}");
 
     let mut data = avm::GetUtxosRequest::default();
     data.method = String::from("avm.getUTXOs");
@@ -222,7 +276,7 @@ pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetUtxosR
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -243,7 +297,18 @@ pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> io::Result<avm::GetUtxosR
 /// e.g., "avm.issueStopVertex" on "http://[ADDR]:9650" and "/ext/bc/X" path.
 /// Issue itself is asynchronous, so the internal error is not exposed!
 pub async fn issue_stop_vertex(http_rpc: &str) -> io::Result<()> {
-    log::debug!("issuing a stop vertex transaction via {http_rpc}/ext/bc/X");
+    let (scheme, host, port, _, _) =
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+    let u = if let Some(scheme) = scheme {
+        if let Some(port) = port {
+            format!("{scheme}://{host}:{port}/ext/bc/X")
+        } else {
+            format!("{scheme}://{host}/ext/bc/X")
+        }
+    } else {
+        format!("http://{host}/ext/bc/X")
+    };
+    log::info!("issuing a stop vertex transaction via {u}");
 
     let mut data = avm::IssueStopVertexRequest::default();
     data.method = String::from("avm.issueStopVertex");
@@ -264,7 +329,7 @@ pub async fn issue_stop_vertex(http_rpc: &str) -> io::Result<()> {
             )
         })?;
     let resp = req_cli_builder
-        .post(format!("{http_rpc}/ext/bc/X").as_str())
+        .post(&u)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()

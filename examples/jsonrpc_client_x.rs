@@ -2,8 +2,8 @@ use std::{env::args, io};
 
 use avalanche_types::jsonrpc::client::x as jsonrpc_client_x;
 
-/// cargo run --example jsonrpc_client_x -- [HTTP RPC ENDPOINT] X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
-/// cargo run --example jsonrpc_client_x -- http://44.230.236.23:9650 X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
+/// cargo run --example jsonrpc_client_x --features="jsonrpc_client" -- [HTTP RPC ENDPOINT] X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
+/// cargo run --example jsonrpc_client_x --features="jsonrpc_client" -- http://44.230.236.23:9650 X-custom152qlr6zunz7nw2kc4lfej3cn3wk46u3002k4w5
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. <https://github.com/env-logger-rs/env_logger/issues/47>

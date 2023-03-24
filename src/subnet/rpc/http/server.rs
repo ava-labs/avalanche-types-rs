@@ -1,26 +1,37 @@
+use std::sync::Arc;
+
 use crate::proto::pb::{
     self,
     google::protobuf::Empty,
     http::{HandleSimpleHttpRequest, HandleSimpleHttpResponse, HttpRequest},
 };
-use jsonrpc_core::MethodCall;
-use prost::bytes::Bytes;
-use tonic::{codegen::http, Status};
+
+use tonic::codegen::http;
+
+use super::handle::Handle;
 
 #[derive(Clone)]
-pub struct Server {
+pub struct Server<T> {
     /// handler generated from create_handlers
-    handler: jsonrpc_core::IoHandler,
+    handle: Arc<T>,
 }
 
-impl Server {
-    pub fn new(handler: jsonrpc_core::IoHandler) -> impl pb::http::http_server::Http {
-        Server { handler }
+impl<T> Server<T>
+where
+    T: Handle + Send + Sync + 'static,
+{
+    pub fn new(handler: T) -> impl pb::http::http_server::Http {
+        Server {
+            handle: Arc::new(handler),
+        }
     }
 }
 
 #[tonic::async_trait]
-impl pb::http::http_server::Http for Server {
+impl<T> pb::http::http_server::Http for Server<T>
+where
+    T: Handle + Send + Sync + 'static,
+{
     /// handles http requests including websockets
     async fn handle(
         &self,
@@ -36,24 +47,12 @@ impl pb::http::http_server::Http for Server {
     ) -> Result<tonic::Response<HandleSimpleHttpResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        // TODO: this assumes JSON-RPC.
-        let de_request: MethodCall = serde_json::from_slice(request.body.as_ref())
-            .map_err(|e| tonic::Status::unknown(e.to_string()))?;
-
-        let json_str = serde_json::to_string(&de_request)
-            .map_err(|e| tonic::Status::unknown(format!("failed to serialize request: {}", e)))?;
-
-        // pass HTTP body bytes from [HandleSimpleHttpRequest] to underlying IoHandler
-        let response = self
-            .handler
-            .handle_request(&json_str)
-            .await
-            .ok_or_else(|| Status::internal("failed to get response from rpc handler"))?;
+        let (body, headers) = self.handle.request(&request.body, &request.headers).await?;
 
         Ok(tonic::Response::new(HandleSimpleHttpResponse {
             code: http::StatusCode::OK.as_u16() as i32,
-            body: Bytes::from(response.into_bytes()),
-            headers: vec![],
+            body,
+            headers,
         }))
     }
 }

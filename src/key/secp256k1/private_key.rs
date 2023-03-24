@@ -32,6 +32,8 @@ pub const HEX_ENCODE_PREFIX: &str = "0x";
 pub const CB58_ENCODE_PREFIX: &str = "PrivateKey-";
 
 /// Represents "k256::SecretKey" and "k256::ecdsa::SigningKey".
+/// "k256::SecretKey" already implements "zeroize" with "Drop".
+/// "k256::ecdsa::SigningKey" already implements "zeroize" with "Drop".
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Key((SecretKey, SigningKey));
 
@@ -239,10 +241,9 @@ impl Key {
         crate::key::secp256k1::libsecp256k1::PrivateKey::from_bytes(&b)
     }
 
-    /// TODO: remove this after upstream "ethers-core" migrates to "k256" >= 0.12
     pub fn to_ethers_core_signing_key(&self) -> ethers_core::k256::ecdsa::SigningKey {
         let kb = self.to_bytes();
-        ethers_core::k256::ecdsa::SigningKey::from_bytes(&kb).unwrap()
+        ethers_core::k256::ecdsa::SigningKey::from_bytes(GenericArray::from_slice(&kb)).unwrap()
     }
 }
 

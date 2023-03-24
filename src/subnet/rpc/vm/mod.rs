@@ -25,8 +25,6 @@ use tonic_health::server::health_reporter;
 
 use super::runtime::Initializer;
 
-pub trait Vm: crate::subnet::rpc::snowman::block::ChainVm {}
-
 /// Health Service for the RPC Chain VM Server.
 struct HealthServer;
 

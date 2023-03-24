@@ -9,7 +9,7 @@ use crate::ids;
 ///
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/common#AppSender>
 #[tonic::async_trait]
-pub trait AppSender: CloneBox {
+pub trait AppSender: Send + Sync + CloneBox {
     async fn send_app_request(
         &self,
         node_ids: ids::node::Set,
@@ -59,6 +59,7 @@ impl Clone for Box<dyn AppSender + Send + Sync> {
 
 #[tokio::test]
 async fn clone_box_test() {
+    use crate::subnet::rpc::snow::engine::common::appsender::client::AppSenderClient;
     use tokio::net::TcpListener;
     use tonic::transport::Channel;
 
@@ -68,5 +69,5 @@ async fn clone_box_test() {
         .connect()
         .await
         .unwrap();
-    let _app_sender = client::Client::new(client_conn).clone();
+    let _app_sender = AppSenderClient::new(client_conn).clone();
 }

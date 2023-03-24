@@ -57,10 +57,11 @@ where
         let native_dt = NaiveDateTime::from_timestamp_opt(start_time as i64, 0).unwrap();
         let start_time = DateTime::<Utc>::from_utc(native_dt, Utc);
 
-        // 95-day
+        // 14-day + 5-min
         // must be smaller than the primary network default
         // otherwise "staking period must be a subset of the primary network"
-        let end_time = now_unix + 95 * 24 * 60 * 60;
+        // ref. "Validator.BoundedBy"
+        let end_time = now_unix + 15 * 24 * 60 * 60 + 5 * 60;
         let native_dt = NaiveDateTime::from_timestamp_opt(end_time as i64, 0).unwrap();
         let end_time = DateTime::<Utc>::from_utc(native_dt, Utc);
 
@@ -116,7 +117,7 @@ where
 
     /// Sets the validate start/end time in days from 'offset_seconds' later.
     #[must_use]
-    pub fn validate_period_in_days(mut self, offset_seconds: u64, days: u64) -> Self {
+    pub fn validate_period_in_days(mut self, days: u64, offset_seconds: u64) -> Self {
         let now_unix = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("unexpected None duration_since")

@@ -2,8 +2,9 @@ use std::{env::args, io};
 
 use avalanche_types::jsonrpc::client::p as jsonrpc_client_p;
 
-/// cargo run --example jsonrpc_client_p -- [HTTP RPC ENDPOINT] P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
-/// cargo run --example jsonrpc_client_p -- http://44.230.236.23:9650 P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
+/// cargo run --example jsonrpc_client_p --features="jsonrpc_client" -- [HTTP RPC ENDPOINT] P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
+/// cargo run --example jsonrpc_client_p --features="jsonrpc_client" -- http://52.42.183.125:9650
+/// cargo run --example jsonrpc_client_p --features="jsonrpc_client" -- http://52.42.183.125:9650 P-custom1qwmslrrqdv4slxvynhy9csq069l0u8mqwjzmcd
 ///
 /// ```
 /// # or run this
@@ -20,21 +21,22 @@ async fn main() -> io::Result<()> {
     );
 
     let url = args().nth(1).expect("no url given");
-    let paddr = args().nth(2).expect("no p-chain address given");
-
     println!("{}", url);
-    println!("{}", paddr);
-    let resp = jsonrpc_client_p::get_balance(&url, &paddr).await.unwrap();
-    log::info!(
-        "get_balance response: {}",
-        serde_json::to_string_pretty(&resp).unwrap()
-    );
 
-    let resp = jsonrpc_client_p::get_utxos(&url, &paddr).await.unwrap();
-    log::info!(
-        "get_utxos response: {}",
-        serde_json::to_string_pretty(&resp).unwrap()
-    );
+    if let Some(paddr) = &args().nth(2) {
+        println!("{}", paddr);
+        let resp = jsonrpc_client_p::get_balance(&url, paddr).await.unwrap();
+        log::info!(
+            "get_balance response: {}",
+            serde_json::to_string_pretty(&resp).unwrap()
+        );
+
+        let resp = jsonrpc_client_p::get_utxos(&url, paddr).await.unwrap();
+        log::info!(
+            "get_utxos response: {}",
+            serde_json::to_string_pretty(&resp).unwrap()
+        );
+    }
 
     let resp = jsonrpc_client_p::get_height(&url).await.unwrap();
     log::info!(
@@ -47,6 +49,18 @@ async fn main() -> io::Result<()> {
         .unwrap();
     log::info!(
         "get_current_validators response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
+
+    let resp = jsonrpc_client_p::get_subnets(&url, None).await.unwrap();
+    log::info!(
+        "get_subnets response: {}",
+        serde_json::to_string_pretty(&resp).unwrap()
+    );
+
+    let resp = jsonrpc_client_p::get_blockchains(&url).await.unwrap();
+    log::info!(
+        "get_blockchains response: {}",
         serde_json::to_string_pretty(&resp).unwrap()
     );
 

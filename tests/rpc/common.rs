@@ -2,13 +2,18 @@
 use std::io::{self, Error, ErrorKind};
 
 use avalanche_types::{
-    proto::pb::{
-        self,
-        http::http_server::{Http, HttpServer},
-        rpcdb::database_server::{Database, DatabaseServer},
+    proto::{
+        http::Element,
+        pb::{
+            self,
+            http::http_server::{Http, HttpServer},
+            rpcdb::database_server::{Database, DatabaseServer},
+        },
     },
-    subnet::rpc::utils::grpc::default_server,
+    subnet::rpc::{http::handle::Handle, utils::grpc::default_server},
 };
+use bytes::Bytes;
+use jsonrpc_core::{IoHandler, MethodCall};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
@@ -80,4 +85,59 @@ pub fn generate_http_request(
 #[derive(Serialize, Deserialize)]
 pub struct HttpBarParams {
     pub name: String,
+}
+
+#[derive(Clone)]
+pub struct TestHandler {
+    pub handler: IoHandler,
+}
+
+impl TestHandler {
+    pub fn new() -> Self {
+        let mut handler = jsonrpc_core::IoHandler::new();
+        handler.add_method("foo", |_params: jsonrpc_core::Params| async move {
+            Ok(jsonrpc_core::Value::String(format!("Hello, from foo")))
+        });
+
+        handler.add_method("bar", |params: jsonrpc_core::Params| async move {
+            let params: HttpBarParams = params.parse().unwrap();
+
+            Ok(jsonrpc_core::Value::String(format!(
+                "Hello, {}, from bar",
+                params.name
+            )))
+        });
+        Self { handler }
+    }
+}
+
+#[tonic::async_trait]
+impl Handle for TestHandler {
+    async fn request(
+        &self,
+        req: &Bytes,
+        _headers: &[Element],
+    ) -> std::io::Result<(Bytes, Vec<Element>)> {
+        let de_request: MethodCall = serde_json::from_slice(req).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("failed to deserialize request: {e}"),
+            )
+        })?;
+
+        let json_str = serde_json::to_string(&de_request).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("failed to serialize request: {e}"),
+            )
+        })?;
+
+        match self.handler.handle_request(&json_str).await {
+            Some(resp) => Ok((Bytes::from(resp), Vec::new())),
+            None => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "failed to handle request",
+            )),
+        }
+    }
 }

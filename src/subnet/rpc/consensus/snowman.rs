@@ -2,19 +2,22 @@ use std::io::Result;
 
 use crate::{choices::status::Status, ids::Id};
 
-/// ref.https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowman#Block
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowman#Block>
 #[tonic::async_trait]
-pub trait Block: Decidable + Initializer + StatusWriter + Sync + Send {
-    /// Returns the bytes of this block.
+pub trait Block: Decidable + Send + Sync {
+    /// Returns the binary representation of this block.
+    ///
+    /// This is used for sending blocks to peers. The bytes should be able to be
+    /// parsed into the same block on another node.
     async fn bytes(&self) -> &[u8];
-
-    /// Returns bytes from serde.
-    async fn to_bytes(&self) -> Result<Vec<u8>>;
 
     /// Returns the height of the block in the chain.
     async fn height(&self) -> u64;
 
-    /// Returns the creation timestamp of the block in the chain.
+    /// Time this block was proposed at. This value should be consistent across
+    /// all nodes. If this block hasn't been successfully verified, any value can
+    /// be returned. If this block is the last accepted block, the timestamp must
+    /// be returned correctly. Otherwise, accepted blocks can return any value.
     async fn timestamp(&self) -> u64;
 
     /// Returns the ID of this block's parent.
@@ -27,27 +30,29 @@ pub trait Block: Decidable + Initializer + StatusWriter + Sync + Send {
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/choices#Decidable>
 #[tonic::async_trait]
 pub trait Decidable {
-    /// Returns the ID of this block's parent.
+    /// Returns a unique ID for this element.
+    ///
+    /// Typically, this is implemented by using a cryptographic hash of a
+    /// binary representation of this element. An element should return the same
+    /// IDs upon repeated calls.
     async fn id(&self) -> Id;
 
-    /// Returns the current status.
+    /// Status returns this element's current status.
+    ///
+    /// If Accept has been called on an element with this ID, Accepted should be
+    /// returned. Similarly, if Reject has been called on an element with this
+    /// ID, Rejected should be returned. If the contents of this element are
+    /// unknown, then Unknown should be returned. Otherwise, Processing should be
+    /// returned.
     async fn status(&self) -> Status;
 
-    /// Accepts this element.
+    /// Accept this element.
+    ///
+    /// This element will be accepted by every correct node in the network.
     async fn accept(&mut self) -> Result<()>;
 
     /// Rejects this element.
+    ///
+    /// This element will not be accepted by any correct node in the network.
     async fn reject(&mut self) -> Result<()>;
-}
-
-#[tonic::async_trait]
-pub trait Initializer {
-    /// Initializes the block.
-    async fn init(&mut self, bytes: &[u8], status: Status) -> Result<()>;
-}
-
-#[tonic::async_trait]
-pub trait StatusWriter {
-    /// Sets the blocks status.
-    async fn set_status(&mut self, status: Status);
 }

@@ -9,7 +9,7 @@ use crate::{hash, ids::short, key};
 use async_trait::async_trait;
 use aws_manager::kms;
 use aws_sdk_kms::model::{KeySpec, KeyUsageType};
-use ethers_core::k256::ecdsa::recoverable::Signature as RSig;
+use ethers_core::types::Signature as EthSig;
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents AWS KMS asymmetric elliptic curve key pair ECC_SECG_P256K1.
@@ -142,7 +142,7 @@ impl Cmk {
         })
     }
 
-    pub async fn sign_digest(&self, digest: &[u8]) -> Result<RSig, aws_manager::errors::Error> {
+    pub async fn sign_digest(&self, digest: &[u8]) -> Result<EthSig, aws_manager::errors::Error> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
@@ -200,13 +200,19 @@ impl Cmk {
 
         let mut fixed_digest = [0u8; hash::SHA256_OUTPUT_LEN];
         fixed_digest.copy_from_slice(digest);
-        Ok(
-            key::secp256k1::signature::rsig_from_digest_bytes_trial_recovery(
-                &sig,
-                fixed_digest,
-                &self.public_key.to_verifying_key(),
-            ),
+
+        key::secp256k1::signature::sig_from_digest_bytes_trial_recovery(
+            &sig,
+            &fixed_digest,
+            &self.public_key.to_verifying_key(),
         )
+        .map_err(|e| aws_manager::errors::Error::Other {
+            message: format!(
+                "failed key::secp256k1::signature::sig_from_digest_bytes_trial_recovery {}",
+                e
+            ),
+            is_retryable: false,
+        })
     }
 }
 
@@ -222,7 +228,7 @@ impl key::secp256k1::SignOnly for Cmk {
         let sig = self.sign_digest(msg).await?;
 
         let mut b = [0u8; key::secp256k1::signature::LEN];
-        b.copy_from_slice(&sig.as_ref());
+        b.copy_from_slice(&sig.to_vec());
 
         Ok(b)
     }
