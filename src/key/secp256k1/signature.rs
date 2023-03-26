@@ -210,8 +210,9 @@ pub fn sig_from_digest_bytes_trial_recovery(
 
 /// Modify the v value of a signature to conform to eip155
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "apply_eip155"
+/// ref. <https://github.com/gakonst/ethers-rs/pull/2300>
 pub fn apply_eip155(sig: &mut ethers_core::types::Signature, chain_id: u64) {
-    let v = (chain_id * 2 + 35) + ((sig.v - 1) % 2);
+    let v = (chain_id * 2 + 35) + sig.v;
     sig.v = v;
 }
 

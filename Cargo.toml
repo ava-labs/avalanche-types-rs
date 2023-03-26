@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.321" # https://crates.io/crates/avalanche-types
+version = "0.0.323" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.68" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -11,7 +11,7 @@ repository = "https://github.com/ava-labs/avalanche-types-rs"
 readme = "README.md"
 
 [dependencies]
-async-trait = "0.1.67" # for "key::secp256k1" sign trait, https://github.com/dtolnay/async-trait
+async-trait = "0.1.68" # for "key::secp256k1" sign trait, https://github.com/dtolnay/async-trait
 bech32 = "0.9.1"
 blst = "0.3.10" # https://github.com/supranational/blst/tree/master/bindings/rust, for "BLS
 bs58 = "0.4.0"

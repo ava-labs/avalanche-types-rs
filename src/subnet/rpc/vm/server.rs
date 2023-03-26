@@ -271,10 +271,9 @@ where
 
         // get handlers from underlying vm
         let mut inner_vm = self.vm.write().await;
-        let handlers = inner_vm
-            .create_handlers()
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("failed to create handlers: {e}")))?;
+        let handlers = inner_vm.create_static_handlers().await.map_err(|e| {
+            tonic::Status::unknown(format!("failed to create static handlers: {e}"))
+        })?;
 
         // create and start gRPC server serving HTTP service for each handler
         let mut resp_handlers: Vec<vm::Handler> = Vec::with_capacity(handlers.keys().len());
