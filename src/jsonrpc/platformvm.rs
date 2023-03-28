@@ -6,7 +6,9 @@ use std::{
 use crate::{
     codec::serde::hex_0x_utxo::Hex0xUtxo,
     ids::{self, node},
-    jsonrpc, platformvm, txs,
+    jsonrpc,
+    key::bls,
+    platformvm, txs,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -724,6 +726,9 @@ pub struct GetCurrentValidatorsResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetCurrentValidatorsResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 impl Default for GetCurrentValidatorsResponse {
@@ -738,6 +743,7 @@ impl GetCurrentValidatorsResponse {
             jsonrpc: "2.0".to_string(),
             id: 1,
             result: Some(GetCurrentValidatorsResult::default()),
+            error: None,
         }
     }
 }
@@ -766,51 +772,63 @@ impl GetCurrentValidatorsResult {
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker>
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ApiPrimaryValidator {
     #[serde(rename = "txID")]
     pub tx_id: ids::Id,
 
     #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "startTime")]
     pub start_time: u64,
     #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "endTime")]
     pub end_time: u64,
 
+    /// None for subnet validator.
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<u64>,
 
     /// None for subnet validator.
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(rename = "stakeAmount")]
     pub stake_amount: Option<u64>,
 
     #[serde(rename = "nodeID")]
     pub node_id: node::Id,
 
     /// None for subnet validator.
-    #[serde(rename = "rewardOwner", skip_serializing_if = "Option::is_none")]
-    pub reward_owner: Option<ApiOwner>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validation_reward_owner: Option<ApiOwner>,
 
+    /// None for subnet validator.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delegation_reward_owner: Option<ApiOwner>,
+
+    /// None for subnet validator.
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(rename = "potentialReward")]
     pub potential_reward: Option<u64>,
+    /// None for subnet validator.
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(rename = "delegationFee", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub delegation_fee: Option<f32>,
 
+    #[serde_as(as = "DisplayFromStr")]
+    pub uptime: f32,
+    pub connected: bool,
+
+    /// None if the validator doesn't have a BLS public key.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signer: Option<bls::ProofOfPossession>,
+
+    /// None for subnet validator.
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub uptime: Option<f32>,
+    pub delegator_count: Option<u64>,
+    /// None for subnet validator.
+    #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connected: Option<bool>,
-
+    pub delegator_weight: Option<u64>,
+    /// None for subnet validator.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegators: Option<Vec<ApiPrimaryDelegator>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub staked: Option<Vec<ApiUtxo>>,
 }
 
 impl Default for ApiPrimaryValidator {
@@ -828,13 +846,16 @@ impl ApiPrimaryValidator {
             weight: None,
             stake_amount: None,
             node_id: node::Id::empty(),
-            reward_owner: None,
+            validation_reward_owner: None,
+            delegation_reward_owner: None,
             potential_reward: None,
             delegation_fee: None,
-            uptime: None,
-            connected: None,
-            staked: None,
+            uptime: 0.0,
+            connected: false,
+            signer: None,
             delegators: None,
+            delegator_count: None,
+            delegator_weight: None,
         }
     }
 }
@@ -881,9 +902,6 @@ pub struct ApiPrimaryDelegator {
     #[serde(rename = "endTime")]
     pub end_time: u64,
 
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub weight: Option<u64>,
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "stakeAmount")]
     pub stake_amount: u64,
@@ -912,7 +930,6 @@ impl ApiPrimaryDelegator {
             tx_id: ids::Id::empty(),
             start_time: 0,
             end_time: 0,
-            weight: None,
             stake_amount: 0,
             node_id: node::Id::empty(),
             reward_owner: None,
@@ -939,7 +956,14 @@ fn test_get_current_validators() {
                 \"endTime\": \"1679843235\",
                 \"stakeAmount\": \"100000000000000000\",
                 \"nodeID\": \"NodeID-5wVq6KkSK3p4wQFmiVHCDq2zdg8unchaE\",
-                \"rewardOwner\": {
+                \"validationRewardOwner\": {
+                    \"locktime\": \"0\",
+                    \"threshold\": \"1\",
+                    \"addresses\": [
+                        \"P-custom1vkzy5p2qtumx9svjs9pvds48s0hcw80f962vrs\"
+                    ]
+                },
+                \"delegationRewardOwner\": {
                     \"locktime\": \"0\",
                     \"threshold\": \"1\",
                     \"addresses\": [
@@ -950,6 +974,8 @@ fn test_get_current_validators() {
                 \"delegationFee\": \"6.2500\",
                 \"uptime\": \"1.0000\",
                 \"connected\": true,
+                \"delegatorCount\": \"0\",
+                \"delegatorWeight\": \"0\",
                 \"delegators\": null
             },
             {
@@ -958,7 +984,14 @@ fn test_get_current_validators() {
                 \"endTime\": \"1679848635\",
                 \"stakeAmount\": \"100000000000000000\",
                 \"nodeID\": \"NodeID-JLR7d6z9cwCbkoPcPsnjkm6gq4xz7c4oT\",
-                \"rewardOwner\": {
+                \"validationRewardOwner\": {
+                    \"locktime\": \"0\",
+                    \"threshold\": \"1\",
+                    \"addresses\": [
+                        \"P-custom1vkzy5p2qtumx9svjs9pvds48s0hcw80f962vrs\"
+                    ]
+                },
+                \"delegationRewardOwner\": {
                     \"locktime\": \"0\",
                     \"threshold\": \"1\",
                     \"addresses\": [
@@ -969,6 +1002,8 @@ fn test_get_current_validators() {
                 \"delegationFee\": \"6.2500\",
                 \"uptime\": \"1.0000\",
                 \"connected\": true,
+                \"delegatorCount\": \"0\",
+                \"delegatorWeight\": \"0\",
                 \"delegators\": null
             }
         ]
@@ -993,7 +1028,14 @@ fn test_get_current_validators() {
                     stake_amount: Some(100000000000000000),
                     node_id: node::Id::from_str("NodeID-5wVq6KkSK3p4wQFmiVHCDq2zdg8unchaE")
                         .unwrap(),
-                    reward_owner: Some(ApiOwner {
+                    validation_reward_owner: Some(ApiOwner {
+                        locktime: 0,
+                        threshold: 1,
+                        addresses: vec![
+                            "P-custom1vkzy5p2qtumx9svjs9pvds48s0hcw80f962vrs".to_string()
+                        ],
+                    }),
+                    delegation_reward_owner: Some(ApiOwner {
                         locktime: 0,
                         threshold: 1,
                         addresses: vec![
@@ -1002,8 +1044,10 @@ fn test_get_current_validators() {
                     }),
                     potential_reward: Some(79984390135364555),
                     delegation_fee: Some(6.25),
-                    uptime: Some(1.0),
-                    connected: Some(true),
+                    uptime: 1.0,
+                    connected: true,
+                    delegator_count: Some(0),
+                    delegator_weight: Some(0),
                     ..ApiPrimaryValidator::default()
                 },
                 ApiPrimaryValidator {
@@ -1015,7 +1059,14 @@ fn test_get_current_validators() {
                     stake_amount: Some(100000000000000000),
                     node_id: node::Id::from_str("NodeID-JLR7d6z9cwCbkoPcPsnjkm6gq4xz7c4oT")
                         .unwrap(),
-                    reward_owner: Some(ApiOwner {
+                    validation_reward_owner: Some(ApiOwner {
+                        locktime: 0,
+                        threshold: 1,
+                        addresses: vec![
+                            "P-custom1vkzy5p2qtumx9svjs9pvds48s0hcw80f962vrs".to_string()
+                        ],
+                    }),
+                    delegation_reward_owner: Some(ApiOwner {
                         locktime: 0,
                         threshold: 1,
                         addresses: vec![
@@ -1024,12 +1075,15 @@ fn test_get_current_validators() {
                     }),
                     potential_reward: Some(77148186230865960),
                     delegation_fee: Some(6.25),
-                    uptime: Some(1.0),
-                    connected: Some(true),
+                    uptime: 1.0,
+                    connected: true,
+                    delegator_count: Some(0),
+                    delegator_weight: Some(0),
                     ..ApiPrimaryValidator::default()
                 },
             ])),
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
