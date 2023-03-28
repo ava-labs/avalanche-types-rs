@@ -140,7 +140,7 @@ impl<'de> Deserialize<'de> for Id {
     where
         D: Deserializer<'de>,
     {
-        let s: &str = Deserialize::deserialize(deserializer)?;
+        let s: String = Deserialize::deserialize(deserializer)?;
         Id::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
