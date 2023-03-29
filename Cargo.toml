@@ -19,7 +19,7 @@ bytes = "1.4.0"
 chrono = "0.4.24"
 cmp-manager = "0.0.1"
 ecdsa = { version = "0.16.1", features = ["rfc6979", "verifying"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
-ethers-core = { version = "=2.0.1", features = ["eip712"] }
+ethers-core = { version = "=2.0.2", features = ["eip712"] }
 hex = "0.4.3"
 hmac = "0.12.1"
 k256 = { version = "0.13.0", features = ["ecdsa"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
