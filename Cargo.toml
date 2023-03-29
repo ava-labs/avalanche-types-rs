@@ -60,7 +60,7 @@ rustls = { version = "0.20.8", optional = true } # https://github.com/rustls/rus
 flate2 = { version = "1.0.25", optional = true }
 
 # [OPTIONAL] for "mnemonic"
-bip32 = { version = "0.4.0", optional = true }
+bip32 = { version = "0.5.0", optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional = true }
 
 # [OPTIONAL] for "evm", "jsonrpc_client"
