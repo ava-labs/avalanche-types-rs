@@ -34,10 +34,13 @@ async fn main() -> io::Result<()> {
     let w = wallet::Builder::new(&k1)
         .base_http_url(chain_rpc_url.clone())
         .build()
-        .await?;
-    let evm_wallet = w.evm(&k1_signer, chain_rpc_url.as_str(), U256::from(chain_id))?;
+        .await
+        .unwrap();
+    let evm_wallet = w
+        .evm(&k1_signer, chain_rpc_url.as_str(), U256::from(chain_id))
+        .unwrap();
 
-    let c_bal = evm_wallet.balance().await?;
+    let c_bal = evm_wallet.balance().await.unwrap();
     let transfer_amount = c_bal.div(U256::from(10));
 
     let (max_fee_per_gas, max_priority_fee_per_gas) = evm_wallet
@@ -62,7 +65,8 @@ async fn main() -> io::Result<()> {
         .urgent()
         .check_acceptance(true)
         .submit()
-        .await?;
+        .await
+        .unwrap();
     log::info!("evm ethers wallet SUCCESS with transaction id {}", tx_id);
 
     Ok(())

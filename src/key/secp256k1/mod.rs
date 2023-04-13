@@ -16,11 +16,15 @@ use std::{
     collections::HashMap,
     fmt,
     fs::{self, File},
-    io::{self, Error, ErrorKind, Write},
+    io::Write,
     path::Path,
 };
 
-use crate::{codec::serde::hex_0x_primitive_types_h160::Hex0xH160, ids::short};
+use crate::{
+    codec::serde::hex_0x_primitive_types_h160::Hex0xH160,
+    errors::{Error, Result},
+    ids::short,
+};
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use rust_embed::RustEmbed;
@@ -32,9 +36,7 @@ use serde_with::{serde_as, DisplayFromStr};
 /// or to enable secure remote key management service integration (e.g., KMS ECC_SECG_P256K1).
 #[async_trait]
 pub trait SignOnly {
-    type Error: std::error::Error;
-
-    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey>;
+    fn signing_key(&self) -> Result<k256::ecdsa::SigningKey>;
 
     /// Signs the 32-byte SHA256 output message with the ECDSA private key and the recoverable code.
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
@@ -43,7 +45,7 @@ pub trait SignOnly {
     /// ref. <https://docs.rs/secp256k1/latest/secp256k1/struct.SecretKey.html#method.sign_ecdsa>
     /// ref. <https://docs.rs/secp256k1/latest/secp256k1/struct.Message.html>
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash>
-    async fn sign_digest(&self, digest: &[u8]) -> Result<[u8; 65], Self::Error>;
+    async fn sign_digest(&self, digest: &[u8]) -> Result<[u8; 65]>;
 }
 
 /// Key interface that "only" allows "read" operations.
@@ -52,9 +54,9 @@ pub trait ReadOnly {
     /// Implements "crypto.PublicKeySECP256K1R.Address()" and "formatting.FormatAddress".
     /// "human readable part" (hrp) must be valid output from "constants.GetHRP(networkID)".
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/constants>
-    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String>;
-    fn short_address(&self) -> io::Result<short::Id>;
-    fn short_address_bytes(&self) -> io::Result<Vec<u8>>;
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String>;
+    fn short_address(&self) -> Result<short::Id>;
+    fn short_address_bytes(&self) -> Result<Vec<u8>>;
     fn eth_address(&self) -> String;
     fn h160_address(&self) -> primitive_types::H160;
 }
@@ -173,34 +175,38 @@ impl From<&crate::key::secp256k1::private_key::Key> for Info {
 }
 
 impl Info {
-    pub fn load(file_path: &str) -> io::Result<Self> {
+    pub fn load(file_path: &str) -> Result<Self> {
         log::info!("loading Info from {}", file_path);
 
         if !Path::new(file_path).exists() {
-            return Err(Error::new(
-                ErrorKind::NotFound,
-                format!("file {} does not exists", file_path),
-            ));
+            return Err(Error::Other {
+                message: format!("file {} does not exists", file_path),
+                retryable: false,
+            });
         }
 
-        let f = File::open(&file_path).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to open {} ({})", file_path, e),
-            )
+        let f = File::open(&file_path).map_err(|e| Error::Other {
+            message: format!("failed to open {} ({})", file_path, e),
+            retryable: false,
         })?;
-        serde_yaml::from_reader(f)
-            .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("invalid YAML: {}", e)))
+        serde_yaml::from_reader(f).map_err(|e| Error::Other {
+            message: format!("failed serde_yaml::from_reader {}", e),
+            retryable: false,
+        })
     }
 
-    pub fn sync(&self, file_path: String) -> io::Result<()> {
+    pub fn sync(&self, file_path: String) -> std::io::Result<()> {
         log::info!("syncing key info to '{}'", file_path);
         let path = Path::new(&file_path);
         let parent_dir = path.parent().unwrap();
         fs::create_dir_all(parent_dir)?;
 
-        let d = serde_json::to_vec(self)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed to serialize JSON {}", e)))?;
+        let d = serde_json::to_vec(self).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("failed to serialize JSON {}", e),
+            )
+        })?;
 
         let mut f = File::create(&file_path)?;
         f.write_all(&d)?;
@@ -216,7 +222,7 @@ impl Info {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl fmt::Display for Info {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = serde_yaml::to_string(&self).unwrap();
@@ -266,7 +272,7 @@ impl std::str::FromStr for KeyType {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for KeyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())

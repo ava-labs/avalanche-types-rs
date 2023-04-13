@@ -1,9 +1,7 @@
-use std::{
-    io::{self, Error, ErrorKind},
-    time::SystemTime,
-};
+use std::time::SystemTime;
 
 use crate::{
+    errors::{Error, Result},
     formatting,
     ids::{self, node},
     jsonrpc::client::p as client_p,
@@ -177,7 +175,7 @@ where
     /// The boolean return represents whether the "add_subnet_validator" request was
     /// successfully issued or not (regardless of its acceptance).
     /// If the validator is already a validator, it returns an empty Id and false.
-    pub async fn issue(&self) -> io::Result<(ids::Id, bool)> {
+    pub async fn issue(&self) -> Result<(ids::Id, bool)> {
         let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "adding {} as subnet {} validator with weight {} via {}",
@@ -201,10 +199,10 @@ where
 
         let cur_balance_p = self.inner.balance().await?;
         if cur_balance_p < self.inner.inner.tx_fee {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("key address {} (balance {} nano-AVAX, network {}) does not have enough to cover stake amount + fee {}", self.inner.inner.p_address, cur_balance_p, self.inner.inner.network_name, self.inner.inner.tx_fee),
-             ));
+            return Err(Error::Other {
+                message: format!("key address {} (balance {} nano-AVAX, network {}) does not have enough to cover stake amount + fee {}", self.inner.inner.p_address, cur_balance_p, self.inner.inner.network_name, self.inner.inner.tx_fee),
+                retryable: false,
+            });
         };
         log::info!(
             "{} current P-chain balance {}",
@@ -259,10 +257,10 @@ where
                 return Ok((ids::Id::empty(), false));
             }
 
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to issue add subnet validator transaction {:?}", e),
-            ));
+            return Err(Error::API {
+                message: format!("failed to issue add subnet validator transaction {:?}", e),
+                retryable: false,
+            });
         }
 
         let tx_id = resp.result.unwrap().tx_id;
@@ -304,10 +302,10 @@ where
             sleep(self.poll_interval).await;
         }
         if !success {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "failed to check acceptance in time",
-            ));
+            return Err(Error::API {
+                message: "failed to check acceptance in time".to_string(),
+                retryable: true,
+            });
         }
 
         log::info!("polling to confirm subnet validator");
@@ -336,10 +334,10 @@ where
             sleep(self.poll_interval).await;
         }
         if !success {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "failed to check subnet validator acceptance in time",
-            ));
+            return Err(Error::API {
+                message: "failed to check subnet validator acceptance in time".to_string(),
+                retryable: true,
+            });
         }
 
         Ok((tx_id, true))

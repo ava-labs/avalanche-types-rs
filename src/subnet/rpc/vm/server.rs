@@ -23,6 +23,7 @@ use crate::{
         http::server::Server as HttpServer,
         snow::{
             engine::common::{appsender::client::AppSenderClient, message::Message},
+            validators::client::ValidatorStateClient,
             State,
         },
         snowman::block::ChainVm,
@@ -65,8 +66,11 @@ impl<V: ChainVm> Server<V> {
 #[tonic::async_trait]
 impl<V> Vm for Server<V>
 where
-    V: ChainVm<DatabaseManager = DatabaseManager, AppSender = AppSenderClient>
-        + Send
+    V: ChainVm<
+            DatabaseManager = DatabaseManager,
+            AppSender = AppSenderClient,
+            ValidatorState = ValidatorStateClient,
+        > + Send
         + Sync
         + 'static,
 {
@@ -94,7 +98,7 @@ where
         let shared_memory = SharedMemoryClient::new(client_conn.clone());
         let bc_lookup = AliasReaderClient::new(client_conn.clone());
 
-        let ctx = Some(Context {
+        let ctx: Option<Context<ValidatorStateClient>> = Some(Context {
             network_id: req.network_id,
             subnet_id: ids::Id::from_slice(&req.subnet_id),
             chain_id: ids::Id::from_slice(&req.chain_id),
@@ -106,6 +110,7 @@ where
             shared_memory,
             bc_lookup,
             chain_data_dir: req.chain_data_dir,
+            validator_state: ValidatorStateClient::new(client_conn.clone()),
         });
 
         let mut versioned_dbs = Vec::with_capacity(req.db_servers.len());

@@ -2,11 +2,10 @@ pub mod raw;
 pub mod transferable;
 pub mod utxo;
 
-use std::io::{self, Error, ErrorKind};
-
 use super::{
     codec::{self, serde::hex_0x_bytes::Hex0xBytes},
-    formatting, hash, ids, key, packer, platformvm,
+    errors::{Error, Result},
+    hash, ids, key, packer, platformvm,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -78,19 +77,14 @@ impl Tx {
     /// e.g., pack prefix with the type ID for "avm.BaseTx" (linearCodec.PackPrefix)
     /// ref. "avalanchego/codec/linearcodec.linearCodec.MarshalInto"
     /// ref. "avalanchego/codec/reflectcodec.genericCodec.MarshalInto"
-    pub fn pack(&self, codec_version: u16, type_id: u32) -> io::Result<packer::Packer> {
+    pub fn pack(&self, codec_version: u16, type_id: u32) -> Result<packer::Packer> {
         // ref. "avalanchego/codec.manager.Marshal", "vms/avm.newCustomCodecs"
         // ref. "math.MaxInt32" and "constants.DefaultByteSliceCap" in Go
         let packer = packer::Packer::new((1 << 31) - 1, 128);
 
         // codec version
         // ref. "avalanchego/codec.manager.Marshal"
-        packer.pack_u16(codec_version).map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidInput,
-                format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
-            )
-        })?;
+        packer.pack_u16(codec_version)?;
         packer.pack_u32(type_id)?;
 
         // marshal the actual struct "avm.BaseTx"
@@ -120,10 +114,10 @@ impl Tx {
                 if transferable_output.transfer_output.is_none()
                     && transferable_output.stakeable_lock_out.is_none()
                 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "unexpected Nones in TransferableOutput transfer_output and stakeable_lock_out",
-                    ));
+                    return Err(Error::Other {
+                        message: "unexpected Nones in TransferableOutput transfer_output and stakeable_lock_out".to_string(),
+                        retryable: false,
+                    });
                 }
                 let type_id_transferable_out = {
                     if transferable_output.transfer_output.is_some() {
@@ -198,13 +192,13 @@ impl Tx {
                         }
                     }
                     _ => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidInput,
-                            format!(
+                        return Err(Error::Other {
+                            message: format!(
                                 "unexpected type ID {} for TransferableOutput",
                                 type_id_transferable_out
                             ),
-                        ));
+                            retryable: false,
+                        })
                     }
                 }
             }
@@ -240,10 +234,10 @@ impl Tx {
                 if transferable_input.transfer_input.is_none()
                     && transferable_input.stakeable_lock_in.is_none()
                 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "unexpected Nones in TransferableInput transfer_input and stakeable_lock_in",
-                    ));
+                    return Err(Error::Other {
+                        message: "unexpected Nones in TransferableInput transfer_input and stakeable_lock_in".to_string(),
+                        retryable: false,
+                    });
                 }
                 let type_id_transferable_in = {
                     if transferable_input.transfer_input.is_some() {
@@ -305,13 +299,13 @@ impl Tx {
                         }
                     }
                     _ => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidInput,
-                            format!(
+                        return Err(Error::Other {
+                            message: format!(
                                 "unexpected type ID {} for TransferableInput",
                                 type_id_transferable_in
                             ),
-                        ));
+                            retryable: false,
+                        })
                     }
                 }
             }
@@ -515,12 +509,12 @@ impl Metadata {
         }
     }
 
-    pub fn verify(&self) -> io::Result<()> {
+    pub fn verify(&self) -> Result<()> {
         if self.id.is_empty() {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "metadata was never initialized and is not valid", // ref. "errMetadataNotInitialize"
-            ));
+            return Err(Error::Other {
+                message: "metadata was never initialized and is not valid".to_string(), // ref. "errMetadataNotInitialize"
+                retryable: false,
+            });
         }
         Ok(())
     }

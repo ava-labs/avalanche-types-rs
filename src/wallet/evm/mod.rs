@@ -1,13 +1,12 @@
 pub mod eip1559;
 
-use std::{
-    io::{self, Error, ErrorKind},
-    ops::Div,
-    sync::Arc,
-    time::Duration,
-};
+use std::{ops::Div, sync::Arc, time::Duration};
 
-use crate::{jsonrpc::client::evm as jsonrpc_client_evm, key, wallet};
+use crate::{
+    errors::{Error, Result},
+    jsonrpc::client::evm as jsonrpc_client_evm,
+    key, wallet,
+};
 use ethers::{
     prelude::{
         gas_escalator::{Frequency, GasEscalatorMiddleware, GeometricGasPrice},
@@ -29,12 +28,10 @@ pub fn new_provider(
     request_timeout: Duration,
     max_retries: u32,
     backoff_timeout: Duration,
-) -> io::Result<Provider<RetryClient<Http>>> {
-    let u = Url::parse(chain_rpc_url).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidInput,
-            format!("failed to parse chain RPC URL {}", e),
-        )
+) -> Result<Provider<RetryClient<Http>>> {
+    let u = Url::parse(chain_rpc_url).map_err(|e| Error::Other {
+        message: format!("failed to parse chain RPC URL {}", e),
+        retryable: false,
     })?;
 
     let http_cli = ClientBuilder::new()
@@ -45,10 +42,11 @@ pub fn new_provider(
         .danger_accept_invalid_certs(true) // make this configurable
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
 
     // TODO: make "HttpRateLimitRetryPolicy" configurable
@@ -68,7 +66,7 @@ pub fn new_middleware<S>(
     provider: Arc<Provider<RetryClient<Http>>>,
     eth_signer: &S,
     chain_id: U256,
-) -> io::Result<
+) -> Result<
     NonceManagerMiddleware<
         SignerMiddleware<GasEscalatorMiddleware<Arc<Provider<RetryClient<Http>>>>, S>,
     >,
@@ -106,12 +104,7 @@ where
     /// e.g., "{base_http_url}/ext/bc/{chain_id_alias}/rpc"
     /// Set "chain_id_alias" to either "C" or subnet-evm chain Id.
     #[must_use]
-    pub fn evm<S>(
-        &self,
-        eth_signer: &S,
-        chain_rpc_url: &str,
-        chain_id: U256,
-    ) -> io::Result<Evm<T, S>>
+    pub fn evm<S>(&self, eth_signer: &S, chain_rpc_url: &str, chain_id: U256) -> Result<Evm<T, S>>
     where
         S: ethers_signers::Signer + Clone,
         S::Error: 'static,
@@ -175,7 +168,7 @@ where
     S::Error: 'static,
 {
     /// Fetches the current balance of the wallet owner.
-    pub async fn balance(&self) -> io::Result<U256> {
+    pub async fn balance(&self) -> Result<U256> {
         let cur_balance =
             jsonrpc_client_evm::get_balance(&self.chain_rpc_url, self.inner.h160_address).await?;
         Ok(cur_balance)

@@ -1,44 +1,42 @@
-use std::fmt;
-
 use crate::ids::Id;
 
 pub const NUM_BITS: usize = 256;
 const BITS_PER_BYTES: usize = 8;
 
-/// Returns "true" if two Ids are equal for the range [start, end).
+/// Returns "true" if two Ids are equal for the range [start, stop).
 /// This does bit-per-bit comparison for the Id type of [u8; ID_LEN].
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#EqualSubset>
-pub fn equal_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> bool {
-    if end == 0 {
+pub fn equal_subset(start: usize, stop: usize, id1: &Id, id2: &Id) -> bool {
+    if stop == 0 {
         return true;
     }
 
-    let end = end - 1; // -1 for end index
-    if start > end {
+    let stop = stop - 1; // -1 for end index
+    if start > stop {
         return true;
     }
-    if end >= NUM_BITS {
+    if stop >= NUM_BITS {
         return false;
     }
 
     let start_index = (start / BITS_PER_BYTES) as usize;
-    let end_index = (end / BITS_PER_BYTES) as usize;
+    let stop_index = (stop / BITS_PER_BYTES) as usize;
 
-    if start_index + 1 < end_index
-        && id1.0[(start_index + 1)..end_index] != id2.0[(start_index + 1)..end_index]
+    if start_index + 1 < stop_index
+        && id1.0[(start_index + 1)..stop_index] != id2.0[(start_index + 1)..stop_index]
     {
         return false;
     }
 
     let start_bit = (start % BITS_PER_BYTES) as usize; // index in the byte that the first bit is at
-    let end_bit = (end % BITS_PER_BYTES) as usize; // index in the byte that the last bit is at
+    let stop_bit = (stop % BITS_PER_BYTES) as usize; // index in the byte that the last bit is at
 
     let start_mask: i32 = -1 << start_bit; // 111...0... The number of 0s is equal to start_bit
-    let end_mask: i32 = (1 << (end_bit + 1)) - 1; // 000...1... The number of 1s is equal to end_bit + 1
+    let stop_mask: i32 = (1 << (stop_bit + 1)) - 1; // 000...1... The number of 1s is equal to stop_bit + 1
 
-    if start_index == end_index {
+    if start_index == stop_index {
         // if looking at same byte, both masks need to be applied
-        let mask = start_mask & end_mask;
+        let mask = start_mask & stop_mask;
 
         let b1 = mask & id1.0[start_index] as i32;
         let b2 = mask & id2.0[start_index] as i32;
@@ -49,10 +47,10 @@ pub fn equal_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> bool {
     let start1 = start_mask & id1.0[start_index] as i32;
     let start2 = start_mask & id2.0[start_index] as i32;
 
-    let end1 = end_mask & id1.0[end_index] as i32;
-    let end2 = end_mask & id2.0[end_index] as i32;
+    let stop1 = stop_mask & id1.0[stop_index] as i32;
+    let stop2 = stop_mask & id2.0[stop_index] as i32;
 
-    start1 == start2 && end1 == end2
+    start1 == start2 && stop1 == stop2
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- ids::bits::test_equal_subset --exact --show-output
@@ -61,6 +59,8 @@ fn test_equal_subset() {
     // ref. TestEqualSubsetEarlyStop
     let id1 = Id::from_slice(&vec![0xf0, 0x0f]);
     let id2 = Id::from_slice(&vec![0xf0, 0x1f]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -68,6 +68,7 @@ fn test_equal_subset() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 11110000 00001111 00000000 ...
     // 11110000 00011111 00000000 ...
@@ -78,6 +79,8 @@ fn test_equal_subset() {
     // ref. TestEqualSubsetLateStart
     let id1 = Id::from_slice(&vec![0x1f, 0xf8]);
     let id2 = Id::from_slice(&vec![0x10, 0x08]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -85,6 +88,7 @@ fn test_equal_subset() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 00011111 11111000 00000000 ...
     // 00010000 00001000 00000000 ...
@@ -99,6 +103,8 @@ fn test_equal_subset() {
 fn test_equal_subset_same_byte() {
     let id1 = Id::from_slice(&vec![0x18]);
     let id2 = Id::from_slice(&vec![0xfc]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -106,6 +112,7 @@ fn test_equal_subset_same_byte() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 00011000 00000000 ...
     // 11111100 00000000 ...
@@ -121,6 +128,8 @@ fn test_equal_subset_same_byte() {
 fn test_equal_subset_bad_middle() {
     let id1 = Id::from_slice(&vec![0x18, 0xe8, 0x55]);
     let id2 = Id::from_slice(&vec![0x18, 0x8e, 0x55]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -128,6 +137,7 @@ fn test_equal_subset_bad_middle() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 00011000 11101000 01010101 00000000 ...
     // 00011000 10001110 01010101 00000000 ...
@@ -144,34 +154,34 @@ fn test_equal_subset_out_of_bounds() {
     assert!(!equal_subset(0, 500, &id1, &id2));
 }
 
-/// Returns the "id1" index of the first different bit in the range [start, end).
+/// Returns the "id1" index of the first different bit in the range [start, stop).
 /// This does bit-per-bit comparison for the Id type of [u8; ID_LEN].
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/ids#FirstDifferenceSubset>
-pub fn first_difference_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> (usize, bool) {
-    if end == 0 {
+pub fn first_difference_subset(start: usize, stop: usize, id1: &Id, id2: &Id) -> (usize, bool) {
+    if stop == 0 {
         return (0, false);
     }
 
-    let end = end - 1; // -1 for end index
-    if start > end {
+    let stop = stop - 1; // -1 for end index
+    if start > stop {
         return (0, false);
     }
-    if end >= NUM_BITS {
+    if stop >= NUM_BITS {
         return (0, false);
     }
 
     let start_index = (start / BITS_PER_BYTES) as usize;
-    let end_index = (end / BITS_PER_BYTES) as usize;
+    let stop_index = (stop / BITS_PER_BYTES) as usize;
 
     let start_bit = (start % BITS_PER_BYTES) as usize; // index in the byte that the first bit is at
-    let end_bit = (end % BITS_PER_BYTES) as usize; // index in the byte that the last bit is at
+    let stop_bit = (stop % BITS_PER_BYTES) as usize; // index in the byte that the last bit is at
 
     let start_mask: i32 = -1 << start_bit; // 111...0... The number of 0s is equal to start_bit
-    let end_mask: i32 = (1 << (end_bit + 1)) - 1; // 000...1... The number of 1s is equal to end_bit + 1
+    let stop_mask: i32 = (1 << (stop_bit + 1)) - 1; // 000...1... The number of 1s is equal to stop_bit + 1
 
-    if start_index == end_index {
+    if start_index == stop_index {
         // if looking at same byte, both masks need to be applied
-        let mask = start_mask & end_mask;
+        let mask = start_mask & stop_mask;
 
         let b1 = mask & id1.0[start_index] as i32;
         let b2 = mask & id2.0[start_index] as i32;
@@ -197,7 +207,7 @@ pub fn first_difference_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> 
     }
 
     // check interior bits
-    for idx in (start_index + 1)..end_index {
+    for idx in (start_index + 1)..stop_index {
         let b1 = id1.0[idx];
         let b2 = id2.0[idx];
         if b1 != b2 {
@@ -206,12 +216,12 @@ pub fn first_difference_subset(start: usize, end: usize, id1: &Id, id2: &Id) -> 
         }
     }
 
-    let end1 = end_mask & id1.0[end_index] as i32;
-    let end2 = end_mask & id2.0[end_index] as i32;
-    if end1 != end2 {
-        let bd = end1 ^ end2;
+    let stop1 = stop_mask & id1.0[stop_index] as i32;
+    let stop2 = stop_mask & id2.0[stop_index] as i32;
+    if stop1 != stop2 {
+        let bd = stop1 ^ stop2;
         return (
-            bd.trailing_zeros() as usize + end_index * BITS_PER_BYTES,
+            bd.trailing_zeros() as usize + stop_index * BITS_PER_BYTES,
             true,
         );
     }
@@ -225,6 +235,8 @@ fn test_first_difference_subset() {
     // ref. TestFirstDifferenceSubsetEarlyStop
     let id1 = Id::from_slice(&vec![0xf0, 0x0f]);
     let id2 = Id::from_slice(&vec![0xf0, 0x1f]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -232,6 +244,7 @@ fn test_first_difference_subset() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 11110000 00001111 00000000 ...
     // 11110000 00011111 00000000 ...
@@ -242,6 +255,8 @@ fn test_first_difference_subset() {
     // ref. TestFirstDifferenceEqualByte4
     let id1 = Id::from_slice(&vec![0x10]);
     let id2 = Id::from_slice(&vec![0x00]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -249,6 +264,7 @@ fn test_first_difference_subset() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 00100000 00000000 ...
     // 00000000 00000000 ...
@@ -263,6 +279,8 @@ fn test_first_difference_subset() {
 fn test_first_difference_equal_byte_5() {
     let id1 = Id::from_slice(&vec![0x20]);
     let id2 = Id::from_slice(&vec![0x00]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -270,6 +288,7 @@ fn test_first_difference_equal_byte_5() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 00100000 00000000 ...
     // 00000000 00000000 ...
@@ -284,6 +303,8 @@ fn test_first_difference_equal_byte_5() {
 fn test_first_difference_subset_middle() {
     let id1 = Id::from_slice(&vec![0xf0, 0x0f, 0x11]);
     let id2 = Id::from_slice(&vec![0xf0, 0x1f, 0xff]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -291,6 +312,7 @@ fn test_first_difference_subset_middle() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 11110000 00001111 00010001 00000000 ...
     // 11110000 00011111 11111111 00000000 ...
@@ -305,6 +327,8 @@ fn test_first_difference_subset_middle() {
 fn test_first_difference_vacuous() {
     let id1 = Id::from_slice(&vec![0xf0, 0x0f, 0x11]);
     let id2 = Id::from_slice(&vec![0xf0, 0x1f, 0xff]);
+
+    // println!("");
     // for c in &id1.0 {
     //     print!("{:08b} ", *c);
     // }
@@ -312,6 +336,7 @@ fn test_first_difference_vacuous() {
     // for c in &id2.0 {
     //     print!("{:08b} ", *c);
     // }
+    //
     // big endian - most significant byte first, 0x1 == 00000001
     // 11110000 00001111 00010001 00000000 ...
     // 11110000 00011111 11111111 00000000 ...
@@ -422,9 +447,9 @@ impl Default for Set64 {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
-impl fmt::Display for Set64 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+/// Use "Self.to_string()" to directly invoke this.
+impl std::fmt::Display for Set64 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#16x}", self.0)
     }
 }

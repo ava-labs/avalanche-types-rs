@@ -7,10 +7,14 @@ use crate::{choices::status::Status, ids::Id};
 pub trait Decidable {
     /// Returns the ID of this block's parent.
     fn id(&self) -> Id;
+
     /// Returns the current status.
     fn status(&self) -> Status;
+
     /// Accepts this element.
+    /// TODO: use <https://docs.rs/tokio-context/latest/tokio_context>?
     fn accept(&mut self) -> Result<()>;
     /// Rejects this element.
+    /// TODO: use <https://docs.rs/tokio-context/latest/tokio_context>?
     fn reject(&mut self) -> Result<()>;
 }

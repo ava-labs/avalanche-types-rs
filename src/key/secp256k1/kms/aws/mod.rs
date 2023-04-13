@@ -1,14 +1,16 @@
 pub mod eth_signer;
 
-use std::{
-    collections::HashMap,
-    io::{self, Error, ErrorKind},
-};
+use std::collections::HashMap;
 
-use crate::{hash, ids::short, key};
+use crate::{
+    errors::{Error, Result},
+    hash,
+    ids::short,
+    key,
+};
 use async_trait::async_trait;
 use aws_manager::kms;
-use aws_sdk_kms::model::{KeySpec, KeyUsageType};
+use aws_sdk_kms::types::{KeySpec, KeyUsageType};
 use ethers_core::types::Signature as EthSig;
 use tokio::time::{sleep, Duration, Instant};
 
@@ -16,15 +18,21 @@ use tokio::time::{sleep, Duration, Instant};
 /// Note that the actual private key never leaves KMS.
 /// Private key signing operation must be done via AWS KMS API.
 /// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html>
+///
+/// "AWS KMS has replaced the term customer master key (CMK) with AWS KMS key and KMS key."
+/// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/Welcome.html>
 #[derive(Debug, Clone)]
-pub struct Cmk {
+pub struct Key {
     /// AWS KMS API wrapper.
     pub kms_manager: kms::Manager,
 
-    /// CMK Id.
+    /// Key Id.
     pub id: String,
-    /// CMK Arn.
+    /// Key Arn.
     pub arn: String,
+
+    /// Optional. KMS grant token used for signing.
+    pub grant_token: Option<String>,
 
     /// Public key.
     pub public_key: key::secp256k1::public_key::Key,
@@ -35,45 +43,51 @@ pub struct Cmk {
     pub retry_interval: Duration,
 }
 
-impl Cmk {
-    /// Generates a new CMK.
-    pub async fn create(
-        kms_manager: kms::Manager,
-        tags: HashMap<String, String>,
-    ) -> io::Result<Self> {
-        let cmk = kms_manager
+impl Key {
+    /// Generates a new key.
+    pub async fn create(kms_manager: kms::Manager, tags: HashMap<String, String>) -> Result<Self> {
+        let key = kms_manager
             .create_key(KeySpec::EccSecgP256K1, KeyUsageType::SignVerify, Some(tags))
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed kms.create_key {}", e)))?;
+            .map_err(|e| Error::API {
+                message: format!(
+                    "failed kms.create_key {} (retryable {})",
+                    e.message(),
+                    e.retryable()
+                ),
+                retryable: e.retryable(),
+            })?;
 
-        Self::from_arn(kms_manager, &cmk.arn).await
+        Self::from_arn(kms_manager, &key.arn).await
     }
 
-    /// Loads the Cmk from its Arn or Id.
-    pub async fn from_arn(kms_manager: kms::Manager, arn: &str) -> io::Result<Self> {
-        let (id, _desc) = kms_manager.describe_key(arn).await.map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!(
+    /// Loads the key from its Arn or Id.
+    pub async fn from_arn(kms_manager: kms::Manager, arn: &str) -> Result<Self> {
+        let (id, _desc) = kms_manager
+            .describe_key(arn)
+            .await
+            .map_err(|e| Error::API {
+                message: format!(
                     "failed kms.describe_key {} (retryable {})",
                     e.message(),
-                    e.is_retryable()
+                    e.retryable()
                 ),
-            )
-        })?;
+                retryable: e.retryable(),
+            })?;
         log::info!("described key Id '{id}' from '{arn}'");
 
         // derives the public key from its private key
-        let pubkey = kms_manager.get_public_key(arn).await.map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!(
+        let pubkey = kms_manager
+            .get_public_key(arn)
+            .await
+            .map_err(|e| Error::API {
+                message: format!(
                     "failed kms.get_public_key {} (retryable {})",
                     e.message(),
-                    e.is_retryable()
+                    e.retryable()
                 ),
-            )
-        })?;
+                retryable: e.retryable(),
+            })?;
 
         if let Some(blob) = pubkey.public_key() {
             // same as "key::secp256k1::public_key::Key::from_public_key_der(blob.as_ref())"
@@ -84,7 +98,7 @@ impl Cmk {
                 )?;
             let public_key = key::secp256k1::public_key::Key::from_verifying_key(&verifying_key);
             log::info!(
-                "fetched CMK public key with ETH address '{}'",
+                "fetched public key with ETH address '{}'",
                 public_key.to_eth_address(),
             );
 
@@ -93,20 +107,31 @@ impl Cmk {
                 public_key,
                 id,
                 arn: arn.to_string(),
+                grant_token: None,
                 retry_timeout: Duration::from_secs(90),
                 retry_interval: Duration::from_secs(10),
             });
         }
 
-        return Err(Error::new(ErrorKind::Other, "public key not found"));
+        return Err(Error::API {
+            message: "public key not found".to_string(),
+            retryable: false,
+        });
     }
 
-    /// Schedules to delete the KMS CMK.
-    pub async fn delete(&self, pending_window_in_days: i32) -> io::Result<()> {
+    /// Schedules to delete the KMS key.
+    pub async fn delete(&self, pending_window_in_days: i32) -> Result<()> {
         self.kms_manager
             .schedule_to_delete(&self.arn, pending_window_in_days)
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed schedule_to_delete {}", e)))
+            .map_err(|e| Error::API {
+                message: format!(
+                    "failed kms.schedule_to_delete {} (retryable {})",
+                    e.message(),
+                    e.retryable()
+                ),
+                retryable: e.retryable(),
+            })
     }
 
     pub fn to_public_key(&self) -> key::secp256k1::public_key::Key {
@@ -114,7 +139,7 @@ impl Cmk {
     }
 
     /// Converts to Info.
-    pub fn to_info(&self, network_id: u32) -> io::Result<key::secp256k1::Info> {
+    pub fn to_info(&self, network_id: u32) -> Result<key::secp256k1::Info> {
         let short_addr = self.public_key.to_short_id()?;
         let eth_addr = self.public_key.to_eth_address();
         let h160_addr = self.public_key.to_h160();
@@ -142,7 +167,7 @@ impl Cmk {
         })
     }
 
-    pub async fn sign_digest(&self, digest: &[u8]) -> Result<EthSig, aws_manager::errors::Error> {
+    pub async fn sign_digest(&self, digest: &[u8]) -> Result<EthSig> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
@@ -159,9 +184,11 @@ impl Cmk {
                 break;
             }
 
+            // make sure to use KMS key Arn, not Id
+            // in case its key access is granted with a KMS grant token
             raw_der = match self
                 .kms_manager
-                .sign_digest_secp256k1_ecdsa_sha256(&self.id, digest)
+                .sign_digest_secp256k1_ecdsa_sha256(&self.arn, digest, self.grant_token.clone())
                 .await
             {
                 Ok(raw) => {
@@ -172,10 +199,13 @@ impl Cmk {
                     log::warn!(
                         "[round {round}] failed sign {} (retriable {})",
                         aerr,
-                        aerr.is_retryable()
+                        aerr.retryable()
                     );
-                    if !aerr.is_retryable() {
-                        return Err(aerr);
+                    if !aerr.retryable() {
+                        return Err(Error::API {
+                            message: aerr.message(),
+                            retryable: false,
+                        });
                     }
 
                     sleep(self.retry_interval).await;
@@ -185,46 +215,44 @@ impl Cmk {
             break;
         }
         if !success {
-            return Err(aws_manager::errors::Error::API {
+            return Err(Error::API {
                 message: "failed sign after retries".to_string(),
-                is_retryable: false,
+                retryable: true,
             });
         }
 
-        let sig = key::secp256k1::signature::decode_signature(&raw_der).map_err(|e| {
-            aws_manager::errors::Error::Other {
+        let sig =
+            key::secp256k1::signature::decode_signature(&raw_der).map_err(|e| Error::Other {
                 message: format!("failed decode_signature {}", e),
-                is_retryable: false,
-            }
-        })?;
+                retryable: false,
+            })?;
 
         let mut fixed_digest = [0u8; hash::SHA256_OUTPUT_LEN];
         fixed_digest.copy_from_slice(digest);
 
-        key::secp256k1::signature::sig_from_digest_bytes_trial_recovery(
+        let eth_sig = key::secp256k1::signature::sig_from_digest_bytes_trial_recovery(
             &sig,
             &fixed_digest,
             &self.public_key.to_verifying_key(),
         )
-        .map_err(|e| aws_manager::errors::Error::Other {
+        .map_err(|e| Error::Other {
             message: format!(
                 "failed key::secp256k1::signature::sig_from_digest_bytes_trial_recovery {}",
                 e
             ),
-            is_retryable: false,
-        })
+            retryable: false,
+        })?;
+        Ok(eth_sig)
     }
 }
 
 #[async_trait]
-impl key::secp256k1::SignOnly for Cmk {
-    type Error = aws_manager::errors::Error;
-
-    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
-        Err(Error::new(ErrorKind::Other, "not implemented"))
+impl key::secp256k1::SignOnly for Key {
+    fn signing_key(&self) -> Result<k256::ecdsa::SigningKey> {
+        unimplemented!("signing key not implemented for KMS")
     }
 
-    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], aws_manager::errors::Error> {
+    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65]> {
         let sig = self.sign_digest(msg).await?;
 
         let mut b = [0u8; key::secp256k1::signature::LEN];
@@ -235,21 +263,21 @@ impl key::secp256k1::SignOnly for Cmk {
 }
 
 /// ref. <https://doc.rust-lang.org/book/ch10-02-traits.html>
-impl key::secp256k1::ReadOnly for Cmk {
+impl key::secp256k1::ReadOnly for Key {
     fn key_type(&self) -> key::secp256k1::KeyType {
         key::secp256k1::KeyType::AwsKms
     }
 
-    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         self.to_public_key()
             .to_hrp_address(network_id, chain_id_alias)
     }
 
-    fn short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> Result<short::Id> {
         self.to_public_key().to_short_id()
     }
 
-    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> Result<Vec<u8>> {
         self.to_public_key().to_short_bytes()
     }
 

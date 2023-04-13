@@ -1,7 +1,7 @@
 use std::io::{self, Error, ErrorKind};
 
 use crate::key::bls::signature::Sig;
-use blst::min_pk::PublicKey;
+use blst::min_pk::{AggregatePublicKey, PublicKey};
 
 /// Represents "blst::min_pk::PublicKey".
 /// By default, serializes as hex string.
@@ -72,6 +72,18 @@ impl From<Key> for PublicKey {
     fn from(k: Key) -> Self {
         k.0
     }
+}
+
+pub fn aggregate(pubkeys: &[Key]) -> io::Result<Key> {
+    let ss = pubkeys.into_iter().map(|s| &s.0).collect::<Vec<_>>();
+
+    let agg_pubkey = AggregatePublicKey::aggregate(&ss, false).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("failed AggregatePublicKey::aggregate {:?}", e),
+        )
+    })?;
+    Ok(Key(agg_pubkey.to_public_key()))
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- key::bls::public_key::test_key --exact --show-output

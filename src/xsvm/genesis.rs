@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{ids::short, key, packer};
+use crate::{errors, ids::short, key, packer};
 use serde::{Deserialize, Serialize};
 
 /// ref. <https://github.com/ava-labs/xsvm/blob/master/genesis/genesis.go>
@@ -98,17 +98,12 @@ impl Genesis {
     /// Encodes the genesis to packer bytes.
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer>
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/codec#Manager>
-    pub fn to_packer_bytes(&self) -> io::Result<Vec<u8>> {
+    pub fn to_packer_bytes(&self) -> errors::Result<Vec<u8>> {
         let packer = packer::Packer::new((1 << 31) - 1, 128);
 
         // codec version
         // ref. "avalanchego/codec.manager.Marshal"
-        packer.pack_u16(CODEC_VERSION).map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidInput,
-                format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
-            )
-        })?;
+        packer.pack_u16(CODEC_VERSION)?;
         packer.pack_u64(self.timestamp as u64)?;
 
         if let Some(allocs) = &self.allocations {

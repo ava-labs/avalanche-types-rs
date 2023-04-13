@@ -146,12 +146,15 @@ async fn main() -> io::Result<()> {
     let w = wallet::Builder::new(&gas_payer_key)
         .base_http_url(chain_rpc_url.clone())
         .build()
-        .await?;
-    let gas_payer_evm_wallet = w.evm(
-        &gas_payer_signer,
-        chain_rpc_url.as_str(),
-        U256::from(chain_id),
-    )?;
+        .await
+        .unwrap();
+    let gas_payer_evm_wallet = w
+        .evm(
+            &gas_payer_signer,
+            chain_rpc_url.as_str(),
+            U256::from(chain_id),
+        )
+        .unwrap();
 
     let tx_id = gas_payer_evm_wallet
         .eip1559()
@@ -160,7 +163,8 @@ async fn main() -> io::Result<()> {
         .urgent()
         .check_acceptance(true)
         .submit()
-        .await?;
+        .await
+        .unwrap();
     log::info!("evm ethers wallet SUCCESS with transaction id {}", tx_id);
 
     Ok(())

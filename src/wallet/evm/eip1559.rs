@@ -1,9 +1,7 @@
-use std::{
-    io::{self, Error, ErrorKind},
-    ops::Mul,
-};
+use std::ops::Mul;
 
 use crate::{
+    errors::{Error, Result},
     key,
     wallet::{self, evm},
 };
@@ -134,7 +132,8 @@ where
     /// Arbitrary data.
     pub data: Option<Vec<u8>>,
 
-    /// Set "true" to poll transfer status after issuance for its acceptance.
+    /// Set "true" to poll transfer status after issuance for its acceptance
+    /// by calling "eth_getTransactionByHash".
     pub check_acceptance: bool,
 
     /// Initial wait duration before polling for acceptance.
@@ -267,7 +266,7 @@ where
 
     /// Issues the transaction and returns the transaction Id.
     /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
-    pub async fn submit(&self) -> io::Result<H256> {
+    pub async fn submit(&self) -> Result<H256> {
         let max_priority_fee_per_gas = if let Some(v) = self.max_priority_fee_per_gas {
             format!("{} GWEI", super::wei_to_gwei(v))
         } else {
@@ -298,7 +297,11 @@ where
                 .initialize_nonce(None)
                 .await
                 .map_err(|e| {
-                    Error::new(ErrorKind::Other, format!("failed initialize_nonce '{}'", e))
+                    // TODO: check retryable
+                    Error::Other {
+                        message: format!("failed initialize_nonce '{}'", e),
+                        retryable: false,
+                    }
                 })?
         };
         log::info!("latest signer nonce {}", signer_nonce);
@@ -351,42 +354,70 @@ where
             .send_transaction(tx_request, None)
             .await
             .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("failed to send_transaction '{}'", e),
-                )
+                // e.g., 'Custom { kind: Other, error: "failed to send_transaction '(code: -32000, message: nonce too low: address 0xaa3033DB04bE0C31967bfC9D0D01bF04a0038526 current nonce (1562) > tx nonce (1561), data: None)'" }'
+                // e.g., 'Custom { kind: Other, error: "failed to send_transaction '(code: -32000, message: replacement transaction underpriced, data: None)'" }'
+                let mut is_retryable = false;
+                if e.to_string().contains("nonce too low")
+                    || e.to_string().contains("transaction underpriced")
+                    || e.to_string().contains("dropped from mempool")
+                {
+                    log::warn!("tx submit failed due to a retryable error; '{}'", e);
+                    is_retryable = true;
+                }
+                Error::API {
+                    message: format!("failed to send_transaction '{}'", e),
+                    retryable: is_retryable,
+                }
             })?;
 
         let tx_receipt = pending_tx.await.map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to wait for pending tx '{}'", e),
-            )
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed to wait for pending tx '{}'", e),
+                retryable: false,
+            }
         })?;
         if tx_receipt.is_none() {
-            return Err(Error::new(ErrorKind::Other, "tx dropped from mempool"));
+            return Err(Error::API {
+                message: "tx dropped from mempool".to_string(),
+                retryable: true,
+            });
         }
         let tx_receipt = tx_receipt.unwrap();
         let tx_hash = H256(tx_receipt.transaction_hash.0);
+        log::info!("issued transaction '0x{:x}'", tx_hash);
 
+        if !self.check_acceptance {
+            log::debug!("skipping checking acceptance for '0x{:x}'", tx_hash);
+            return Ok(tx_hash);
+        }
+
+        // calls "eth_getTransactionByHash"; None when the transaction is pending
         let tx = self
             .inner
             .middleware
             .get_transaction(tx_receipt.transaction_hash)
             .await
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed get_transaction '{}'", e)))?;
-
+            .map_err(|e| {
+                // TODO: check retryable
+                Error::API {
+                    message: format!("failed eth_getTransactionByHash '{}'", e),
+                    retryable: false,
+                }
+            })?;
         // serde_json::to_string(&tx).unwrap()
         if let Some(inner) = &tx {
-            assert_eq!(inner.hash(), tx_receipt.transaction_hash);
-            log::info!("successfully issued transaction '0x{:x}'", inner.hash());
+            if inner.hash() != tx_receipt.transaction_hash {
+                return Err(Error::API {
+                    message: format!(
+                        "eth_getTransactionByHash returned unexpected tx hash '0x{:x}' (expected '0x{:x}')",
+                        inner.hash(), tx_receipt.transaction_hash
+                    ),
+                    retryable: false,
+                });
+            }
         } else {
-            log::warn!("transaction not found in get_transaction");
-        }
-
-        if !self.check_acceptance {
-            log::debug!("skipping checking acceptance...");
-            return Ok(tx_hash);
+            log::warn!("transaction '0x{:x}' still pending", tx_hash);
         }
 
         Ok(tx_hash)

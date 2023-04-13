@@ -1,5 +1,4 @@
-use std::io::{self, Error, ErrorKind};
-
+use crate::errors::{Error, Result};
 use bip32::{DerivationPath, Language, Mnemonic, XPrv};
 use rand_core::OsRng;
 
@@ -25,31 +24,25 @@ pub fn gen_24() -> String {
 
 impl crate::key::secp256k1::private_key::Key {
     /// Loads the private key from the mnemonic phrase.
-    pub fn from_mnemonic_phrase<S>(phrase: S, derive_path: S) -> io::Result<Self>
+    pub fn from_mnemonic_phrase<S>(phrase: S, derive_path: S) -> Result<Self>
     where
         S: AsRef<str>,
     {
-        let deriv: DerivationPath = derive_path.as_ref().parse().map_err(|e| {
-            return Error::new(
-                ErrorKind::Other,
-                format!("failed to parse derive path ({})", e),
-            );
+        let deriv: DerivationPath = derive_path.as_ref().parse().map_err(|e| Error::Other {
+            message: format!("failed to parse derive path ({})", e),
+            retryable: false,
         })?;
 
-        let mnemonic = Mnemonic::new(phrase, Language::English).map_err(|e| {
-            return Error::new(
-                ErrorKind::Other,
-                format!("failed to read mnemonic phrase ({})", e),
-            );
+        let mnemonic = Mnemonic::new(phrase, Language::English).map_err(|e| Error::Other {
+            message: format!("failed to read mnemonic phrase ({})", e),
+            retryable: false,
         })?;
         let seed = mnemonic.to_seed("password");
 
         // ref. https://github.com/ava-labs/avalanche-wallet/blob/v0.3.8/src/js/wallets/MnemonicWallet.ts
-        let child_xprv = XPrv::derive_from_path(&seed, &deriv).map_err(|e| {
-            return Error::new(
-                ErrorKind::Other,
-                format!("failed to derive AVAX account path ({})", e),
-            );
+        let child_xprv = XPrv::derive_from_path(&seed, &deriv).map_err(|e| Error::Other {
+            message: format!("failed to derive AVAX account path ({})", e),
+            retryable: false,
         })?;
 
         let pk = child_xprv.private_key().to_bytes();

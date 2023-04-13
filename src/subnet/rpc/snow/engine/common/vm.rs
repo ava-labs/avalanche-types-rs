@@ -7,10 +7,14 @@ use crate::{
         database::manager::Manager,
         health::Checkable,
         http::handle::Handle,
-        snow::engine::common::{
-            appsender::AppSender, engine::AppHandler, http_handler::HttpHandler, message::Message,
-        },
         snow::State,
+        snow::{
+            engine::common::{
+                appsender::AppSender, engine::AppHandler, http_handler::HttpHandler,
+                message::Message,
+            },
+            validators,
+        },
     },
 };
 use tokio::sync::mpsc::Sender;
@@ -24,10 +28,11 @@ pub trait CommonVm: AppHandler + Connector + Checkable {
     type AppSender: AppSender;
     type ChainHandler: Handle;
     type StaticHandler: Handle;
+    type ValidatorState: validators::State;
 
     async fn initialize(
         &mut self,
-        ctx: Option<Context>,
+        ctx: Option<Context<Self::ValidatorState>>,
         db_manager: Self::DatabaseManager,
         genesis_bytes: &[u8],
         upgrade_bytes: &[u8],

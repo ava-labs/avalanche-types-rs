@@ -16,11 +16,13 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{Hash, Hasher},
-    io::{self, Error, ErrorKind},
     str::FromStr,
 };
 
-use crate::{formatting, hash, packer};
+use crate::{
+    errors::{Error, Result},
+    formatting, hash, packer,
+};
 use lazy_static::lazy_static;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
@@ -79,7 +81,7 @@ impl Id {
     }
 
     /// ref. "ids.ID.Prefix(output_index)"
-    pub fn prefix(&self, prefixes: &[u64]) -> io::Result<Self> {
+    pub fn prefix(&self, prefixes: &[u64]) -> Result<Self> {
         let n = prefixes.len() + packer::U64_LEN + 32;
         let packer = packer::Packer::new(n, n);
         for pfx in prefixes {
@@ -124,7 +126,7 @@ impl AsRef<[u8]> for Id {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = formatting::encode_cb58_with_checksum_string(&self.0);
@@ -134,12 +136,12 @@ impl fmt::Display for Id {
 
 /// ref. <https://doc.rust-lang.org/std/str/trait.FromStr.html>
 impl FromStr for Id {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = std::io::Error;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         // trim in case it's parsed from list
         let decoded = formatting::decode_cb58_with_checksum(s.trim()).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
                 format!("failed decode_cb58_with_checksum '{}'", e),
             )
         })?;
@@ -156,7 +158,7 @@ impl From<std::borrow::Cow<'static, str>> for Id {
 /// Custom serializer.
 /// ref. <https://serde.rs/impl-serialize.html>
 impl Serialize for Id {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -167,7 +169,7 @@ impl Serialize for Id {
 /// Custom deserializer.
 /// ref. <https://serde.rs/impl-deserialize.html>
 impl<'de> Deserialize<'de> for Id {
-    fn deserialize<D>(deserializer: D) -> Result<Id, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Id, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -211,7 +213,7 @@ fn test_custom_de_serializer() {
     assert_eq!(d, json_decoded_2);
 }
 
-fn fmt_id<'de, D>(deserializer: D) -> Result<Id, D::Error>
+fn fmt_id<'de, D>(deserializer: D) -> std::result::Result<Id, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -221,7 +223,7 @@ where
 
 /// Custom deserializer.
 /// ref. <https://serde.rs/impl-deserialize.html>
-pub fn deserialize_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
+pub fn deserialize_id<'de, D>(deserializer: D) -> std::result::Result<Option<Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -234,7 +236,7 @@ where
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "ids::must_deserialize_id")] to serde without derive.
 /// ref. <https://serde.rs/impl-deserialize.html>
-pub fn must_deserialize_id<'de, D>(deserializer: D) -> Result<Id, D::Error>
+pub fn must_deserialize_id<'de, D>(deserializer: D) -> std::result::Result<Id, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -249,7 +251,7 @@ where
 
 /// Custom deserializer.
 /// ref. <https://serde.rs/impl-deserialize.html>
-pub fn deserialize_ids<'de, D>(deserializer: D) -> Result<Option<Vec<Id>>, D::Error>
+pub fn deserialize_ids<'de, D>(deserializer: D) -> std::result::Result<Option<Vec<Id>>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -262,7 +264,7 @@ where
 /// Custom deserializer.
 /// Use #[serde(deserialize_with = "short::must_deserialize_ids")] to serde with derive.
 /// ref. <https://serde.rs/impl-deserialize.html>
-pub fn must_deserialize_ids<'de, D>(deserializer: D) -> Result<Vec<Id>, D::Error>
+pub fn must_deserialize_ids<'de, D>(deserializer: D) -> std::result::Result<Vec<Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -275,7 +277,7 @@ where
     }
 }
 
-fn fmt_ids<'de, D>(deserializer: D) -> Result<Vec<Id>, D::Error>
+fn fmt_ids<'de, D>(deserializer: D) -> std::result::Result<Vec<Id>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -284,7 +286,7 @@ where
     match ss
         .iter()
         .map(|x| x.parse::<Id>())
-        .collect::<Result<Vec<Id>, Error>>()
+        .collect::<std::result::Result<Vec<Id>, std::io::Error>>()
     {
         Ok(x) => Ok(x),
         Err(e) => Err(serde::de::Error::custom(format!(
@@ -553,13 +555,13 @@ fn test_sort() {
 }
 
 /// Generates VM ID based on the name.
-pub fn encode_vm_name_to_id(name: &str) -> io::Result<Id> {
+pub fn encode_vm_name_to_id(name: &str) -> Result<Id> {
     let n = name.len();
     if n > LEN {
-        return Err(Error::new(
-            ErrorKind::Other,
-            format!("can't id {} bytes (>{})", n, LEN),
-        ));
+        return Err(Error::Other {
+            message: format!("can't id {} bytes (>{})", n, LEN),
+            retryable: false,
+        });
     }
 
     let input = name.as_bytes().to_vec();

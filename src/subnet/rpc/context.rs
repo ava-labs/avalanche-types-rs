@@ -10,9 +10,11 @@ use crate::{
 };
 use tonic::transport::Channel;
 
+use super::snow::validators;
+
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#Context>
 #[derive(Debug, Clone)]
-pub struct Context {
+pub struct Context<S: validators::State> {
     pub network_id: u32,
     pub subnet_id: Id,
     pub chain_id: Id,
@@ -24,5 +26,6 @@ pub struct Context {
     pub shared_memory: SharedMemoryClient<Channel>,
     pub bc_lookup: AliasReaderClient<Channel>,
     pub chain_data_dir: String,
+    pub validator_state: S,
     // TODO metrics
 }

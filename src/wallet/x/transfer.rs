@@ -1,12 +1,9 @@
-use std::{
-    cmp,
-    io::{self, Error, ErrorKind},
-    time::SystemTime,
-};
+use std::{cmp, time::SystemTime};
 
 use crate::{
     avm,
     choices::status::Status,
+    errors::{Error, Result},
     formatting,
     ids::{self, short},
     jsonrpc::client::x as client_x,
@@ -108,7 +105,7 @@ where
     }
 
     /// Issues the transfer transaction and returns the transaction Id.
-    pub async fn issue(&self) -> io::Result<ids::Id> {
+    pub async fn issue(&self) -> Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "transferring {} AVAX from {} to {} via {}",
@@ -246,10 +243,10 @@ where
         let resp = client_x::issue_tx(&picked_http_rpc.1, &hex_tx).await?;
 
         if resp.result.is_none() {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to issue tx {:?}", resp.error),
-            ));
+            return Err(Error::API {
+                message: format!("failed to issue tx {:?} (no result)", resp.error),
+                retryable: false,
+            });
         }
 
         let tx_id = resp.result.unwrap().tx_id;
@@ -291,10 +288,10 @@ where
             sleep(self.poll_interval).await;
         }
         if !success {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "failed to check acceptance in time",
-            ));
+            return Err(Error::API {
+                message: "failed to check acceptance in time".to_string(),
+                retryable: true,
+            });
         }
 
         Ok(tx_id)

@@ -1,7 +1,7 @@
-use std::io::{self, Error, ErrorKind};
-
 use crate::{
-    constants, formatting, hash,
+    constants,
+    errors::{Error, Result},
+    formatting, hash,
     ids::short,
     key::{self, secp256k1::address},
 };
@@ -14,35 +14,31 @@ pub struct PrivateKey(libsecp256k1::SecretKey);
 
 impl PrivateKey {
     /// Loads the private key from the raw bytes.
-    pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
+    pub fn from_bytes(raw: &[u8]) -> Result<Self> {
         if raw.len() != key::secp256k1::private_key::LEN {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!(
+            return Err(Error::Other {
+                message: format!(
                     "libsecp256k1::SecretKey must be {}-byte, got {}-byte",
                     key::secp256k1::private_key::LEN,
                     raw.len()
                 ),
-            ));
+                retryable: false,
+            });
         }
 
-        let sk = libsecp256k1::SecretKey::from_slice(raw).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed libsecp256k1::SecretKey::from_slice {}", e),
-            )
+        let sk = libsecp256k1::SecretKey::from_slice(raw).map_err(|e| Error::Other {
+            message: format!("failed libsecp256k1::SecretKey::from_slice {}", e),
+            retryable: false,
         })?;
         Ok(Self(sk))
     }
 
-    pub fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+    pub fn signing_key(&self) -> Result<k256::ecdsa::SigningKey> {
         let b = self.to_bytes();
         let ga = k256::elliptic_curve::generic_array::GenericArray::from_slice(&b);
-        k256::ecdsa::SigningKey::from_bytes(&ga).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed k256::ecdsa::SigningKey::from_bytes '{}'", e),
-            )
+        k256::ecdsa::SigningKey::from_bytes(&ga).map_err(|e| Error::Other {
+            message: format!("failed k256::ecdsa::SigningKey::from_bytes '{}'", e),
+            retryable: false,
         })
     }
 
@@ -87,16 +83,14 @@ impl PrivateKey {
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
     /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
     /// ref. <https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs>
-    pub fn sign_digest(&self, digest: &[u8]) -> io::Result<key::secp256k1::signature::Sig> {
+    pub fn sign_digest(&self, digest: &[u8]) -> Result<key::secp256k1::signature::Sig> {
         // ref. "crypto/sha256.Size"
         assert_eq!(digest.len(), hash::SHA256_OUTPUT_LEN);
 
         let secp = libsecp256k1::Secp256k1::new();
-        let m = libsecp256k1::Message::from_slice(digest).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed libsecp256k1::Message::from_slice {}", e),
-            )
+        let m = libsecp256k1::Message::from_slice(digest).map_err(|e| Error::Other {
+            message: format!("failed libsecp256k1::Message::from_slice {}", e),
+            retryable: false,
         })?;
 
         // "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs
@@ -128,13 +122,11 @@ impl From<PrivateKey> for libsecp256k1::SecretKey {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for PrivateKey {
-    type Error = io::Error;
-
-    fn signing_key(&self) -> io::Result<k256::ecdsa::SigningKey> {
+    fn signing_key(&self) -> Result<k256::ecdsa::SigningKey> {
         self.signing_key()
     }
 
-    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], io::Error> {
+    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65]> {
         let sig = self.sign_digest(msg)?;
         Ok(sig.to_bytes())
     }
@@ -142,7 +134,7 @@ impl key::secp256k1::SignOnly for PrivateKey {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for PrivateKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.to_bytes()))
@@ -174,17 +166,23 @@ impl PublicKey {
 
     /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
-    pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
+    pub fn to_short_bytes(&self) -> Result<Vec<u8>> {
         let compressed = self.to_compressed_bytes();
-        hash::sha256_ripemd160(&compressed)
+        hash::sha256_ripemd160(&compressed).map_err(|e| Error::Other {
+            message: format!("failed hash::sha256_ripemd160 ({})", e),
+            retryable: false,
+        })
     }
 
     /// "hashing.PubkeyBytesToAddress"
     /// ref. "pk.PublicKey().Address().Bytes()"
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
-    pub fn to_short_id(&self) -> io::Result<crate::ids::short::Id> {
+    pub fn to_short_id(&self) -> Result<crate::ids::short::Id> {
         let compressed = self.to_compressed_bytes();
-        short::Id::from_public_key_bytes(&compressed)
+        short::Id::from_public_key_bytes(&compressed).map_err(|e| Error::Other {
+            message: format!("failed short::Id::from_public_key_bytes ({})", e),
+            retryable: false,
+        })
     }
 
     pub fn to_h160(&self) -> primitive_types::H160 {
@@ -204,7 +202,7 @@ impl PublicKey {
         address::h160_to_eth_address(&self.to_h160(), None)
     }
 
-    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         let hrp = match constants::NETWORK_ID_TO_HRP.get(&network_id) {
             Some(v) => v,
             None => constants::FALLBACK_HRP,
@@ -213,7 +211,10 @@ impl PublicKey {
         let short_address_bytes = self.to_short_bytes()?;
 
         // ref. "formatting.FormatAddress(chainIDAlias, hrp, pubBytes)"
-        formatting::address(chain_id_alias, hrp, &short_address_bytes)
+        formatting::address(chain_id_alias, hrp, &short_address_bytes).map_err(|e| Error::Other {
+            message: format!("failed formatting::address ({})", e),
+            retryable: false,
+        })
     }
 }
 
@@ -231,7 +232,7 @@ impl From<PublicKey> for libsecp256k1::PublicKey {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.to_compressed_bytes()))
@@ -244,15 +245,15 @@ impl key::secp256k1::ReadOnly for PublicKey {
         key::secp256k1::KeyType::Hot
     }
 
-    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         self.to_hrp_address(network_id, chain_id_alias)
     }
 
-    fn short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> Result<short::Id> {
         self.to_short_id()
     }
 
-    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> Result<Vec<u8>> {
         self.to_short_bytes()
     }
 

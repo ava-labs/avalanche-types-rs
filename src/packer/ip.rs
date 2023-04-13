@@ -1,10 +1,12 @@
 use std::{
     convert::TryInto,
-    io,
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
 };
 
-use crate::packer::{self, Packer};
+use crate::{
+    errors::Result,
+    packer::{self, Packer},
+};
 
 /// All IPs (either IPv4 or IPv6) are represented as a 16-byte (IPv6) array.
 /// ref. "go/net/IP"
@@ -20,7 +22,7 @@ impl Packer {
     /// ref. <https://doc.rust-lang.org/std/net/enum.IpAddr.html>
     /// ref. <https://doc.rust-lang.org/std/net/struct.Ipv4Addr.html>
     /// ref. <https://doc.rust-lang.org/std/net/struct.Ipv6Addr.html>
-    pub fn pack_ip(&self, ip_addr: IpAddr, port: u16) -> io::Result<()> {
+    pub fn pack_ip(&self, ip_addr: IpAddr, port: u16) -> Result<()> {
         let ip_bytes = match ip_addr {
             IpAddr::V4(v) => {
                 // "avalanchego" encodes IPv4 address as it is
@@ -40,7 +42,7 @@ impl Packer {
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackIP"
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIP>
-    pub fn unpack_ip(&self) -> io::Result<(IpAddr, u16)> {
+    pub fn unpack_ip(&self) -> Result<(IpAddr, u16)> {
         let ip = self.unpack_bytes(IP_ADDR_LEN)?;
         let ip_array: [u8; IP_ADDR_LEN] = fix_vector_size(ip);
 
@@ -68,7 +70,7 @@ impl Packer {
     /// and increments the offset afterwards.
     /// ref. "avalanchego/utils/wrappers.Packer.PackIPs"
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.PackIPs>
-    pub fn pack_ips(&self, ips: &[(IpAddr, u16)]) -> io::Result<()> {
+    pub fn pack_ips(&self, ips: &[(IpAddr, u16)]) -> Result<()> {
         let n = ips.len();
         self.pack_u32(n as u32)?;
         for ip in ips.iter() {
@@ -81,7 +83,7 @@ impl Packer {
     /// and advances the cursor and offset.
     /// ref. "avalanchego/utils/wrappers.Packer.UnpackIPs"
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/wrappers#Packer.UnpackIPs>
-    pub fn unpack_ips(&self) -> io::Result<Vec<(IpAddr, u16)>> {
+    pub fn unpack_ips(&self) -> Result<Vec<(IpAddr, u16)>> {
         let n = self.unpack_u32()?;
         let mut rs: Vec<(IpAddr, u16)> = Vec::new();
         for _ in 0..n {

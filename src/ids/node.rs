@@ -96,7 +96,7 @@ impl AsRef<[u8]> for Id {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut node_id = String::from(ENCODE_PREFIX);

@@ -43,6 +43,9 @@ pub struct Config {
     /// Database directory, must be a valid path in remote host machine.
     #[serde(default)]
     pub db_dir: String,
+    /// Chain data directory, must be a valid path in remote host machine.
+    #[serde(default)]
+    pub chain_data_dir: String,
 
     /// Logging directory, must be a valid path in remote host machine.
     #[serde(default)]
@@ -183,11 +186,41 @@ pub struct Config {
     pub profile_continuous_max_files: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub proposervm_use_current_height: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub throttler_inbound_node_max_processing_msgs: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub throttler_inbound_bandwidth_refill_rate: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub throttler_inbound_bandwidth_max_burst_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub throttler_inbound_cpu_validator_alloc: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub throttler_inbound_disk_validator_alloc: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub throttler_inbound_at_large_alloc_size: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub throttler_inbound_validator_alloc_size: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub throttler_inbound_node_max_at_large_bytes: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snow_mixed_query_num_push_vdr_uint: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_gossip_frequency: Option<i64>,
+    /// ref. <https://github.com/ava-labs/avalanchego/pull/1322>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_app_concurrency: Option<i64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_on_accept_gossip_validator_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_on_accept_gossip_non_validator_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_on_accept_gossip_peer_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consensus_accepted_frontier_gossip_peer_size: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub throttler_outbound_at_large_alloc_size: Option<u64>,
@@ -200,6 +233,9 @@ pub struct Config {
     pub network_minimum_timeout: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_require_validator_to_connect: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_compression_type: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tracing_enabled: Option<bool>,
@@ -217,7 +253,11 @@ pub const DEFAULT_DB_TYPE: &str = "leveldb";
 /// MUST BE matched with the attached physical storage volume path.
 /// MUST BE a valid path in remote host machine.
 /// ref. See "cfn-templates/avalanche-node/asg_amd64_ubuntu.yaml" "ASGLaunchTemplate"
-pub const DEFAULT_DB_DIR: &str = "/data";
+pub const DEFAULT_DB_DIR: &str = "/data/db";
+/// Default "chain-data-dir" directory path for remote linux machines.
+/// MUST BE matched with the attached physical storage volume path.
+/// MUST BE a valid path in remote host machine.
+pub const DEFAULT_CHAIN_DATA_DIR: &str = "/data/chainData";
 
 /// Default "log-dir" directory path for remote linux machines.
 /// MUST BE a valid path in remote host machine.
@@ -286,6 +326,8 @@ pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanchego-profile/avalanche";
 pub const DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE: u64 = 6291456;
 pub const DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES: u64 = 2097152;
 
+pub const DEFAULT_NETWORK_COMPRESSION_TYPE: &str = "gzip";
+
 impl Default for Config {
     fn default() -> Self {
         Self::default()
@@ -308,6 +350,7 @@ impl Config {
 
             db_type: String::from(DEFAULT_DB_TYPE),
             db_dir: String::from(DEFAULT_DB_DIR),
+            chain_data_dir: String::from(DEFAULT_CHAIN_DATA_DIR),
             log_dir: String::from(DEFAULT_LOG_DIR),
             log_level: Some(String::from(DEFAULT_LOG_LEVEL)),
             log_format: Some(String::from(DEFAULT_LOG_FORMAT)),
@@ -363,6 +406,13 @@ impl Config {
             profile_continuous_freq: None,
             profile_continuous_max_files: None,
 
+            proposervm_use_current_height: Some(true),
+            throttler_inbound_node_max_processing_msgs: Some(100000),
+            throttler_inbound_bandwidth_refill_rate: Some(1073741824),
+            throttler_inbound_bandwidth_max_burst_size: Some(1073741824),
+            throttler_inbound_cpu_validator_alloc: Some(100000),
+            throttler_inbound_disk_validator_alloc: Some(10737418240000),
+
             throttler_inbound_at_large_alloc_size: Some(
                 DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
             ),
@@ -371,12 +421,24 @@ impl Config {
                 DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
             ),
 
+            snow_mixed_query_num_push_vdr_uint: Some(10),
+
+            consensus_gossip_frequency: Some(10000000000), // 10-second
+            consensus_app_concurrency: Some(2),
+
+            consensus_on_accept_gossip_validator_size: Some(0),
+            consensus_on_accept_gossip_non_validator_size: Some(0),
+            consensus_on_accept_gossip_peer_size: Some(10),
+            consensus_accepted_frontier_gossip_peer_size: Some(10),
+
             throttler_outbound_at_large_alloc_size: None,
             throttler_outbound_validator_alloc_size: None,
             throttler_outbound_node_max_at_large_bytes: None,
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            network_compression_type: Some(DEFAULT_NETWORK_COMPRESSION_TYPE.to_string()),
 
             tracing_enabled: None,
         }
@@ -393,6 +455,7 @@ impl Config {
 
             db_type: String::from(DEFAULT_DB_TYPE),
             db_dir: String::from(DEFAULT_DB_DIR),
+            chain_data_dir: String::from(DEFAULT_CHAIN_DATA_DIR),
             log_dir: String::from(DEFAULT_LOG_DIR),
             log_level: Some(String::from(DEFAULT_LOG_LEVEL)),
             log_format: Some(String::from(DEFAULT_LOG_FORMAT)),
@@ -448,6 +511,13 @@ impl Config {
             profile_continuous_freq: None,
             profile_continuous_max_files: None,
 
+            proposervm_use_current_height: Some(true),
+            throttler_inbound_node_max_processing_msgs: Some(100000),
+            throttler_inbound_bandwidth_refill_rate: Some(1073741824),
+            throttler_inbound_bandwidth_max_burst_size: Some(1073741824),
+            throttler_inbound_cpu_validator_alloc: Some(100000),
+            throttler_inbound_disk_validator_alloc: Some(10737418240000),
+
             throttler_inbound_at_large_alloc_size: Some(
                 DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
             ),
@@ -456,12 +526,24 @@ impl Config {
                 DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
             ),
 
+            snow_mixed_query_num_push_vdr_uint: Some(10),
+
+            consensus_gossip_frequency: Some(10000000000), // 10-second
+            consensus_app_concurrency: Some(2),
+
+            consensus_on_accept_gossip_validator_size: Some(0),
+            consensus_on_accept_gossip_non_validator_size: Some(0),
+            consensus_on_accept_gossip_peer_size: Some(10),
+            consensus_accepted_frontier_gossip_peer_size: Some(10),
+
             throttler_outbound_at_large_alloc_size: None,
             throttler_outbound_validator_alloc_size: None,
             throttler_outbound_node_max_at_large_bytes: None,
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            network_compression_type: Some(DEFAULT_NETWORK_COMPRESSION_TYPE.to_string()),
 
             tracing_enabled: None,
         }
@@ -478,6 +560,7 @@ impl Config {
 
             db_type: String::from(DEFAULT_DB_TYPE),
             db_dir: String::from(DEFAULT_DB_DIR),
+            chain_data_dir: String::from(DEFAULT_CHAIN_DATA_DIR),
             log_dir: String::from(DEFAULT_LOG_DIR),
             log_level: Some(String::from(DEFAULT_LOG_LEVEL)),
             log_format: Some(String::from(DEFAULT_LOG_FORMAT)),
@@ -533,6 +616,13 @@ impl Config {
             profile_continuous_freq: None,
             profile_continuous_max_files: None,
 
+            proposervm_use_current_height: Some(true),
+            throttler_inbound_node_max_processing_msgs: Some(100000),
+            throttler_inbound_bandwidth_refill_rate: Some(1073741824),
+            throttler_inbound_bandwidth_max_burst_size: Some(1073741824),
+            throttler_inbound_cpu_validator_alloc: Some(100000),
+            throttler_inbound_disk_validator_alloc: Some(10737418240000),
+
             throttler_inbound_at_large_alloc_size: Some(
                 DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
             ),
@@ -541,12 +631,24 @@ impl Config {
                 DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
             ),
 
+            snow_mixed_query_num_push_vdr_uint: Some(10),
+
+            consensus_gossip_frequency: Some(10000000000), // 10-second
+            consensus_app_concurrency: Some(2),
+
+            consensus_on_accept_gossip_validator_size: Some(0),
+            consensus_on_accept_gossip_non_validator_size: Some(0),
+            consensus_on_accept_gossip_peer_size: Some(10),
+            consensus_accepted_frontier_gossip_peer_size: Some(10),
+
             throttler_outbound_at_large_alloc_size: None,
             throttler_outbound_validator_alloc_size: None,
             throttler_outbound_node_max_at_large_bytes: None,
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
+
+            network_compression_type: Some(DEFAULT_NETWORK_COMPRESSION_TYPE.to_string()),
 
             tracing_enabled: None,
         }

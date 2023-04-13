@@ -2,9 +2,7 @@ pub mod export;
 pub mod import;
 pub mod transfer;
 
-use std::io;
-
-use crate::{jsonrpc::client::x as client_x, key, txs, wallet};
+use crate::{errors::Result, jsonrpc::client::x as client_x, key, txs, wallet};
 
 impl<T> wallet::Wallet<T>
 where
@@ -31,7 +29,7 @@ where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
     /// Fetches the current balance of the wallet owner from the specified HTTP endpoint.
-    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<u64> {
+    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> Result<u64> {
         let resp = client_x::get_balance(http_rpc, &self.inner.x_address).await?;
         let cur_balance = resp
             .result
@@ -42,7 +40,7 @@ where
 
     /// Fetches the current balance of the wallet owner from all endpoints
     /// in the same order of "self.http_rpcs".
-    pub async fn balances(&self) -> io::Result<Vec<u64>> {
+    pub async fn balances(&self) -> Result<Vec<u64>> {
         let mut balances = Vec::new();
         for http_rpc in self.inner.base_http_urls.iter() {
             let balance = self.balance_with_endpoint(http_rpc).await?;
@@ -52,14 +50,14 @@ where
     }
 
     /// Fetches the current balance of the wallet owner.
-    pub async fn balance(&self) -> io::Result<u64> {
+    pub async fn balance(&self) -> Result<u64> {
         self.balance_with_endpoint(&self.inner.pick_base_http_url().1)
             .await
     }
 
     /// Fetches UTXOs for "X" chain.
     /// TODO: cache this like avalanchego
-    pub async fn utxos(&self) -> io::Result<Vec<txs::utxo::Utxo>> {
+    pub async fn utxos(&self) -> Result<Vec<txs::utxo::Utxo>> {
         // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/wallet/chain/p/builder.go
         // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/add_validator_tx.go#L263
         // ref. https://github.com/ava-labs/avalanchego/blob/v1.7.9/vms/platformvm/spend.go#L39 "stake"

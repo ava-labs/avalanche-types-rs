@@ -1,10 +1,7 @@
-use std::{
-    collections::HashMap,
-    io::{self, Error, ErrorKind},
-    time::Duration,
-};
+use std::{collections::HashMap, time::Duration};
 
 use crate::{
+    errors::{Error, Result},
     ids,
     jsonrpc::{self, info},
     utils,
@@ -13,9 +10,14 @@ use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 
 /// e.g., "info.getNetworkName".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname>
-pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkNameResponse> {
+pub async fn get_network_name(http_rpc: &str) -> Result<info::GetNetworkNameResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -29,7 +31,10 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkName");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -38,10 +43,11 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -49,28 +55,37 @@ pub async fn get_network_name(http_rpc: &str) -> io::Result<info::GetNetworkName
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed info.getNetworkName '{}'", e),
-        )
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
     })
 }
 
 /// e.g., "info.getNetworkID".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid>
-pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResponse> {
+pub async fn get_network_id(http_rpc: &str) -> Result<info::GetNetworkIdResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -84,7 +99,10 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkID");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -93,10 +111,11 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -104,20 +123,24 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed info.getNetworkID '{}'", e),
-        )
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
     })
 }
 
@@ -126,9 +149,14 @@ pub async fn get_network_id(http_rpc: &str) -> io::Result<info::GetNetworkIdResp
 pub async fn get_blockchain_id(
     http_rpc: &str,
     chain_alias: &str,
-) -> io::Result<info::GetBlockchainIdResponse> {
+) -> Result<info::GetBlockchainIdResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -146,7 +174,10 @@ pub async fn get_blockchain_id(
     let mut params = HashMap::new();
     params.insert(String::from("alias"), String::from(chain_alias));
     data.params = Some(params);
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -155,10 +186,11 @@ pub async fn get_blockchain_id(
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -166,28 +198,37 @@ pub async fn get_blockchain_id(
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed info.getBlockchainID '{}'", e),
-        )
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
     })
 }
 
 /// e.g., "info.getNodeID".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
-pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> {
+pub async fn get_node_id(http_rpc: &str) -> Result<info::GetNodeIdResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -201,7 +242,10 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeID");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -210,10 +254,11 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -221,21 +266,32 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    let resp: info::GetNodeIdResponse = serde_json::from_slice(&out)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getNodeID '{}'", e)))?;
+    let resp: info::GetNodeIdResponse = serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
+    })?;
 
     if let Some(res) = &resp.result {
         if let Some(pop) = &res.node_pop {
-            let pubkey = pop.load_pubkey()?;
+            let pubkey = pop.load_pubkey().map_err(|e| Error::Other {
+                message: format!("failed pop.load_pubkey '{}'", e),
+                retryable: false,
+            })?;
 
             let mut cloned_pop = pop.clone();
             cloned_pop.pubkey = Some(pubkey);
@@ -248,18 +304,29 @@ pub async fn get_node_id(http_rpc: &str) -> io::Result<info::GetNodeIdResponse> 
 
             Ok(cloned_resp)
         } else {
-            return Err(Error::new(ErrorKind::Other, "no result.node_pop found"));
+            return Err(Error::Other {
+                message: "no result.node_pop found".to_string(),
+                retryable: false,
+            });
         }
     } else {
-        return Err(Error::new(ErrorKind::Other, "no result found"));
+        return Err(Error::Other {
+            message: "no result found".to_string(),
+            retryable: false,
+        });
     }
 }
 
 /// e.g., "info.getNodeVersion".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
-pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersionResponse> {
+pub async fn get_node_version(http_rpc: &str) -> Result<info::GetNodeVersionResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -273,7 +340,10 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeVersion");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -282,10 +352,11 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -293,28 +364,37 @@ pub async fn get_node_version(http_rpc: &str) -> io::Result<info::GetNodeVersion
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed info.getNodeVersion '{}'", e),
-        )
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
     })
 }
 
 /// e.g., "info.getVMs".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetvms>
-pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
+pub async fn get_vms(http_rpc: &str) -> Result<info::GetVmsResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -328,7 +408,10 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getVMs");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -337,10 +420,11 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -348,24 +432,37 @@ pub async fn get_vms(http_rpc: &str) -> io::Result<info::GetVmsResponse> {
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getVMs '{}'", e)))
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
+    })
 }
 
 /// e.g., "info.isBootstrapped".
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped>
-pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedResponse> {
+pub async fn is_bootstrapped(http_rpc: &str) -> Result<info::IsBootstrappedResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -379,7 +476,10 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.isBootstrapped");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -388,10 +488,11 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -399,20 +500,24 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed info.isBootstrapped '{}'", e),
-        )
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
     })
 }
 
@@ -420,9 +525,14 @@ pub async fn is_bootstrapped(http_rpc: &str) -> io::Result<info::IsBootstrappedR
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee>
 /// ref. "genesi/genesis_mainnet.go" requires 1 * units::AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
 /// ref. "genesi/genesis_fuji/local.go" requires 100 * units::MILLI_AVAX for create_subnet_tx_fee/create_blockchain_tx_fee
-pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
+pub async fn get_tx_fee(http_rpc: &str) -> Result<info::GetTxFeeResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -436,7 +546,10 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getTxFee");
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -445,10 +558,11 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -456,17 +570,25 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.getTxFee '{}'", e)))
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
+    })
 }
 
 /// e.g., "info.peers".
@@ -474,9 +596,14 @@ pub async fn get_tx_fee(http_rpc: &str) -> io::Result<info::GetTxFeeResponse> {
 pub async fn peers(
     http_rpc: &str,
     node_ids: Option<Vec<ids::node::Id>>,
-) -> io::Result<info::PeersResponse> {
+) -> Result<info::PeersResponse> {
     let (scheme, host, port, _, _) =
-        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc)?;
+        utils::urls::extract_scheme_host_port_path_chain_alias(http_rpc).map_err(|e| {
+            Error::Other {
+                message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+                retryable: false,
+            }
+        })?;
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
             format!("{scheme}://{host}:{port}/ext/info")
@@ -499,7 +626,10 @@ pub async fn peers(
     let mut params = HashMap::new();
     params.insert(String::from("nodeIDs"), ids);
     data.params = Some(params);
-    let d = data.encode_json()?;
+    let d = data.encode_json().map_err(|e| Error::Other {
+        message: format!("failed encode_json '{}'", e),
+        retryable: false,
+    })?;
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -508,10 +638,11 @@ pub async fn peers(
         .connection_verbose(true)
         .build()
         .map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed ClientBuilder build {}", e),
-            )
+            // TODO: check retryable
+            Error::Other {
+                message: format!("failed reqwest::ClientBuilder.build '{}'", e),
+                retryable: false,
+            }
         })?;
     let resp = req_cli_builder
         .post(&u)
@@ -519,15 +650,23 @@ pub async fn peers(
         .body(d)
         .send()
         .await
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed ClientBuilder send {}", e)))?;
+        .map_err(|e|
+            // TODO: check retryable
+            Error::API {
+                message: format!("failed reqwest::Client.send '{}'", e),
+                retryable: false,
+            })?;
     let out = resp.bytes().await.map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed ClientBuilder bytes {}", e),
-        )
+        // TODO: check retryable
+        Error::Other {
+            message: format!("failed reqwest response bytes '{}'", e),
+            retryable: false,
+        }
     })?;
     let out: Vec<u8> = out.into();
 
-    serde_json::from_slice(&out)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("failed info.peers '{}'", e)))
+    serde_json::from_slice(&out).map_err(|e| Error::Other {
+        message: format!("failed serde_json::from_slice '{}'", e),
+        retryable: false,
+    })
 }

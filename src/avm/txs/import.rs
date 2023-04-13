@@ -1,6 +1,9 @@
-use std::io::{self, Error, ErrorKind};
-
-use crate::{avm::txs::fx, codec, hash, ids, key, platformvm, txs};
+use crate::{
+    avm::txs::fx,
+    codec,
+    errors::{Error, Result},
+    hash, ids, key, platformvm, txs,
+};
 use serde::{Deserialize, Serialize};
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx>
@@ -63,10 +66,7 @@ impl Tx {
 
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/avm#Tx.SignSECP256K1Fx>
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash>
-    pub async fn sign<T: key::secp256k1::SignOnly>(
-        &mut self,
-        signers: Vec<Vec<T>>,
-    ) -> io::Result<()> {
+    pub async fn sign<T: key::secp256k1::SignOnly>(&mut self, signers: Vec<Vec<T>>) -> Result<()> {
         // marshal "unsigned tx" with the codec version
         let type_id = Self::type_id();
         let packer = self.base_tx.pack(codec::VERSION, type_id)?;
@@ -113,10 +113,10 @@ impl Tx {
                 if transferable_input.transfer_input.is_none()
                     && transferable_input.stakeable_lock_in.is_none()
                 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "unexpected Nones in TransferableInput transfer_input and stakeable_lock_in",
-                    ));
+                    return Err(Error::Other {
+                        message: "unexpected Nones in TransferableInput transfer_input and stakeable_lock_in".to_string(),
+                        retryable: false,
+                    });
                 }
                 let type_id_transferable_in = {
                     if transferable_input.transfer_input.is_some() {
@@ -178,13 +178,13 @@ impl Tx {
                         }
                     }
                     _ => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidInput,
-                            format!(
+                        return Err(Error::Other {
+                            message: format!(
                                 "unexpected type ID {} for TransferableInput",
                                 type_id_transferable_in
                             ),
-                        ));
+                            retryable: false,
+                        });
                     }
                 }
             }
@@ -213,9 +213,7 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&tx_bytes_hash).await.map_err(|e| {
-                    Error::new(ErrorKind::Other, format!("failed sign_digest {}", e))
-                })?;
+                let sig = k.sign_digest(&tx_bytes_hash).await?;
                 sigs.push(Vec::from(sig));
             }
 

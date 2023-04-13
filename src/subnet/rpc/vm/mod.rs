@@ -97,9 +97,7 @@ where
         .register_encoded_file_descriptor_set(pb::vm::FILE_DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(pb::google::protobuf::FILE_DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(pb::io::prometheus::client::FILE_DESCRIPTOR_SET)
-        .register_encoded_file_descriptor_set(
-            tonic_health::proto::GRPC_HEALTH_V1_FILE_DESCRIPTOR_SET,
-        )
+        .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
         .build()
         .map_err(|e| {
             Error::new(

@@ -5,11 +5,12 @@ pub mod x;
 pub mod evm;
 
 use std::{
-    fmt, io,
+    fmt,
     sync::{Arc, Mutex},
 };
 
 use crate::{
+    errors::Result,
     ids::{self, short},
     jsonrpc::client::{info as api_info, x as api_x},
     key, utils,
@@ -50,7 +51,7 @@ pub struct Wallet<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl<T> fmt::Display for Wallet<T>
 where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
@@ -174,7 +175,7 @@ where
         self
     }
 
-    pub async fn build(&self) -> io::Result<Wallet<T>> {
+    pub async fn build(&self) -> Result<Wallet<T>> {
         log::info!(
             "building wallet with {} endpoints",
             self.base_http_urls.len()

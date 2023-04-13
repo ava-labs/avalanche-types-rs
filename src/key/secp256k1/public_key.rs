@@ -1,7 +1,7 @@
-use std::io::{self, Error, ErrorKind};
-
 use crate::{
-    constants, formatting, hash,
+    constants,
+    errors::{Error, Result},
+    formatting, hash,
     ids::short,
     key::{
         self,
@@ -32,30 +32,26 @@ impl Key {
     /// Decodes compressed or uncompressed public key bytes with Elliptic-Curve-Point-to-Octet-String
     /// encoding described in SEC 1: Elliptic Curve Cryptography (Version 2.0) section 2.3.3 (page 10).
     /// ref. <http://www.secg.org/sec1-v2.pdf>
-    pub fn from_sec1_bytes(b: &[u8]) -> io::Result<Self> {
-        let pubkey = PublicKey::from_sec1_bytes(b).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed PublicKey::from_sec1_bytes {}", e),
-            )
+    pub fn from_sec1_bytes(b: &[u8]) -> Result<Self> {
+        let pubkey = PublicKey::from_sec1_bytes(b).map_err(|e| Error::Other {
+            message: format!("failed PublicKey::from_sec1_bytes {}", e),
+            retryable: false,
         })?;
         Ok(Self(pubkey))
     }
 
     /// Decodes ASN.1 DER-encoded public key bytes.
-    pub fn from_public_key_der(b: &[u8]) -> io::Result<Self> {
-        let pubkey = PublicKey::from_public_key_der(b).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed PublicKey::from_public_key_der {}", e),
-            )
+    pub fn from_public_key_der(b: &[u8]) -> Result<Self> {
+        let pubkey = PublicKey::from_public_key_der(b).map_err(|e| Error::Other {
+            message: format!("failed PublicKey::from_public_key_der {}", e),
+            retryable: false,
         })?;
         Ok(Self(pubkey))
     }
 
     /// Loads the public key from a message and its recoverable signature.
     /// ref. "fx.SECPFactory.RecoverHashPublicKey"
-    pub fn from_signature(digest: &[u8], sig: &[u8]) -> io::Result<Self> {
+    pub fn from_signature(digest: &[u8], sig: &[u8]) -> Result<Self> {
         let sig = Sig::from_bytes(sig)?;
         let (pubkey, _) = sig.recover_public_key(digest)?;
         Ok(pubkey)
@@ -71,8 +67,11 @@ impl Key {
     }
 
     /// Verifies the message and the validity of its signature with recoverable code.
-    pub fn verify(&self, digest: &[u8], sig: &[u8]) -> io::Result<bool> {
-        let sig = Sig::from_bytes(sig)?;
+    pub fn verify(&self, digest: &[u8], sig: &[u8]) -> Result<bool> {
+        let sig = Sig::from_bytes(sig).map_err(|e| Error::Other {
+            message: format!("failed Sig::from_bytes '{}'", e),
+            retryable: false,
+        })?;
 
         let (recovered_pubkey, verifying_key) = sig.recover_public_key(digest)?;
         if verifying_key.verify_prehash(digest, &sig.0 .0).is_err() {
@@ -111,17 +110,23 @@ impl Key {
     /// ref. "pk.PublicKey().Address().Bytes()"
     ///
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
-    pub fn to_short_id(&self) -> io::Result<crate::ids::short::Id> {
+    pub fn to_short_id(&self) -> Result<crate::ids::short::Id> {
         let compressed = self.to_compressed_bytes();
-        short::Id::from_public_key_bytes(&compressed)
+        short::Id::from_public_key_bytes(&compressed).map_err(|e| Error::Other {
+            message: format!("failed short::Id::from_public_key_bytes '{}'", e),
+            retryable: false,
+        })
     }
 
     /// "hashing.PubkeyBytesToAddress" and "ids.ToShortID"
     ///
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#PubkeyBytesToAddress>
-    pub fn to_short_bytes(&self) -> io::Result<Vec<u8>> {
+    pub fn to_short_bytes(&self) -> Result<Vec<u8>> {
         let compressed = self.to_compressed_bytes();
-        hash::sha256_ripemd160(&compressed)
+        hash::sha256_ripemd160(&compressed).map_err(|e| Error::Other {
+            message: format!("failed to_short_bytes '{}'", e),
+            retryable: false,
+        })
     }
 
     pub fn to_h160(&self) -> primitive_types::H160 {
@@ -142,7 +147,7 @@ impl Key {
         address::h160_to_eth_address(&self.to_h160(), None)
     }
 
-    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    pub fn to_hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         let hrp = match constants::NETWORK_ID_TO_HRP.get(&network_id) {
             Some(v) => v,
             None => constants::FALLBACK_HRP,
@@ -152,12 +157,15 @@ impl Key {
         let short_address_bytes = self.to_short_bytes()?;
 
         // ref. "formatting.FormatAddress(chainIDAlias, hrp, pubBytes)"
-        formatting::address(chain_id_alias, hrp, &short_address_bytes)
+        formatting::address(chain_id_alias, hrp, &short_address_bytes).map_err(|e| Error::Other {
+            message: format!("failed formatting::address '{}'", e),
+            retryable: false,
+        })
     }
 }
 
 impl<'de> Deserialize<'de> for Key {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -170,7 +178,7 @@ impl<'de> Deserialize<'de> for Key {
 }
 
 impl Serialize for Key {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -206,7 +214,7 @@ impl From<Key> for VerifyingKey {
 ///
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
 ///
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.to_compressed_bytes()))
@@ -219,15 +227,15 @@ impl key::secp256k1::ReadOnly for Key {
         key::secp256k1::KeyType::Hot
     }
 
-    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         self.to_hrp_address(network_id, chain_id_alias)
     }
 
-    fn short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> Result<short::Id> {
         self.to_short_id()
     }
 
-    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> Result<Vec<u8>> {
         self.to_short_bytes()
     }
 
@@ -295,21 +303,17 @@ fn test_public_key() {
 
 /// Same as "from_public_key_der".
 /// ref. <https://github.com/gakonst/ethers-rs/tree/master/ethers-signers/src/aws> "decode_pubkey"
-pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> io::Result<VerifyingKey> {
-    let spk = spki::SubjectPublicKeyInfoRef::try_from(b).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidInput,
-            format!("failed to load spki::SubjectPublicKeyInfoRef {}", e),
-        )
+pub fn load_ecdsa_verifying_key_from_public_key(b: &[u8]) -> Result<VerifyingKey> {
+    let spk = spki::SubjectPublicKeyInfoRef::try_from(b).map_err(|e| Error::Other {
+        message: format!("failed to load spki::SubjectPublicKeyInfoRef {}", e),
+        retryable: false,
     })?;
-    VerifyingKey::from_sec1_bytes(spk.subject_public_key.raw_bytes()).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidInput,
-            format!(
-                "failed to load k256::ecdsa::VerifyingKey::from_sec1_bytes {}",
-                e
-            ),
-        )
+    VerifyingKey::from_sec1_bytes(spk.subject_public_key.raw_bytes()).map_err(|e| Error::Other {
+        message: format!(
+            "failed to load k256::ecdsa::VerifyingKey::from_sec1_bytes {}",
+            e
+        ),
+        retryable: false,
     })
 }
 

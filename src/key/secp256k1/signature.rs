@@ -1,5 +1,4 @@
-use std::io::{self, Error, ErrorKind};
-
+use crate::errors::{Error, Result};
 use ecdsa::RecoveryId as EcdsaRecoveryId;
 use ethers_core::{k256::ecdsa::Signature as KSig, types::Signature as EthSig};
 use k256::{
@@ -25,25 +24,21 @@ pub struct Sig(pub (Signature, RecoveryId));
 
 impl Sig {
     /// Loads the recoverable signature from the bytes.
-    pub fn from_bytes(b: &[u8]) -> io::Result<Self> {
+    pub fn from_bytes(b: &[u8]) -> Result<Self> {
         if b.len() != LEN {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "invalid signature length",
-            ));
+            return Err(Error::Other {
+                message: "invalid signature length".to_string(),
+                retryable: false,
+            });
         }
 
-        let sig = Signature::try_from(&b[..64]).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to load recoverable signature {}", e),
-            )
+        let sig = Signature::try_from(&b[..64]).map_err(|e| Error::Other {
+            message: format!("failed to load recoverable signature {}", e),
+            retryable: false,
         })?;
-        let recid = RecoveryId::try_from(b[64]).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to create recovery Id {}", e),
-            )
+        let recid = RecoveryId::try_from(b[64]).map_err(|e| Error::Other {
+            message: format!("failed to create recovery Id {}", e),
+            retryable: false,
         })?;
         Ok(Self((sig, recid)))
     }
@@ -62,7 +57,7 @@ impl Sig {
     pub fn recover_public_key(
         &self,
         digest: &[u8],
-    ) -> io::Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
+    ) -> Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
         recover_pubkeys(&self.0 .0, self.0 .1, digest)
     }
 
@@ -84,7 +79,7 @@ impl Sig {
 }
 
 impl<'de> Deserialize<'de> for Sig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -97,7 +92,7 @@ impl<'de> Deserialize<'de> for Sig {
 }
 
 impl Serialize for Sig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -109,15 +104,14 @@ fn recover_pubkeys(
     rsig: &Signature,
     recid: RecoveryId,
     digest: &[u8],
-) -> io::Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
+) -> Result<(crate::key::secp256k1::public_key::Key, VerifyingKey)> {
     // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recovery_id"
     // ref. <https://github.com/RustCrypto/elliptic-curves/blob/p384/v0.11.2/k256/src/ecdsa/recoverable.rs> "recover_verifying_key_from_digest_bytes"
-    let vkey = VerifyingKey::recover_from_prehash(digest, rsig, recid).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed recover_verifying_key_from_digest_bytes {}", e),
-        )
-    })?;
+    let vkey =
+        VerifyingKey::recover_from_prehash(digest, rsig, recid).map_err(|e| Error::Other {
+            message: format!("failed recover_verifying_key_from_digest_bytes {}", e),
+            retryable: false,
+        })?;
 
     Ok((vkey.into(), vkey))
 }
@@ -160,12 +154,10 @@ fn test_signature() {
 /// as defined by ANS X9.62–2005 and RFC 3279 Section 2.2.3.
 /// ref. <https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html#KMS-Sign-response-Signature>
 /// ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "decode_signature"
-pub fn decode_signature(b: &[u8]) -> io::Result<Signature> {
-    let sig = Signature::from_der(b).map_err(|e| {
-        Error::new(
-            ErrorKind::Other,
-            format!("failed Signature::from_der {}", e),
-        )
+pub fn decode_signature(b: &[u8]) -> Result<Signature> {
+    let sig = Signature::from_der(b).map_err(|e| Error::Other {
+        message: format!("failed Signature::from_der {}", e),
+        retryable: false,
     })?;
 
     // EIP-2, not all elliptic curve signatures are accepted
@@ -183,16 +175,16 @@ pub fn sig_from_digest_bytes_trial_recovery(
     sig: &KSig,
     digest: &[u8; 32],
     vk: &VerifyingKey,
-) -> io::Result<EthSig> {
+) -> Result<EthSig> {
     // Checks whether the specified recoverable signature can derive
     // the expected verifying key from the digest bytes.
     // ref. <https://github.com/gakonst/ethers-rs/blob/master/ethers-signers/src/aws/utils.rs> "check_candidate"
     let recid =
         EcdsaRecoveryId::trial_recovery_from_prehash(vk, digest.as_bytes(), sig).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed EcdsaRecoveryId::trial_recovery_from_prehash {}", e),
-            )
+            Error::Other {
+                message: format!("failed EcdsaRecoveryId::trial_recovery_from_prehash {}", e),
+                retryable: false,
+            }
         })?;
 
     let r_bytes: FieldBytes = sig.r().into();

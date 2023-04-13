@@ -1,8 +1,10 @@
 #![allow(deprecated)]
 
-use std::{env::args, io, str::FromStr};
+use std::{env::args, str::FromStr};
 
-use avalanche_types::{evm::abi, jsonrpc::client::evm as json_client_evm, key, wallet};
+use avalanche_types::{
+    errors::Result, evm::abi, jsonrpc::client::evm as json_client_evm, key, wallet,
+};
 use ethers_core::{
     abi::{encode as abi_encode, Function, StateMutability, Token},
     types::{H160, U256},
@@ -15,7 +17,7 @@ use ethers_core::{
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x41a24Bc2AE2eFF7CA3a2562374F339eAd168a5dB "getNumber()" | sed -r '/^\s*$/d' | tail -1
 /// cast call --rpc-url=http://127.0.0.1:9650/ext/bc/C/rpc 0x41a24Bc2AE2eFF7CA3a2562374F339eAd168a5dB "getLast()"
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<()> {
     // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),

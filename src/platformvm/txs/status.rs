@@ -1,6 +1,4 @@
-use std::io;
-
-use crate::packer::Packer;
+use crate::{errors::Result, packer::Packer};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
@@ -63,7 +61,7 @@ impl std::str::FromStr for Status {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
@@ -87,7 +85,7 @@ impl Status {
     }
 
     /// Returns the bytes representation of this status.
-    pub fn bytes(&self) -> io::Result<Bytes> {
+    pub fn bytes(&self) -> Result<Bytes> {
         let iota = match self {
             Status::Unknown(_) => 0_u32,
             Status::Committed => 4_u32,

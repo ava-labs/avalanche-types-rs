@@ -1,49 +1,53 @@
-use std::{collections::HashMap, thread, time};
+use std::{collections::HashMap, env::args, io};
 
 use avalanche_types::key;
 use aws_manager::{self, kms};
+use tokio::time::{self, sleep};
 
 /// cargo run --example key_secp256k1_kms_aws --features="kms_aws"
-fn main() {
+/// cargo run --example key_secp256k1_kms_aws --features="kms_aws" -- arn:aws:sts::[ACCOUNT_ID]:assumed-role/[NAME]/[EMAIL]
+#[tokio::main]
+async fn main() -> io::Result<()> {
     // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
     env_logger::init_from_env(
-        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
+        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"),
     );
 
-    macro_rules! ab {
-        ($e:expr) => {
-            tokio_test::block_on($e)
-        };
-    }
-
     log::info!("creating AWS KMS resources!");
-    let shared_config = ab!(aws_manager::load_config(None, None)).unwrap();
+    let shared_config = aws_manager::load_config(None, None).await;
     let kms_manager = kms::Manager::new(&shared_config);
 
-    let mut key_name = id_manager::time::with_prefix("test");
-    key_name.push_str("-cmk");
+    let key_name = id_manager::time::with_prefix("test");
     let mut tags = HashMap::new();
     tags.insert(String::from("Name"), key_name);
 
-    let cmk = ab!(key::secp256k1::kms::aws::Cmk::create(
-        kms_manager.clone(),
-        tags,
-    ))
-    .unwrap();
+    let mut key = key::secp256k1::kms::aws::Key::create(kms_manager.clone(), tags)
+        .await
+        .unwrap();
 
-    let cmk_info = cmk.to_info(1).unwrap();
-    println!("cmk_info:\n{}", cmk_info);
+    let grant_id = if let Some(arn_to_grant) = args().nth(1) {
+        log::info!("creating kms grant");
+        let (grant_id, grant_token) = kms_manager
+            .create_grant_for_sign_reads(&key.id, &arn_to_grant)
+            .await
+            .unwrap();
+        key.grant_token = Some(grant_token);
+        Some(grant_id)
+    } else {
+        None
+    };
 
-    let cmk2 = ab!(key::secp256k1::kms::aws::Cmk::from_arn(
-        kms_manager,
-        &cmk.arn,
-    ))
-    .unwrap();
-    let cmk_info2 = cmk2.to_info(1).unwrap();
-    println!("cmk_info2:\n{}", cmk_info2);
+    let key_info = key.to_info(1).unwrap();
+    println!("key_info:\n{}", key_info);
+
+    let key2 = key::secp256k1::kms::aws::Key::from_arn(kms_manager.clone(), &key.arn)
+        .await
+        .unwrap();
+    let key_info2 = key2.to_info(1).unwrap();
+    println!("key_info2:\n{}", key_info2);
 
     let digest = [0u8; ring::digest::SHA256_OUTPUT_LEN];
-    match ab!(cmk.sign_digest(&digest)) {
+    match key.sign_digest(&digest).await {
         Ok(sig) => {
             log::info!(
                 "successfully signed with signature output {} bytes",
@@ -55,10 +59,17 @@ fn main() {
         }
     }
 
-    thread::sleep(time::Duration::from_secs(5));
-    ab!(cmk.delete(7)).unwrap();
+    if let Some(grant_id) = &grant_id {
+        log::info!("revoking kms grant");
+        kms_manager.revoke_grant(&key.id, grant_id).await.unwrap();
+    }
+
+    sleep(time::Duration::from_secs(5)).await;
+    key.delete(7).await.unwrap();
 
     // error should be ignored if it's already scheduled for delete
-    thread::sleep(time::Duration::from_secs(5));
-    ab!(cmk.delete(7)).unwrap();
+    sleep(time::Duration::from_secs(5)).await;
+    key.delete(7).await.unwrap();
+
+    Ok(())
 }

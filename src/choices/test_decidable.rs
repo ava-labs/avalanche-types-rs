@@ -1,6 +1,6 @@
-use crate::errors::{Error, Result};
 use crate::{
     choices::{decidable::Decidable, status::Status},
+    errors::{Error, Result},
     ids::Id,
 };
 
@@ -89,7 +89,7 @@ impl Decidable for TestDecidable {
                     status,
                     Status::Accepted
                 ),
-                is_retryable: false,
+                retryable: false,
             });
         }
         if self.accept_result.is_ok() {
@@ -108,7 +108,7 @@ impl Decidable for TestDecidable {
                     status,
                     Status::Rejected
                 ),
-                is_retryable: false,
+                retryable: false,
             });
         }
         if self.reject_result.is_ok() {
@@ -139,7 +139,7 @@ fn test_decidable() {
     let mut decidable = TestDecidable::new(id, Status::Processing);
     decidable.set_accept_result(Err(Error::Other {
         message: "test error".to_string(),
-        is_retryable: false,
+        retryable: false,
     }));
     assert_eq!(decidable.id(), id);
     assert_eq!(decidable.status(), Status::Processing);
@@ -152,7 +152,7 @@ fn test_decidable() {
         Ok(()),
         Err(Error::Other {
             message: "test error".to_string(),
-            is_retryable: false,
+            retryable: false,
         }),
     );
     assert_eq!(decidable.id(), id);

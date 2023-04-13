@@ -1,5 +1,6 @@
 //! Current runtime state of a VM.
 pub mod engine;
+pub mod validators;
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow#State>
 #[derive(PartialEq, Eq)]

@@ -1,10 +1,9 @@
-use std::{
-    cmp::Ordering,
-    io::{self, Error, ErrorKind},
-};
+use std::cmp::Ordering;
 
-use super::{
-    codec, formatting,
+use crate::{
+    codec,
+    errors::{Error, Result},
+    formatting,
     ids::{self, short},
     key, packer, platformvm,
 };
@@ -40,7 +39,7 @@ impl Id {
         }
     }
 
-    pub fn new(tx_id: &[u8], output_index: u32, symbol: bool) -> io::Result<Self> {
+    pub fn new(tx_id: &[u8], output_index: u32, symbol: bool) -> Result<Self> {
         let tx_id = ids::Id::from_slice(tx_id);
         let prefixes: Vec<u64> = vec![output_index as u64];
         let id = tx_id.prefix(&prefixes)?;
@@ -172,7 +171,7 @@ impl Utxo {
     }
 
     /// Hex-encodes the Utxo with the prepended "0x".
-    pub fn to_hex(&self) -> io::Result<String> {
+    pub fn to_hex(&self) -> Result<String> {
         let packer = self.pack(codec::VERSION)?;
         let b = packer.take_bytes();
 
@@ -181,28 +180,27 @@ impl Utxo {
     }
 
     /// Parses the raw hex-encoded data from the "getUTXOs" API.
-    pub fn from_hex(d: &str) -> io::Result<Self> {
+    pub fn from_hex(d: &str) -> Result<Self> {
         // ref. "utils/formatting.encode" prepends "0x" for "Hex" encoding
         let d = d.trim_start_matches("0x");
 
-        let decoded = formatting::decode_hex_with_checksum(d.as_bytes())?;
+        let decoded =
+            formatting::decode_hex_with_checksum(d.as_bytes()).map_err(|e| Error::Other {
+                message: format!("failed formatting::decode_hex_with_checksum '{}'", e),
+                retryable: false,
+            })?;
         Self::unpack(&decoded)
     }
 
     /// Packes the Utxo.
-    pub fn pack(&self, codec_version: u16) -> io::Result<packer::Packer> {
+    pub fn pack(&self, codec_version: u16) -> Result<packer::Packer> {
         // ref. "avalanchego/codec.manager.Marshal", "vms/avm.newCustomCodecs"
         // ref. "math.MaxInt32" and "constants.DefaultByteSliceCap" in Go
         let packer = packer::Packer::new((1 << 31) - 1, 128);
 
         // codec version
         // ref. "avalanchego/codec.manager.Marshal"
-        packer.pack_u16(codec_version).map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidInput,
-                format!("couldn't pack codec version {}", e), // ref. "errCantPackVersion"
-            )
-        })?;
+        packer.pack_u16(codec_version)?;
 
         packer.pack_bytes(self.utxo_id.tx_id.as_ref())?;
         packer.pack_u32(self.utxo_id.output_index)?;
@@ -242,7 +240,7 @@ impl Utxo {
     /// Parses raw bytes to "Utxo".
     /// It assumes the data are already decoded from "hex".
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/components/avax#UTXO>
-    pub fn unpack(d: &[u8]) -> io::Result<Self> {
+    pub fn unpack(d: &[u8]) -> Result<Self> {
         let packer = packer::Packer::load_bytes_for_unpack(d.len() + 1024, d);
 
         let _codec_version = packer.unpack_u16()?;
@@ -269,10 +267,10 @@ impl Utxo {
             7 => {}
             22 => {}
             _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidInput,
-                    format!("unknown type ID for verify.State {}", type_id_verify_state),
-                ));
+                return Err(Error::Other {
+                    message: format!("unknown type ID for verify.State {}", type_id_verify_state),
+                    retryable: false,
+                })
             }
         }
 

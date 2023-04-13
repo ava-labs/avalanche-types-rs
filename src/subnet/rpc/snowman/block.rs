@@ -40,3 +40,57 @@ pub trait Parser {
 
     async fn parse_block(&self, bytes: &[u8]) -> Result<<Self as Parser>::Block>;
 }
+
+/// Defines the block context that will be optionally provided by the proposervm
+/// to an underlying vm.
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#Context>
+pub struct Context {
+    /// Height that this block will use to verify it's state.  In the
+    /// proposervm, blocks verify the proposer based on the P-chain height
+    /// recorded in the parent block. The P-chain height provided here is also
+    /// the parent's P-chain height, not this block's P-chain height.
+    ///
+    /// Because PreForkBlocks and PostForkOptions do not verify their execution
+    /// against the P-chain's state, this context is undefined for those blocks.
+    pub p_chain_height: u64,
+}
+
+/// Defines the trait a [`ChainVm`] can optionally implement to consider the
+/// P-Chain height when building blocks.
+///
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#BuildBlockWithContextChainVM>
+#[tonic::async_trait]
+pub trait BuildBlockWithContextChainVM {
+    type Block: snowman::Block;
+
+    /// Attempt to build a new block given that the P-Chain height is
+    /// [block_ctx.p_chain_height].
+    ///
+    /// This method will be called if and only if the proposervm is activated.
+    /// Otherwise [build_block] will be called.
+    async fn build_block_with_context(
+        &self,
+        blk_context: &Context,
+    ) -> Result<<Self as BuildBlockWithContextChainVM>::Block>;
+}
+
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#WithVerifyContext>
+#[tonic::async_trait]
+pub trait WithVerifyContext {
+    /// Returns true if [`verify_with_context`] should be called.
+    /// Returns false if [verify] should be called.
+    ///
+    /// This method will be called if and only if the proposervm is activated.
+    /// Otherwise [verify] will be called.
+    async fn should_verify_with_context(&self) -> Result<bool>;
+
+    /// Verify that the state transition this block would make if accepted is
+    /// valid. If the state transition is invalid, a non-nil error should be
+    /// returned.
+    ///
+    /// It is guaranteed that the Parent has been successfully verified.
+    ///
+    /// This method may be called again with a different context.
+    async fn verify_with_context(&self, blk_context: &Context) -> Result<()>;
+}

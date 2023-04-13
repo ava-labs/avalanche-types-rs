@@ -8,7 +8,7 @@ use aws_manager::kms;
 use ethers_providers::{Http, Middleware, Provider};
 use primitive_types::U256;
 
-/// cargo run --example evm_send_raw_transaction_eip1559_kms_aws -- [HTTP RPC ENDPOINT] [KMS_CMK_ARN]
+/// cargo run --example evm_send_raw_transaction_eip1559_kms_aws -- [HTTP RPC ENDPOINT] [KMS_KEY_ARN]
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // ref. <https://github.com/env-logger-rs/env_logger/issues/47>
@@ -21,8 +21,8 @@ async fn main() -> io::Result<()> {
         .expect("could not instantiate HTTP Provider");
     log::info!("created chain rpc server provider for {chain_rpc_url}");
 
-    let kms_cmk_arn = args().nth(2).expect("no KMS CMK ARN given");
-    log::info!("running with {kms_cmk_arn}");
+    let kms_key_arn = args().nth(2).expect("no KMS key ARN given");
+    log::info!("running with {kms_key_arn}");
 
     let chain_id = random_manager::u64() % 3000;
     let signer_nonce = U256::from(random_manager::u64() % 10);
@@ -30,15 +30,15 @@ async fn main() -> io::Result<()> {
     let max_fee_per_gas = U256::from(random_manager::u64() % 10000);
     let value = U256::from(random_manager::u64() % 100000);
 
-    let shared_config = aws_manager::load_config(None, None).await?;
+    let shared_config = aws_manager::load_config(None, None).await;
     let kms_manager = kms::Manager::new(&shared_config);
     let k1 =
-        avalanche_types::key::secp256k1::kms::aws::Cmk::from_arn(kms_manager.clone(), &kms_cmk_arn)
+        avalanche_types::key::secp256k1::kms::aws::Key::from_arn(kms_manager.clone(), &kms_key_arn)
             .await
             .unwrap();
 
     let key_info1 = k1.to_info(1).unwrap();
-    log::info!("loaded CMK\n\n{}\n(network Id 1)\n", key_info1);
+    log::info!("loaded key\n\n{}\n(network Id 1)\n", key_info1);
 
     let k1_signer = KmsAwsSigner::new(k1, U256::from(chain_id)).unwrap();
 

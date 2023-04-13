@@ -6,13 +6,10 @@ pub mod create_subnet;
 pub mod export;
 pub mod import;
 
-use std::{
-    cmp,
-    io::{self, Error, ErrorKind},
-    time::SystemTime,
-};
+use std::{cmp, time::SystemTime};
 
 use crate::{
+    errors::{Error, Result},
     ids::{self, node},
     jsonrpc::client::p as client_p,
     key, platformvm, txs, wallet,
@@ -43,7 +40,7 @@ where
     T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone,
 {
     /// Fetches the current balance of the wallet owner from the specified HTTP endpoint.
-    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> io::Result<u64> {
+    pub async fn balance_with_endpoint(&self, http_rpc: &str) -> Result<u64> {
         let resp = client_p::get_balance(http_rpc, &self.inner.p_address).await?;
         let cur_balance = resp
             .result
@@ -54,7 +51,7 @@ where
 
     /// Fetches the current balance of the wallet owner from all endpoints
     /// in the same order of "self.http_rpcs".
-    pub async fn balances(&self) -> io::Result<Vec<u64>> {
+    pub async fn balances(&self) -> Result<Vec<u64>> {
         let mut balances = Vec::new();
         for http_rpc in self.inner.base_http_urls.iter() {
             let balance = self.balance_with_endpoint(http_rpc).await?;
@@ -64,14 +61,14 @@ where
     }
 
     /// Fetches the current balance of the wallet owner.
-    pub async fn balance(&self) -> io::Result<u64> {
+    pub async fn balance(&self) -> Result<u64> {
         self.balance_with_endpoint(&self.inner.pick_base_http_url().1)
             .await
     }
 
     /// Fetches UTXOs for "P" chain.
     /// TODO: cache this like avalanchego
-    pub async fn utxos(&self) -> io::Result<Vec<txs::utxo::Utxo>> {
+    pub async fn utxos(&self) -> Result<Vec<txs::utxo::Utxo>> {
         let resp =
             client_p::get_utxos(&self.inner.pick_base_http_url().1, &self.inner.p_address).await?;
         let utxos = resp
@@ -83,7 +80,7 @@ where
     }
 
     /// Returns "true" if the node_id is a current primary network validator.
-    pub async fn is_primary_network_validator(&self, node_id: &node::Id) -> io::Result<bool> {
+    pub async fn is_primary_network_validator(&self, node_id: &node::Id) -> Result<bool> {
         let resp =
             client_p::get_primary_network_validators(&self.inner.pick_base_http_url().1).await?;
         let resp = resp
@@ -104,7 +101,7 @@ where
         &self,
         node_id: &node::Id,
         subnet_id: &ids::Id,
-    ) -> io::Result<bool> {
+    ) -> Result<bool> {
         let resp = client_p::get_subnet_validators(
             &self.inner.pick_base_http_url().1,
             &subnet_id.to_string(),
@@ -134,7 +131,7 @@ where
         &self,
         amount: u64,
         fee: u64,
-    ) -> io::Result<(
+    ) -> Result<(
         Vec<txs::transferable::Input>,
         Vec<txs::transferable::Output>,
         Vec<txs::transferable::Output>,
@@ -345,16 +342,16 @@ where
             amount
         );
         if amount_burned < fee || amount_staked < amount {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!(
+            return Err(Error::Other {
+                message: format!(
                     "provided keys have balance (unlocked/burned amount so far, locked/staked amount so far) ({}, {}) but need ({}, {})",
                     amount_burned,
                     amount_staked,
                     fee,
                     amount
                 ),
-            ));
+                retryable: false,
+            });
         }
 
         // TODO: for now just ignore "signers" in the sorting
@@ -372,7 +369,7 @@ where
     async fn authorize(
         &self,
         subnet_id: ids::Id,
-    ) -> io::Result<(key::secp256k1::txs::Input, Vec<Vec<T>>)> {
+    ) -> Result<(key::secp256k1::txs::Input, Vec<Vec<T>>)> {
         log::info!("authorizing subnet {}", subnet_id);
 
         let tx =
@@ -391,7 +388,10 @@ where
                 .match_threshold(&output_owners, now_unix);
             let threshold_met = res.is_some();
             if !threshold_met {
-                return Err(Error::new(ErrorKind::Other, "no threshold met, can't sign"));
+                return Err(Error::Other {
+                    message: "no threshold met, can't sign".to_string(),
+                    retryable: false,
+                });
             }
             let (sig_indices, keys) = res.unwrap();
 
@@ -404,7 +404,10 @@ where
             ));
         }
 
-        return Err(Error::new(ErrorKind::Other, "empty get tx result"));
+        return Err(Error::Other {
+            message: "empty get tx result".to_string(),
+            retryable: false,
+        });
     }
 
     /// Subnet validators must validate the primary network.

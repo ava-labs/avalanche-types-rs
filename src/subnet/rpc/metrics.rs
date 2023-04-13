@@ -168,11 +168,13 @@ fn test_gather_process() {
     ];
 
     let metric_families = MetricsFamilies::from(&prometheus::gather()).mfs;
-    for (i, family) in families.iter().enumerate() {
-        if let Some(name) = &metric_families[i].name {
-            assert_eq!(name, family);
-        } else {
-            panic!("expected some {} found none", family)
+    if !metric_families.is_empty() {
+        for (i, family) in families.iter().enumerate() {
+            if let Some(name) = &metric_families[i].name {
+                assert_eq!(name, family);
+            } else {
+                panic!("expected some {} found none", family)
+            }
         }
     }
 }

@@ -1,6 +1,4 @@
-use std::io::{self, Error, ErrorKind};
-
-use crate::{codec, hash, ids, key, txs};
+use crate::{codec, errors::Result, hash, ids, key, txs};
 use serde::{Deserialize, Serialize};
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#CreateSubnetTx>
@@ -63,10 +61,7 @@ impl Tx {
 
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#Tx.Sign
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/crypto#PrivateKeyED25519.SignHash
-    pub async fn sign<T: key::secp256k1::SignOnly>(
-        &mut self,
-        signers: Vec<Vec<T>>,
-    ) -> io::Result<()> {
+    pub async fn sign<T: key::secp256k1::SignOnly>(&mut self, signers: Vec<Vec<T>>) -> Result<()> {
         // marshal "unsigned tx" with the codec version
         let type_id = Self::type_id();
         let packer = self.base_tx.pack(codec::VERSION, type_id)?;
@@ -113,9 +108,7 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&tx_bytes_hash).await.map_err(|e| {
-                    Error::new(ErrorKind::Other, format!("failed sign_digest {}", e))
-                })?;
+                let sig = k.sign_digest(&tx_bytes_hash).await?;
                 sigs.push(Vec::from(sig));
             }
 

@@ -1,6 +1,4 @@
-use std::io;
-
-use crate::{ids, packer::Packer, txs::raw};
+use crate::{errors::Result, ids, packer::Packer, txs::raw};
 
 /// Vertex represents a set of transactions for Avalanche X-chain.
 ///
@@ -19,7 +17,7 @@ impl Packer {
     /// Encodes vertex fields with codec version and packer.
     ///
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/avalanche/vertex#Build>
-    pub fn pack_vertex(&self, vtx: &mut Vertex) -> io::Result<()> {
+    pub fn pack_vertex(&self, vtx: &mut Vertex) -> Result<()> {
         // sort "parent_ids"
         // ref. "ids.SortIDs"
         vtx.parent_ids.sort();
@@ -51,7 +49,7 @@ impl Packer {
     /// Unpacks the vertex.
     ///
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/avalanche/vertex#Build>
-    pub fn unpack_vertex(&self) -> io::Result<Vertex> {
+    pub fn unpack_vertex(&self) -> Result<Vertex> {
         let codec_version = self.unpack_u16()?;
 
         let chain_id = self.unpack_bytes(ids::LEN)?;

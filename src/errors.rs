@@ -7,10 +7,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Backing errors for all consensus operations.
 #[derive(Clone, Debug, Error)]
 pub enum Error {
-    #[error("failed API (message: {message:?}, is_retryable: {is_retryable:?})")]
-    API { message: String, is_retryable: bool },
-    #[error("failed for other reasons (message: {message:?}, is_retryable: {is_retryable:?})")]
-    Other { message: String, is_retryable: bool },
+    #[error("failed API (message: {message:?}, retryable: {retryable:?})")]
+    API { message: String, retryable: bool },
+    #[error("failed for other reasons (message: {message:?}, retryable: {retryable:?})")]
+    Other { message: String, retryable: bool },
 }
 
 impl Error {
@@ -26,9 +26,9 @@ impl Error {
     /// Returns if the error is retryable.
     #[inline]
     #[must_use]
-    pub fn is_retryable(&self) -> bool {
+    pub fn retryable(&self) -> bool {
         match self {
-            Error::API { is_retryable, .. } | Error::Other { is_retryable, .. } => *is_retryable,
+            Error::API { retryable, .. } | Error::Other { retryable, .. } => *retryable,
         }
     }
 
@@ -69,7 +69,7 @@ impl Default for Errors {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut errs: Vec<String> = Vec::new();

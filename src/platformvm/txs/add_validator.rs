@@ -1,6 +1,8 @@
-use std::io::{self, Error, ErrorKind};
-
-use crate::{codec, hash, ids, key, platformvm, txs};
+use crate::{
+    codec,
+    errors::{Error, Result},
+    hash, ids, key, platformvm, txs,
+};
 use serde::{Deserialize, Serialize};
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm/txs#AddValidatorTx>
@@ -72,7 +74,7 @@ impl Tx {
     pub async fn sign<T: key::secp256k1::SignOnly + Clone>(
         &mut self,
         signers: Vec<Vec<T>>,
-    ) -> io::Result<()> {
+    ) -> Result<()> {
         // marshal "unsigned tx" with the codec version
         let type_id = Self::type_id();
         let packer = self.base_tx.pack(codec::VERSION, type_id)?;
@@ -113,10 +115,10 @@ impl Tx {
                 if transferable_output.transfer_output.is_none()
                     && transferable_output.stakeable_lock_out.is_none()
                 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "unexpected Nones in TransferableOutput transfer_output and stakeable_lock_out",
-                    ));
+                    return Err(Error::Other {
+                        message: "unexpected Nones in TransferableOutput transfer_output and stakeable_lock_out".to_string(),
+                        retryable: false,
+                    });
                 }
                 let type_id_transferable_out = {
                     if transferable_output.transfer_output.is_some() {
@@ -191,13 +193,13 @@ impl Tx {
                         }
                     }
                     _ => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidInput,
-                            format!(
+                        return Err(Error::Other {
+                            message: format!(
                                 "unexpected type ID {} for TransferableOutput",
                                 type_id_transferable_out
                             ),
-                        ));
+                            retryable: false,
+                        });
                     }
                 }
             }
@@ -240,9 +242,7 @@ impl Tx {
         for keys in signers.iter() {
             let mut sigs: Vec<Vec<u8>> = Vec::new();
             for k in keys.iter() {
-                let sig = k.sign_digest(&tx_bytes_hash).await.map_err(|e| {
-                    Error::new(ErrorKind::Other, format!("failed sign_digest {}", e))
-                })?;
+                let sig = k.sign_digest(&tx_bytes_hash).await?;
                 sigs.push(Vec::from(sig));
             }
 

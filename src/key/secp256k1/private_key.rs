@@ -1,9 +1,7 @@
-use std::{
-    collections::HashMap,
-    io::{self, Error, ErrorKind},
-};
+use std::collections::HashMap;
 
 use crate::{
+    errors::{Error, Result},
     formatting, hash,
     ids::short,
     key::{
@@ -49,37 +47,36 @@ fn secure_random() -> &'static dyn SecureRandom {
 impl Key {
     /// Generates a private key from random bytes.
     #[cfg(all(not(windows)))]
-    pub fn generate() -> io::Result<Self> {
+    pub fn generate() -> Result<Self> {
         let mut b = [0u8; LEN];
-        secure_random()
-            .fill(&mut b)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed secure_random {}", e)))?;
+        secure_random().fill(&mut b).map_err(|e| Error::Other {
+            message: format!("failed secure_random {}", e),
+            retryable: false,
+        })?;
         Self::from_bytes(&b)
     }
 
     #[cfg(all(windows))]
-    pub fn generate() -> io::Result<Self> {
+    pub fn generate() -> Result<Self> {
         unimplemented!("not implemented")
     }
 
     /// Loads the private key from the raw scalar bytes.
-    pub fn from_bytes(raw: &[u8]) -> io::Result<Self> {
+    pub fn from_bytes(raw: &[u8]) -> Result<Self> {
         if raw.len() != LEN {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!(
+            return Err(Error::Other {
+                message: format!(
                     "k256::SecretKey must be {}-byte, got {}-byte",
                     LEN,
                     raw.len()
                 ),
-            ));
+                retryable: false,
+            });
         }
 
-        let sk = SecretKey::from_slice(raw).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed k256::SecretKey::from_slice {}", e),
-            )
+        let sk = SecretKey::from_slice(raw).map_err(|e| Error::Other {
+            message: format!("failed k256::SecretKey::from_slice {}", e),
+            retryable: false,
         })?;
         let signing_key = SigningKey::from(sk.clone());
 
@@ -110,15 +107,17 @@ impl Key {
     }
 
     /// Loads the private key from a hex-encoded string (e.g., Ethereum).
-    pub fn from_hex<S>(s: S) -> io::Result<Self>
+    pub fn from_hex<S>(s: S) -> Result<Self>
     where
         S: Into<String>,
     {
         let ss: String = s.into();
         let ss = ss.trim_start_matches(HEX_ENCODE_PREFIX);
 
-        let b = hex::decode(ss)
-            .map_err(|e| Error::new(ErrorKind::Other, format!("failed hex::decode {}", e)))?;
+        let b = hex::decode(ss).map_err(|e| Error::Other {
+            message: format!("failed hex::decode '{}'", e),
+            retryable: false,
+        })?;
         Self::from_bytes(&b)
     }
 
@@ -135,14 +134,17 @@ impl Key {
     /// Loads the private key from a CB58-encoded string (e.g., Avalanche).
     /// Once decoded and with its "PrivateKey-" prefix removed,
     /// the length must be 32-byte.
-    pub fn from_cb58<S>(s: S) -> io::Result<Self>
+    pub fn from_cb58<S>(s: S) -> Result<Self>
     where
         S: Into<String>,
     {
         let ss: String = s.into();
         let ss = ss.trim_start_matches(CB58_ENCODE_PREFIX);
 
-        let b = formatting::decode_cb58_with_checksum(ss)?;
+        let b = formatting::decode_cb58_with_checksum(ss).map_err(|e| Error::Other {
+            message: format!("failed decode_cb58_with_checksum '{}'", e),
+            retryable: false,
+        })?;
         Self::from_bytes(&b)
     }
 
@@ -152,7 +154,7 @@ impl Key {
     }
 
     /// Converts to Info.
-    pub fn to_info(&self, network_id: u32) -> io::Result<key::secp256k1::Info> {
+    pub fn to_info(&self, network_id: u32) -> Result<key::secp256k1::Info> {
         let pk_cb58 = self.to_cb58();
         let pk_hex = self.to_hex();
 
@@ -190,27 +192,25 @@ impl Key {
     /// "github.com/decred/dcrd/dcrec/secp256k1/v3/ecdsa.SignCompact" outputs 65-byte signature.
     /// ref. "avalanchego/utils/crypto.PrivateKeySECP256K1R.SignHash"
     /// ref. <https://github.com/rust-bitcoin/rust-secp256k1/blob/master/src/ecdsa/recovery.rs>
-    pub fn sign_digest(&self, digest: &[u8]) -> io::Result<Sig> {
+    pub fn sign_digest(&self, digest: &[u8]) -> Result<Sig> {
         // ref. "crypto/sha256.Size"
         if digest.len() != hash::SHA256_OUTPUT_LEN {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!(
+            return Err(Error::Other {
+                message: format!(
                     "sign_digest only takes {}-byte, got {}-byte",
                     hash::SHA256_OUTPUT_LEN,
                     digest.len()
                 ),
-            ));
+                retryable: false,
+            });
         }
 
         let secret_scalar = self.0 .1.as_nonzero_scalar();
 
         // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "PrehashSigner"
-        let prehash = <[u8; 32]>::try_from(digest).map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidData,
-                format!("failed to convert prehash '{}'", e),
-            )
+        let prehash = <[u8; 32]>::try_from(digest).map_err(|e| Error::Other {
+            message: format!("failed to convert prehash '{}'", e),
+            retryable: false,
         })?;
         let prehash = GenericArray::from_slice(&prehash);
 
@@ -218,17 +218,18 @@ impl Key {
         // ref. <https://github.com/RustCrypto/elliptic-curves/blob/k256/v0.11.6/k256/src/ecdsa/sign.rs> "sign_prehash"
         let (sig, recid) = secret_scalar
             .try_sign_prehashed_rfc6979::<Sha256>(&prehash, &[])
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("failed try_sign_prehashed_rfc6979 '{}'", e),
-                )
+            .map_err(|e| Error::Other {
+                message: format!("failed try_sign_prehashed_rfc6979 '{}'", e),
+                retryable: false,
             })?;
 
         let recid = if let Some(ri) = recid {
             ri
         } else {
-            return Err(Error::new(ErrorKind::Other, "no recovery Id found"));
+            return Err(Error::Other {
+                message: "no recovery Id found".to_string(),
+                retryable: false,
+            });
         };
 
         Ok(Sig((sig, recid)))
@@ -236,7 +237,7 @@ impl Key {
 
     /// Derives the private key that uses libsecp256k1.
     #[cfg(feature = "libsecp256k1")]
-    pub fn to_libsecp256k1(&self) -> io::Result<crate::key::secp256k1::libsecp256k1::PrivateKey> {
+    pub fn to_libsecp256k1(&self) -> Result<crate::key::secp256k1::libsecp256k1::PrivateKey> {
         let b = self.to_bytes();
         crate::key::secp256k1::libsecp256k1::PrivateKey::from_bytes(&b)
     }
@@ -262,7 +263,7 @@ impl From<Key> for SecretKey {
 
 /// ref. <https://doc.rust-lang.org/std/string/trait.ToString.html>
 /// ref. <https://doc.rust-lang.org/std/fmt/trait.Display.html>
-/// Use "Self.to_string()" to directly invoke this
+/// Use "Self.to_string()" to directly invoke this.
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.to_bytes()))
@@ -271,13 +272,11 @@ impl std::fmt::Display for Key {
 
 #[async_trait]
 impl key::secp256k1::SignOnly for Key {
-    type Error = io::Error;
-
-    fn signing_key(&self) -> io::Result<SigningKey> {
+    fn signing_key(&self) -> Result<SigningKey> {
         Ok(self.signing_key())
     }
 
-    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65], io::Error> {
+    async fn sign_digest(&self, msg: &[u8]) -> Result<[u8; 65]> {
         let sig = self.sign_digest(msg)?;
         Ok(sig.to_bytes())
     }
@@ -289,16 +288,16 @@ impl key::secp256k1::ReadOnly for Key {
         key::secp256k1::KeyType::Hot
     }
 
-    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> io::Result<String> {
+    fn hrp_address(&self, network_id: u32, chain_id_alias: &str) -> Result<String> {
         self.to_public_key()
             .to_hrp_address(network_id, chain_id_alias)
     }
 
-    fn short_address(&self) -> io::Result<short::Id> {
+    fn short_address(&self) -> Result<short::Id> {
         self.to_public_key().to_short_id()
     }
 
-    fn short_address_bytes(&self) -> io::Result<Vec<u8>> {
+    fn short_address_bytes(&self) -> Result<Vec<u8>> {
         self.to_public_key().to_short_bytes()
     }
 
@@ -356,16 +355,11 @@ fn test_private_key() {
 
 /// Loads keys from texts, assuming each key is line-separated.
 /// Set "permute_keys" true to permute the key order from the contents "d".
-pub fn load_cb58_keys(d: &[u8], permute_keys: bool) -> io::Result<Vec<Key>> {
-    let text = match std::str::from_utf8(d) {
-        Ok(s) => s,
-        Err(e) => {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to convert str from_utf8 {}", e),
-            ));
-        }
-    };
+pub fn load_cb58_keys(d: &[u8], permute_keys: bool) -> Result<Vec<Key>> {
+    let text = std::str::from_utf8(d).map_err(|e| Error::Other {
+        message: format!("failed to convert str from_utf8 {}", e),
+        retryable: false,
+    })?;
 
     let mut lines = text.lines();
     let mut line_cnt = 1;
@@ -375,10 +369,10 @@ pub fn load_cb58_keys(d: &[u8], permute_keys: bool) -> io::Result<Vec<Key>> {
     loop {
         if let Some(s) = lines.next() {
             if added.get(s).is_some() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("key at line {} already added before", line_cnt),
-                ));
+                return Err(Error::Other {
+                    message: format!("key at line {} already added before", line_cnt),
+                    retryable: false,
+                });
             }
 
             keys.push(Key::from_cb58(s).unwrap());

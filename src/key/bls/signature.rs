@@ -100,22 +100,39 @@ fn test_signature() {
         .is_test(true)
         .try_init();
 
-    let sk = crate::key::bls::private_key::Key::generate().unwrap();
-    let pubkey = sk.to_public_key();
+    let msg_to_sign = random_manager::secure_bytes(50).unwrap();
 
-    let msg = random_manager::secure_bytes(50).unwrap();
-    let sig = sk.sign(&msg);
-    let sig_bytes = sig.to_compressed_bytes();
+    let sk1 = crate::key::bls::private_key::Key::generate().unwrap();
+    let pubkey1 = sk1.to_public_key();
 
-    assert!(sig.verify(&msg, &pubkey));
-    assert!(!sig.verify_proof_of_possession(&msg, &pubkey));
+    let sig1 = sk1.sign(&msg_to_sign);
+    let sig1_bytes = sig1.to_compressed_bytes();
+    assert!(sig1.verify(&msg_to_sign, &pubkey1));
+    assert!(!sig1.verify_proof_of_possession(&msg_to_sign, &pubkey1));
 
-    let sig_pos = sk.sign_proof_of_possession(&msg);
-    assert!(!sig_pos.verify(&msg, &pubkey));
-    assert!(sig_pos.verify_proof_of_possession(&msg, &pubkey));
-
-    let agg_sig = aggregate(&[sig]).unwrap();
+    let agg_sig = aggregate(&[sig1.clone()]).unwrap();
     let agg_sig_bytes = agg_sig.to_compressed_bytes();
+    assert_eq!(sig1_bytes, agg_sig_bytes);
 
-    assert_eq!(sig_bytes, agg_sig_bytes);
+    let sk2 = crate::key::bls::private_key::Key::generate().unwrap();
+    let pubkey2 = sk2.to_public_key();
+    let sig2 = sk2.sign(&msg_to_sign);
+
+    let sk3 = crate::key::bls::private_key::Key::generate().unwrap();
+    let pubkey3 = sk3.to_public_key();
+    let sig3 = sk3.sign(&msg_to_sign);
+
+    let agg_sig = aggregate(&[sig1, sig2, sig3]).unwrap();
+    let agg_pubkey = crate::key::bls::public_key::aggregate(&[pubkey1, pubkey2, pubkey3]).unwrap();
+    assert!(agg_pubkey.verify(&msg_to_sign, &agg_sig));
+
+    let sig1_pos = sk1.sign_proof_of_possession(&msg_to_sign);
+    assert!(!sig1_pos.verify(&msg_to_sign, &pubkey1));
+    assert!(sig1_pos.verify_proof_of_possession(&msg_to_sign, &pubkey1));
+
+    let sig2_pos = sk2.sign_proof_of_possession(&msg_to_sign);
+    let sig3_pos = sk3.sign_proof_of_possession(&msg_to_sign);
+
+    let agg_sig_pos = aggregate(&[sig1_pos, sig2_pos, sig3_pos]).unwrap();
+    assert!(agg_pubkey.verify_proof_of_possession(&msg_to_sign, &agg_sig_pos));
 }

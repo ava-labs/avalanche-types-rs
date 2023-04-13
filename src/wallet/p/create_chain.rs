@@ -1,6 +1,9 @@
-use std::io::{self, Error, ErrorKind};
-
-use crate::{formatting, ids, jsonrpc::client::p as client_p, key, platformvm, txs};
+use crate::{
+    errors::{Error, Result},
+    formatting, ids,
+    jsonrpc::client::p as client_p,
+    key, platformvm, txs,
+};
 use tokio::time::{sleep, Duration, Instant};
 
 /// Represents P-chain "CreateChain" transaction.
@@ -115,7 +118,7 @@ where
     }
 
     /// Issues the create chain transaction and returns the transaction Id.
-    pub async fn issue(&self) -> io::Result<ids::Id> {
+    pub async fn issue(&self) -> Result<ids::Id> {
         let picked_http_rpc = self.inner.inner.pick_base_http_url();
         log::info!(
             "creating a new chain for subnet {}, vm id {}, chain name {}, via {}",
@@ -157,10 +160,10 @@ where
         let resp = client_p::issue_tx(&picked_http_rpc.1, &hex_tx).await?;
 
         if let Some(e) = resp.error {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("failed to issue create chain transaction {:?}", e),
-            ));
+            return Err(Error::API {
+                message: format!("failed to issue create chain transaction {:?}", e),
+                retryable: false,
+            });
         }
 
         let tx_id = resp.result.unwrap().tx_id;
@@ -202,10 +205,10 @@ where
             sleep(self.poll_interval).await;
         }
         if !success {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "failed to check acceptance in time",
-            ));
+            return Err(Error::API {
+                message: "failed to check acceptance in time".to_string(),
+                retryable: true,
+            });
         }
 
         Ok(tx_id)
