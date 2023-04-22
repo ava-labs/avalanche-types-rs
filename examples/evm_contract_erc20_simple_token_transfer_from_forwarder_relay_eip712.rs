@@ -186,7 +186,7 @@ async fn main() -> io::Result<()> {
         .await
         .unwrap();
     log::info!(
-        "pending tx hash {} from 0x{:x}",
+        "pending tx hash 0x{:x} using no gas key 0x{:x}",
         pending.tx_hash(),
         no_gas_key_info.h160_address
     );

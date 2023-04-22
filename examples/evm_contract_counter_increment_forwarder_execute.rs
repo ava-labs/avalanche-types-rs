@@ -161,6 +161,7 @@ async fn main() -> io::Result<()> {
         .recipient(forwarder_contract_addr)
         .data(gas_payer_calldata)
         .urgent()
+        .check_receipt(true)
         .check_acceptance(true)
         .submit()
         .await

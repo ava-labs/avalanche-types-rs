@@ -6,6 +6,7 @@ use crate::{
     wallet::{self, evm},
 };
 use ethers::{prelude::Eip1559TransactionRequest, utils::Units::Gwei};
+use ethers_core::types::transaction::eip2718;
 use ethers_providers::Middleware;
 use lazy_static::lazy_static;
 use primitive_types::{H160, H256, U256};
@@ -132,8 +133,15 @@ where
     /// Arbitrary data.
     pub data: Option<Vec<u8>>,
 
+    /// Set "true" to check whether a transaction is confirmed using "eth_getTransactionReceipt".
+    /// If false, returns the transaction Id immediately after signing and sending the transaction.
+    /// The transaction may still be pending.
+    /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt>
+    pub check_receipt: bool,
+
     /// Set "true" to poll transfer status after issuance for its acceptance
     /// by calling "eth_getTransactionByHash".
+    /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash>
     pub check_acceptance: bool,
 
     /// Initial wait duration before polling for acceptance.
@@ -167,6 +175,7 @@ where
             value: None,
             data: None,
 
+            check_receipt: false,
             check_acceptance: false,
 
             poll_initial_wait: Duration::from_millis(500),
@@ -229,9 +238,21 @@ where
         self
     }
 
+    /// Sets the check receipt boolean flag.
+    #[must_use]
+    pub fn check_receipt(mut self, check_receipt: bool) -> Self {
+        self.check_receipt = check_receipt;
+        self
+    }
+
     /// Sets the check acceptance boolean flag.
+    /// If "true", overwrites "check_receipt" with "true".
+    /// If "false", does not overwrite "check_receipt" with "false".
     #[must_use]
     pub fn check_acceptance(mut self, check_acceptance: bool) -> Self {
+        if check_acceptance {
+            self.check_receipt = true;
+        }
         self.check_acceptance = check_acceptance;
         self
     }
@@ -266,7 +287,7 @@ where
 
     /// Issues the transaction and returns the transaction Id.
     /// ref. "coreth,subnet-evm/internal/ethapi.SubmitTransaction"
-    pub async fn submit(&self) -> Result<H256> {
+    pub async fn submit(&mut self) -> Result<H256> {
         let max_priority_fee_per_gas = if let Some(v) = self.max_priority_fee_per_gas {
             format!("{} GWEI", super::wei_to_gwei(v))
         } else {
@@ -279,32 +300,38 @@ where
         };
 
         log::info!(
-            "submitting transaction [chain Id {}, value {:?}, from {}, recipient {:?}, chain RPC URL {}, max_priority_fee_per_gas {max_priority_fee_per_gas}, max_fee_per_gas {max_fee_per_gas}, gas_limit {:?}]",
+            "submit tx [chain Id {}, value {:?}, from {}, recipient {:?}, chain RPC URL {}, max_priority_fee_per_gas {max_priority_fee_per_gas}, max_fee_per_gas {max_fee_per_gas}, gas_limit {:?}, dry_mode {}]",
             self.inner.chain_id,
             self.value,
             self.inner.inner.h160_address,
             self.recipient,
             self.inner.chain_rpc_url,
             self.gas_limit,
+            self.dry_mode,
         );
 
         let signer_nonce = if let Some(signer_nonce) = self.signer_nonce {
+            log::info!("using the existing signer nonce '{}'", signer_nonce);
             signer_nonce
         } else {
-            log::info!("nonce not specified -- fetching latest");
-            self.inner
-                .middleware
-                .initialize_nonce(None)
-                .await
-                .map_err(|e| {
-                    // TODO: check retryable
-                    Error::Other {
-                        message: format!("failed initialize_nonce '{}'", e),
-                        retryable: false,
-                    }
-                })?
+            let fetched_nonce =
+                self.inner
+                    .middleware
+                    .initialize_nonce(None)
+                    .await
+                    .map_err(|e| {
+                        // TODO: check retryable
+                        Error::Other {
+                            message: format!("failed initialize_nonce '{}'", e),
+                            retryable: false,
+                        }
+                    })?;
+
+            log::info!("no signer nonce, thus fetched/cached '{}'", fetched_nonce);
+            self.signer_nonce = Some(fetched_nonce);
+
+            fetched_nonce
         };
-        log::info!("latest signer nonce {}", signer_nonce);
 
         // "from" itself is not RLP-encoded field
         // "from" can be simply derived from signature and transaction hash
@@ -348,6 +375,60 @@ where
             tx_request = tx_request.data(data.clone());
         }
 
+        if self.dry_mode {
+            // note that the tx hash is only same iff there's no other worker
+            // signing/sending the transaction using the same key
+            // because tx hash differs for different nonces, different gas
+            // if other workers have used the same key (thus incremented the nonce)
+            // the hash returned from dry mode will be different
+            // ref. "ethers-middleware/signer" "send_transaction"
+            let gas_none = tx_request.gas.is_none();
+            let mut typed_tx: eip2718::TypedTransaction = tx_request.into();
+            if gas_none {
+                log::info!("dry-mode estimating gas");
+                let estimated_gas = self
+                    .inner
+                    .provider
+                    .estimate_gas(&typed_tx, None)
+                    .await
+                    .map_err(|e| {
+                        // TODO: check retryable
+                        Error::API {
+                            message: format!("failed estimate_gas '{}' for dry mode", e),
+                            retryable: false,
+                        }
+                    })?;
+
+                log::info!(
+                    "dry-mode caching estimated gas limit {} and updating 'gas' in typed tx",
+                    estimated_gas
+                );
+                self.gas_limit = estimated_gas.into();
+
+                typed_tx.set_gas(estimated_gas);
+            };
+
+            let signature = self
+                .inner
+                .eth_signer
+                .sign_transaction(&typed_tx)
+                .await
+                .map_err(|e| {
+                    // TODO: check retryable
+                    Error::API {
+                        message: format!("failed sign_transaction '{}' for dry-mode", e),
+                        retryable: false,
+                    }
+                })?;
+            let precomputed_tx_hash = typed_tx.hash(&signature);
+
+            log::info!(
+                "dry-mode pre-computed tx hash '0x{:x}'",
+                precomputed_tx_hash
+            );
+            return Ok(precomputed_tx_hash);
+        }
+
         let pending_tx = self
             .inner
             .middleware
@@ -356,20 +437,28 @@ where
             .map_err(|e| {
                 // e.g., 'Custom { kind: Other, error: "failed to send_transaction '(code: -32000, message: nonce too low: address 0xaa3033DB04bE0C31967bfC9D0D01bF04a0038526 current nonce (1562) > tx nonce (1561), data: None)'" }'
                 // e.g., 'Custom { kind: Other, error: "failed to send_transaction '(code: -32000, message: replacement transaction underpriced, data: None)'" }'
-                let mut is_retryable = false;
+                let mut retryable = false;
                 if e.to_string().contains("nonce too low")
                     || e.to_string().contains("transaction underpriced")
                     || e.to_string().contains("dropped from mempool")
                 {
-                    log::warn!("tx submit failed due to a retryable error; '{}'", e);
-                    is_retryable = true;
+                    log::warn!("tx submit failed with a retryable error; '{}'", e);
+                    retryable = true;
                 }
                 Error::API {
                     message: format!("failed to send_transaction '{}'", e),
-                    retryable: is_retryable,
+                    retryable,
                 }
             })?;
+        let sent_tx_hash = H256(pending_tx.tx_hash().0);
+        if !self.check_receipt {
+            log::info!("sent tx '0x{:x}'", sent_tx_hash);
+            return Ok(sent_tx_hash);
+        }
 
+        // blocks until "eth_getTransactionReceipt" returns
+        // thus this tx is confirmed (not pending)
+        log::info!("checking sent tx receipt '0x{:x}'", sent_tx_hash);
         let tx_receipt = pending_tx.await.map_err(|e| {
             // TODO: check retryable
             Error::API {
@@ -377,15 +466,19 @@ where
                 retryable: false,
             }
         })?;
+
+        // "receipt is not available for pending transactions"
+        // ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt>
         if tx_receipt.is_none() {
             return Err(Error::API {
-                message: "tx dropped from mempool".to_string(),
+                message: "tx dropped from mempool or pending".to_string(),
                 retryable: true,
             });
         }
+
         let tx_receipt = tx_receipt.unwrap();
         let tx_hash = H256(tx_receipt.transaction_hash.0);
-        log::info!("issued transaction '0x{:x}'", tx_hash);
+        log::info!("confirmed sent tx receipt '0x{:x}'", tx_hash);
 
         if !self.check_acceptance {
             log::debug!("skipping checking acceptance for '0x{:x}'", tx_hash);
@@ -405,8 +498,18 @@ where
                     retryable: false,
                 }
             })?;
+
         // serde_json::to_string(&tx).unwrap()
         if let Some(inner) = &tx {
+            if inner.hash() != sent_tx_hash {
+                return Err(Error::API {
+                    message: format!(
+                        "eth_getTransactionByHash returned unexpected tx hash '0x{:x}' (expected '0x{:x}')",
+                        inner.hash(), sent_tx_hash
+                    ),
+                    retryable: false,
+                });
+            }
             if inner.hash() != tx_receipt.transaction_hash {
                 return Err(Error::API {
                     message: format!(
@@ -418,8 +521,13 @@ where
             }
         } else {
             log::warn!("transaction '0x{:x}' still pending", tx_hash);
+            return Err(Error::API {
+                message: "tx still pending".to_string(),
+                retryable: true,
+            });
         }
 
+        log::info!("confirmed tx acceptance '0x{:x}'", tx_hash);
         Ok(tx_hash)
     }
 }

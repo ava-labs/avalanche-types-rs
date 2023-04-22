@@ -63,6 +63,7 @@ async fn main() -> io::Result<()> {
         .recipient(contract_addr) // contract address that this transaction will interact with
         .data(calldata)
         .urgent()
+        .check_receipt(true)
         .check_acceptance(true)
         .submit()
         .await

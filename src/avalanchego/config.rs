@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use crate::{avalanchego::genesis, constants};
+use crate::{avalanchego::genesis, constants, units};
 use serde::{Deserialize, Serialize};
 
 /// Represents AvalancheGo configuration.
@@ -205,7 +205,7 @@ pub struct Config {
     pub throttler_inbound_node_max_at_large_bytes: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub snow_mixed_query_num_push_vdr_uint: Option<u64>,
+    pub snow_mixed_query_num_push_vdr: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub consensus_gossip_frequency: Option<i64>,
@@ -323,8 +323,19 @@ pub const DEFAULT_CHAIN_CONFIG_DIR: &str = "/data/avalanche-configs/chains";
 /// MUST BE a valid path in remote host machine.
 pub const DEFAULT_PROFILE_DIR: &str = "/var/log/avalanchego-profile/avalanche";
 
-pub const DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE: u64 = 6291456;
-pub const DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES: u64 = 2097152;
+/// ref. <DefaultInboundThrottlerAtLargeAllocSize>
+pub const DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE: u64 = 6 * units::MIB;
+/// ref. <DefaultInboundThrottlerVdrAllocSize>
+pub const DEFAULT_THROTTLER_INBOUND_VALIDATOR_ALLOC_SIZE: u64 = 32 * units::MIB;
+/// ref. <DefaultInboundThrottlerNodeMaxAtLargeBytes>
+pub const DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES: u64 = 2 * units::MIB;
+
+/// ref. <DefaultOutboundThrottlerAtLargeAllocSize>
+pub const DEFAULT_THROTTLER_OUTBOUND_AT_LARGE_ALLOC_SIZE: u64 = 32 * units::MIB;
+/// ref. <DefaultOutboundThrottlerVdrAllocSize>
+pub const DEFAULT_THROTTLER_OUTBOUND_VALIDATOR_ALLOC_SIZE: u64 = 32 * units::MIB;
+/// ref. <DefaultOutboundThrottlerNodeMaxAtLargeBytes>
+pub const DEFAULT_THROTTLER_OUTBOUND_NODE_MAX_AT_LARGE_BYTES: u64 = 2 * units::MIB;
 
 pub const DEFAULT_NETWORK_COMPRESSION_TYPE: &str = "gzip";
 
@@ -416,12 +427,14 @@ impl Config {
             throttler_inbound_at_large_alloc_size: Some(
                 DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
             ),
-            throttler_inbound_validator_alloc_size: None,
+            throttler_inbound_validator_alloc_size: Some(
+                DEFAULT_THROTTLER_INBOUND_VALIDATOR_ALLOC_SIZE,
+            ),
             throttler_inbound_node_max_at_large_bytes: Some(
                 DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
             ),
 
-            snow_mixed_query_num_push_vdr_uint: Some(10),
+            snow_mixed_query_num_push_vdr: Some(10),
 
             consensus_gossip_frequency: Some(10000000000), // 10-second
             consensus_app_concurrency: Some(2),
@@ -431,9 +444,15 @@ impl Config {
             consensus_on_accept_gossip_peer_size: Some(10),
             consensus_accepted_frontier_gossip_peer_size: Some(10),
 
-            throttler_outbound_at_large_alloc_size: None,
-            throttler_outbound_validator_alloc_size: None,
-            throttler_outbound_node_max_at_large_bytes: None,
+            throttler_outbound_at_large_alloc_size: Some(
+                DEFAULT_THROTTLER_OUTBOUND_AT_LARGE_ALLOC_SIZE,
+            ),
+            throttler_outbound_validator_alloc_size: Some(
+                DEFAULT_THROTTLER_OUTBOUND_VALIDATOR_ALLOC_SIZE,
+            ),
+            throttler_outbound_node_max_at_large_bytes: Some(
+                DEFAULT_THROTTLER_OUTBOUND_NODE_MAX_AT_LARGE_BYTES,
+            ),
 
             network_minimum_timeout: None,
             network_require_validator_to_connect: None,
@@ -447,211 +466,18 @@ impl Config {
     /// The defaults do not match with the ones in avalanchego,
     /// as this is for avalanche-ops based deployments.
     pub fn default_fuji() -> Self {
-        Self {
-            config_file: Some(String::from(DEFAULT_CONFIG_FILE_PATH)),
-            genesis: None,
-
-            network_id: 5,
-
-            db_type: String::from(DEFAULT_DB_TYPE),
-            db_dir: String::from(DEFAULT_DB_DIR),
-            chain_data_dir: String::from(DEFAULT_CHAIN_DATA_DIR),
-            log_dir: String::from(DEFAULT_LOG_DIR),
-            log_level: Some(String::from(DEFAULT_LOG_LEVEL)),
-            log_format: Some(String::from(DEFAULT_LOG_FORMAT)),
-            log_display_level: None,
-
-            http_port: DEFAULT_HTTP_PORT,
-            http_host: Some(String::from(DEFAULT_HTTP_HOST)),
-            http_tls_enabled: Some(DEFAULT_HTTP_TLS_ENABLED),
-            http_tls_key_file: None,
-            http_tls_cert_file: None,
-            public_ip: None,
-
-            staking_enabled: Some(DEFAULT_STAKING_ENABLED),
-            staking_port: DEFAULT_STAKING_PORT,
-            staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
-            staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
-            staking_signer_key_file: Some(String::from(DEFAULT_STAKING_SIGNER_KEY_FILE)),
-
-            bootstrap_ips: None,
-            bootstrap_ids: None,
-
-            snow_sample_size: Some(DEFAULT_SNOW_SAMPLE_SIZE),
-            snow_quorum_size: Some(DEFAULT_SNOW_QUORUM_SIZE),
-            snow_concurrent_repolls: None,
-            snow_max_time_processing: None,
-            snow_rogue_commit_threshold: None,
-            snow_virtuous_commit_threshold: None,
-
-            network_peer_list_gossip_frequency: None,
-            network_max_reconnect_delay: None,
-
-            index_enabled: Some(DEFAULT_INDEX_ENABLED),
-            index_allow_incomplete: Some(DEFAULT_INDEX_ALLOW_INCOMPLETE),
-
-            api_admin_enabled: Some(DEFAULT_API_ADMIN_ENABLED),
-            api_info_enabled: Some(DEFAULT_API_INFO_ENABLED),
-            api_keystore_enabled: Some(DEFAULT_API_KEYSTORE_ENABLED),
-            api_metrics_enabled: Some(DEFAULT_API_METRICS_ENABLED),
-            api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
-            api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
-
-            track_subnets: None,
-
-            plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
-            subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
-            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
-
-            state_sync_ids: None,
-            state_sync_ips: None,
-
-            profile_dir: Some(String::from(DEFAULT_PROFILE_DIR)),
-            profile_continuous_enabled: None,
-            profile_continuous_freq: None,
-            profile_continuous_max_files: None,
-
-            proposervm_use_current_height: Some(true),
-            throttler_inbound_node_max_processing_msgs: Some(100000),
-            throttler_inbound_bandwidth_refill_rate: Some(1073741824),
-            throttler_inbound_bandwidth_max_burst_size: Some(1073741824),
-            throttler_inbound_cpu_validator_alloc: Some(100000),
-            throttler_inbound_disk_validator_alloc: Some(10737418240000),
-
-            throttler_inbound_at_large_alloc_size: Some(
-                DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
-            ),
-            throttler_inbound_validator_alloc_size: None,
-            throttler_inbound_node_max_at_large_bytes: Some(
-                DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
-            ),
-
-            snow_mixed_query_num_push_vdr_uint: Some(10),
-
-            consensus_gossip_frequency: Some(10000000000), // 10-second
-            consensus_app_concurrency: Some(2),
-
-            consensus_on_accept_gossip_validator_size: Some(0),
-            consensus_on_accept_gossip_non_validator_size: Some(0),
-            consensus_on_accept_gossip_peer_size: Some(10),
-            consensus_accepted_frontier_gossip_peer_size: Some(10),
-
-            throttler_outbound_at_large_alloc_size: None,
-            throttler_outbound_validator_alloc_size: None,
-            throttler_outbound_node_max_at_large_bytes: None,
-
-            network_minimum_timeout: None,
-            network_require_validator_to_connect: None,
-
-            network_compression_type: Some(DEFAULT_NETWORK_COMPRESSION_TYPE.to_string()),
-
-            tracing_enabled: None,
-        }
+        let mut cfg = Self::default_main();
+        cfg.network_id = 5;
+        cfg
     }
 
     /// The defaults do not match with the ones in avalanchego,
     /// as this is for avalanche-ops based deployments.
     pub fn default_custom() -> Self {
-        Self {
-            config_file: Some(String::from(DEFAULT_CONFIG_FILE_PATH)),
-            genesis: Some(String::from(DEFAULT_GENESIS_PATH)),
-
-            network_id: constants::DEFAULT_CUSTOM_NETWORK_ID,
-
-            db_type: String::from(DEFAULT_DB_TYPE),
-            db_dir: String::from(DEFAULT_DB_DIR),
-            chain_data_dir: String::from(DEFAULT_CHAIN_DATA_DIR),
-            log_dir: String::from(DEFAULT_LOG_DIR),
-            log_level: Some(String::from(DEFAULT_LOG_LEVEL)),
-            log_format: Some(String::from(DEFAULT_LOG_FORMAT)),
-            log_display_level: None,
-
-            http_port: DEFAULT_HTTP_PORT,
-            http_host: Some(String::from(DEFAULT_HTTP_HOST)),
-            http_tls_enabled: Some(DEFAULT_HTTP_TLS_ENABLED),
-            http_tls_key_file: None,
-            http_tls_cert_file: None,
-            public_ip: None,
-
-            staking_enabled: Some(DEFAULT_STAKING_ENABLED),
-            staking_port: DEFAULT_STAKING_PORT,
-            staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
-            staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
-            staking_signer_key_file: Some(String::from(DEFAULT_STAKING_SIGNER_KEY_FILE)),
-
-            bootstrap_ips: None,
-            bootstrap_ids: None,
-
-            snow_sample_size: Some(DEFAULT_SNOW_SAMPLE_SIZE),
-            snow_quorum_size: Some(DEFAULT_SNOW_QUORUM_SIZE),
-            snow_concurrent_repolls: None,
-            snow_max_time_processing: None,
-            snow_rogue_commit_threshold: None,
-            snow_virtuous_commit_threshold: None,
-
-            network_peer_list_gossip_frequency: None,
-            network_max_reconnect_delay: None,
-
-            index_enabled: Some(DEFAULT_INDEX_ENABLED),
-            index_allow_incomplete: Some(DEFAULT_INDEX_ALLOW_INCOMPLETE),
-
-            api_admin_enabled: Some(DEFAULT_API_ADMIN_ENABLED),
-            api_info_enabled: Some(DEFAULT_API_INFO_ENABLED),
-            api_keystore_enabled: Some(DEFAULT_API_KEYSTORE_ENABLED),
-            api_metrics_enabled: Some(DEFAULT_API_METRICS_ENABLED),
-            api_health_enabled: Some(DEFAULT_API_HEALTH_ENABLED),
-            api_ipcs_enabled: Some(DEFAULT_API_IPCS_ENABLED),
-
-            track_subnets: None,
-
-            plugin_dir: String::from(DEFAULT_PLUGIN_DIR),
-            subnet_config_dir: String::from(DEFAULT_SUBNET_CONFIG_DIR),
-            chain_config_dir: String::from(DEFAULT_CHAIN_CONFIG_DIR),
-
-            state_sync_ids: None,
-            state_sync_ips: None,
-
-            profile_dir: Some(String::from(DEFAULT_PROFILE_DIR)),
-            profile_continuous_enabled: None,
-            profile_continuous_freq: None,
-            profile_continuous_max_files: None,
-
-            proposervm_use_current_height: Some(true),
-            throttler_inbound_node_max_processing_msgs: Some(100000),
-            throttler_inbound_bandwidth_refill_rate: Some(1073741824),
-            throttler_inbound_bandwidth_max_burst_size: Some(1073741824),
-            throttler_inbound_cpu_validator_alloc: Some(100000),
-            throttler_inbound_disk_validator_alloc: Some(10737418240000),
-
-            throttler_inbound_at_large_alloc_size: Some(
-                DEFAULT_THROTTLER_INBOUND_AT_LARGE_ALLOC_SIZE,
-            ),
-            throttler_inbound_validator_alloc_size: None,
-            throttler_inbound_node_max_at_large_bytes: Some(
-                DEFAULT_THROTTLER_INBOUND_NODE_MAX_AT_LARGE_BYTES,
-            ),
-
-            snow_mixed_query_num_push_vdr_uint: Some(10),
-
-            consensus_gossip_frequency: Some(10000000000), // 10-second
-            consensus_app_concurrency: Some(2),
-
-            consensus_on_accept_gossip_validator_size: Some(0),
-            consensus_on_accept_gossip_non_validator_size: Some(0),
-            consensus_on_accept_gossip_peer_size: Some(10),
-            consensus_accepted_frontier_gossip_peer_size: Some(10),
-
-            throttler_outbound_at_large_alloc_size: None,
-            throttler_outbound_validator_alloc_size: None,
-            throttler_outbound_node_max_at_large_bytes: None,
-
-            network_minimum_timeout: None,
-            network_require_validator_to_connect: None,
-
-            network_compression_type: Some(DEFAULT_NETWORK_COMPRESSION_TYPE.to_string()),
-
-            tracing_enabled: None,
-        }
+        let mut cfg = Self::default_main();
+        cfg.network_id = constants::DEFAULT_CUSTOM_NETWORK_ID;
+        cfg.genesis = Some(String::from(DEFAULT_GENESIS_PATH));
+        cfg
     }
 
     /// Returns true if the configuration is mainnet.

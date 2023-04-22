@@ -63,6 +63,7 @@ async fn main() -> io::Result<()> {
         .recipient(key_info2.h160_address)
         .value(transfer_amount)
         .urgent()
+        .check_receipt(true)
         .check_acceptance(true)
         .submit()
         .await

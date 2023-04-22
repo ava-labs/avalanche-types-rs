@@ -1,5 +1,9 @@
 use primitive_types::U256;
 
+pub const KIB: u64 = 1024; // 1 kibibyte
+pub const MIB: u64 = 1024 * KIB; // 1 mebibyte
+pub const GIB: u64 = 1024 * MIB; // 1 gibibyte
+
 pub const NANO_AVAX: u64 = 1;
 pub const MICRO_AVAX: u64 = 1000 * NANO_AVAX;
 pub const MILLI_AVAX: u64 = 1000 * MICRO_AVAX;

@@ -96,6 +96,7 @@ async fn main() -> Result<()> {
         .recipient(recipient_contract_addr) // contract address that this transaction will interact with
         .data(appended_calldata)
         .urgent()
+        .check_receipt(true)
         .check_acceptance(true)
         .submit()
         .await?;

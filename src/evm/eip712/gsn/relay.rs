@@ -10,10 +10,10 @@ use std::{
 use ethers::prelude::Eip1559TransactionRequest;
 use ethers_core::types::{
     transaction::{
-        eip2718::TypedTransaction,
+        eip2718,
         eip712::{Eip712, TypedData},
     },
-    RecoveryMessage, Signature, H160, H256, U256,
+    Bytes as EthBytes, RecoveryMessage, Signature, H160, H256, U256,
 };
 use ethers_providers::{Http, Middleware, Provider, RetryClient};
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ impl super::Tx {
             .to(self.to)
             .gas(self.gas)
             .data(self.data.clone());
-        let typed_tx: TypedTransaction = eip1559_tx.into();
+        let typed_tx: eip2718::TypedTransaction = eip1559_tx.into();
         log::info!(
             "estimating gas for typed tx {}",
             serde_json::to_string(&typed_tx).unwrap()
@@ -129,7 +129,7 @@ impl super::Tx {
     }
 }
 
-/// Used for gas relayer server.
+/// Used for gas relayer server, compatible with the OpenGSN request.
 /// ref. <https://github.com/opengsn/gsn/blob/master/packages/common/src/types/RelayTransactionRequest.ts>
 /// ref. <https://github.com/opengsn/gsn/blob/master/packages/common/src/EIP712/RelayRequest.ts>
 /// ref. <https://github.com/opengsn/gsn/blob/master/packages/common/src/EIP712/ForwardRequest.ts>
@@ -153,6 +153,48 @@ pub struct Metadata {
 }
 
 impl Request {
+    /// Parses the eth_sendRawTransaction request and decodes the EIP-712 encoded typed
+    /// data and signature in the relay metadata,
+    /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+    pub fn from_send_raw_transaction(value: serde_json::Value) -> io::Result<Self> {
+        let params = value.get("params").ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidData,
+                "missing/invalid params field in the request body",
+            )
+        })?;
+
+        let hex_encoded_tx = params
+            .get(0)
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidData,
+                    "missing/invalid params[0] value in the request body",
+                )
+            })?;
+
+        let hex_decoded = EthBytes::from_str(hex_encoded_tx).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidData,
+                format!("failed to decode raw transaction {}", e),
+            )
+        })?;
+
+        Self::decode_signed(&hex_decoded)
+    }
+
+    /// Decodes the EIP-712 encoded typed data and signature in the relay metadata.
+    /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+    pub fn decode_signed(b: impl AsRef<[u8]>) -> io::Result<Self> {
+        serde_json::from_slice(b.as_ref()).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("failed serde_json::from_slice '{}'", e),
+            )
+        })
+    }
+
     /// Signs the typed data with the signer and returns the signature.
     pub async fn sign(
         tx: &super::Tx,
@@ -184,17 +226,6 @@ impl Request {
             metadata: Metadata {
                 signature: sig.to_vec(),
             },
-        })
-    }
-
-    /// Decodes the EIP-712 encoded typed data and signature in the relay metadata.
-    /// ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
-    pub fn decode_signed(b: impl AsRef<[u8]>) -> io::Result<Self> {
-        serde_json::from_slice(b.as_ref()).map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed serde_json::from_slice '{}'", e),
-            )
         })
     }
 
@@ -479,8 +510,25 @@ fn test_build_relay_transaction_request() {
     let k = crate::key::secp256k1::private_key::Key::generate().unwrap();
     let signer: LocalWallet = k.to_ethers_core_signing_key().into();
 
-    let rr = ab!(tx.sign_to_request(signer.clone())).unwrap();
+    let rr: Request = ab!(tx.sign_to_request(signer.clone())).unwrap();
     log::info!("request: {}", serde_json::to_string_pretty(&rr).unwrap());
+
+    let signed_bytes: EthBytes = serde_json::to_vec(&rr).unwrap().into();
+    log::info!("signed bytes of relay request: {}", signed_bytes);
+
+    // ref. <https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction>
+    let raw_tx_req = serde_json::json!({
+        "id": 1,
+        "method": "eth_sendRawTransaction",
+        "jsonrpc": "2.0",
+        "params": [signed_bytes],
+    });
+    let decoded_from_raw_tx = Request::from_send_raw_transaction(raw_tx_req).unwrap();
+    log::info!(
+        "decoded_from_raw_tx: {}",
+        serde_json::to_string_pretty(&decoded_from_raw_tx).unwrap()
+    );
+    assert_eq!(rr, decoded_from_raw_tx);
 
     let (sig1, signer_addr) = rr.recover_signature(&my_type, &my_suffix_data).unwrap();
     assert_eq!(k.to_public_key().to_h160(), signer_addr);

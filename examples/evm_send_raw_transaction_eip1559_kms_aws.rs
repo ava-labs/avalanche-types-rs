@@ -62,7 +62,7 @@ async fn main() -> io::Result<()> {
         .send_raw_transaction(signed_bytes)
         .await
         .unwrap();
-    log::info!("pending tx hash {}", pending.tx_hash());
+    log::info!("pending tx hash 0x{:x}", pending.tx_hash());
 
     Ok(())
 }
