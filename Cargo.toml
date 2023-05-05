@@ -53,7 +53,7 @@ aws-sdk-kms = { version = "0.26.0", optional = true } # https://crates.io/crates
 
 # [OPTIONAL] for "cert"
 rcgen = { version = "0.10.0", optional = true } # https://github.com/est31/rcgen
-rsa = { version = "0.8.2", features = ["pem"], optional = true } # https://crates.io/crates/rsa
+rsa = { version = "0.9.1", features = ["pem"], optional = true } # https://crates.io/crates/rsa
 rustls = { version = "0.21.0", optional = true } # https://github.com/rustls/rustls/tags
 
 # [OPTIONAL] for "message"
