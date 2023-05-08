@@ -16,7 +16,7 @@ bech32 = "0.9.1"
 blst = "0.3.10" # https://github.com/supranational/blst/tree/master/bindings/rust, for "BLS
 bs58 = "0.4.0"
 bytes = "1.4.0"
-cert-manager = "0.0.9" # https://github.com/gyuho/cert-manager
+cert-manager = "0.0.10" # https://github.com/gyuho/cert-manager
 chrono = "0.4.24"
 cmp-manager = "0.0.1"
 ecdsa = { version = "0.16.6", features = ["rfc6979", "verifying"] } # https://github.com/RustCrypto/elliptic-curves/tree/master/k256
@@ -317,4 +317,4 @@ doctest = false
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
 development = ["id-manager", "tokio", "tokio-test", "tonic-reflection", "random-manager", "tempfile"]
-normal = ["rsa"]
+normal = []
