@@ -9,7 +9,6 @@ fi
 # TODO: better way to skip proto tests?
 RUST_LOG=debug cargo test --workspace \
 --features avalanche-types/avalanchego \
---features avalanche-types/cert \
 --features avalanche-types/codec_base64 \
 --features avalanche-types/codec_big_int \
 --features avalanche-types/evm \
