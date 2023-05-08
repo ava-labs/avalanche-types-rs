@@ -53,6 +53,9 @@ pub struct Genesis {
     pub message: Option<String>,
 }
 
+/// All of the P-chain assets owned by "initialStakedFunds" are evenly
+/// distributed over the "initialStakers".
+/// The P-chain assets are determined by the "unlockSchedule".
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 struct GenesisFile {
     #[serde(rename = "networkID")]

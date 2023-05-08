@@ -47,7 +47,12 @@ impl Key {
     /// Generates a new key.
     pub async fn create(kms_manager: kms::Manager, tags: HashMap<String, String>) -> Result<Self> {
         let key = kms_manager
-            .create_key(KeySpec::EccSecgP256K1, KeyUsageType::SignVerify, Some(tags))
+            .create_key(
+                KeySpec::EccSecgP256K1,
+                KeyUsageType::SignVerify,
+                Some(tags),
+                false,
+            )
             .await
             .map_err(|e| Error::API {
                 message: format!(

@@ -4,6 +4,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     io::{self, Error, ErrorKind},
+    path::Path,
     str::FromStr,
 };
 
@@ -12,9 +13,6 @@ use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use zerocopy::{AsBytes, FromBytes, Unaligned};
 
 use crate::{formatting, hash, ids::short};
-
-#[cfg(feature = "cert")]
-use crate::key::cert;
 
 pub const LEN: usize = 20;
 pub const ENCODE_PREFIX: &str = "NodeID-";
@@ -60,10 +58,9 @@ impl Id {
 
     /// Loads a node ID from the PEM-encoded X509 certificate.
     /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/node#Node.Initialize>
-    #[cfg(feature = "cert")]
     pub fn from_cert_pem_file(cert_file_path: &str) -> io::Result<Self> {
         log::info!("loading node ID from certificate {}", cert_file_path);
-        let pub_key_der = cert::x509::load_pem_cert_to_der(cert_file_path)?;
+        let pub_key_der = cert_manager::x509::load_pem_cert_to_der(cert_file_path)?;
 
         // "ids.ToShortID(hashing.PubkeyBytesToAddress(StakingTLSCert.Leaf.Raw))"
         // ref. https://pkg.go.dev/github.com/ava-labs/avalanchego/node#Node.Initialize
@@ -81,6 +78,37 @@ impl Id {
         let short_address = hash::sha256_ripemd160(cert_bytes)?;
         let node_id = Self::from_slice(&short_address);
         Ok(node_id)
+    }
+
+    /// Loads the existing staking certificates if exists,
+    /// and returns the loaded or generated node Id.
+    /// Returns "true" if generated.
+    pub fn load_or_generate_pem(key_path: &str, cert_path: &str) -> io::Result<(Self, bool)> {
+        let tls_key_exists = Path::new(&key_path).exists();
+        log::info!("staking TLS key {} exists? {}", key_path, tls_key_exists);
+
+        let tls_cert_exists = Path::new(&cert_path).exists();
+        log::info!("staking TLS cert {} exists? {}", cert_path, tls_cert_exists);
+
+        let mut generated = false;
+        if !tls_key_exists || !tls_cert_exists {
+            log::info!(
+                "generating staking TLS certs (key exists {}, cert exists {})",
+                tls_key_exists,
+                tls_cert_exists
+            );
+            cert_manager::x509::generate_and_write_pem(None, key_path, cert_path)?;
+            generated = true;
+        } else {
+            log::info!(
+                "loading existing staking TLS certificates from '{}' and '{}'",
+                key_path,
+                cert_path
+            );
+        }
+
+        let node_id = Self::from_cert_pem_file(cert_path)?;
+        Ok((node_id, generated))
     }
 
     pub fn short_id(&self) -> short::Id {
@@ -276,7 +304,6 @@ pub fn new_set(size: usize) -> Set {
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- ids::node::test_from_cert_file --exact --show-output
-#[cfg(feature = "cert")]
 #[test]
 fn test_from_cert_file() {
     let _ = env_logger::builder()
