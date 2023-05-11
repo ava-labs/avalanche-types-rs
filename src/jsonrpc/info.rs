@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     ids::{self, node},
+    jsonrpc,
     key::bls,
 };
 use chrono::{DateTime, Utc};
@@ -20,6 +21,9 @@ pub struct GetNetworkNameResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetNetworkNameResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkname>
@@ -174,6 +178,9 @@ pub struct GetNodeIdResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetNodeIdResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
@@ -226,6 +233,7 @@ fn test_get_node_id() {
             node_id: node::Id::from_str("NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD").unwrap(),
             ..Default::default()
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 
@@ -258,6 +266,70 @@ fn test_get_node_id() {
                 ..Default::default()
             }),
         }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeip>
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetNodeIpResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetNodeIpResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
+}
+
+/// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeip>
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct GetNodeIpResult {
+    #[serde_as(as = "crate::codec::serde::ip_port::IpPort")]
+    pub ip: SocketAddr,
+}
+
+impl Default for GetNodeIpResult {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl GetNodeIpResult {
+    pub fn default() -> Self {
+        Self {
+            ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 9651),
+        }
+    }
+}
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_get_node_id --exact --show-output
+#[test]
+fn test_get_node_ip() {
+    // ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeid>
+    let resp: GetNodeIpResponse = serde_json::from_str(
+        "
+
+{
+    \"jsonrpc\": \"2.0\",
+    \"result\": {
+        \"ip\": \"192.168.1.1:9651\"
+    },
+    \"id\": 1
+}
+
+",
+    )
+    .unwrap();
+    let expected = GetNodeIpResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetNodeIpResult {
+            ip: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)), 9651),
+        }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
