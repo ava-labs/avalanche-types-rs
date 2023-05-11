@@ -342,6 +342,9 @@ pub struct GetNodeVersionResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetNodeVersionResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
@@ -433,6 +436,7 @@ fn test_get_node_version() {
                 platform: String::from("v1.4.10"),
             },
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
@@ -475,6 +479,9 @@ pub struct IsBootstrappedResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<IsBootstrappedResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infoisbootstrapped>
@@ -609,6 +616,9 @@ pub struct UptimeResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<UptimeResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infouptime>
@@ -664,6 +674,7 @@ fn test_uptime() {
             rewarding_stake_percentage: 100.0000_f64,
             weighted_average_percentage: 99.0000_f64,
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
