@@ -810,8 +810,9 @@ pub struct ApiPrimaryValidator {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegation_fee: Option<f32>,
 
-    #[serde_as(as = "DisplayFromStr")]
-    pub uptime: f32,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uptime: Option<f32>,
     pub connected: bool,
 
     /// None if the validator doesn't have a BLS public key.
@@ -854,7 +855,7 @@ impl ApiPrimaryValidator {
             delegation_reward_owner: None,
             potential_reward: None,
             delegation_fee: None,
-            uptime: 0_f32,
+            uptime: Some(0_f32),
             connected: false,
             signer: None,
             delegator_count: None,
@@ -976,7 +977,7 @@ fn test_get_current_validators() {
                 },
                 \"potentialReward\": \"79984390135364555\",
                 \"delegationFee\": \"6.2500\",
-                \"uptime\": \"1.0000\",
+                \"uptime\": \"100.0000\",
                 \"connected\": true,
                 \"delegatorCount\": \"0\",
                 \"delegatorWeight\": \"0\",
@@ -1004,7 +1005,7 @@ fn test_get_current_validators() {
                 },
                 \"potentialReward\": \"77148186230865960\",
                 \"delegationFee\": \"6.2500\",
-                \"uptime\": \"1.0000\",
+                \"uptime\": \"100.0000\",
                 \"connected\": true,
                 \"delegatorCount\": \"0\",
                 \"delegatorWeight\": \"0\",
@@ -1048,7 +1049,7 @@ fn test_get_current_validators() {
                     }),
                     potential_reward: Some(79984390135364555),
                     delegation_fee: Some(6.25),
-                    uptime: 1.0,
+                    uptime: Some(100.0),
                     connected: true,
                     delegator_count: Some(0),
                     delegator_weight: Some(0),
@@ -1079,7 +1080,7 @@ fn test_get_current_validators() {
                     }),
                     potential_reward: Some(77148186230865960),
                     delegation_fee: Some(6.25),
-                    uptime: 1.0,
+                    uptime: Some(100.0),
                     connected: true,
                     delegator_count: Some(0),
                     delegator_weight: Some(0),
