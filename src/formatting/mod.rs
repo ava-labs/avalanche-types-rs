@@ -2,6 +2,7 @@ use std::io::{self, Error, ErrorKind};
 
 use crate::hash;
 use bech32::{ToBase32, Variant};
+use bs58::{decode::DecodeBuilder, encode::EncodeBuilder, Alphabet};
 
 const CHECKSUM_LENGTH: usize = 4;
 
@@ -10,18 +11,9 @@ const CHECKSUM_LENGTH: usize = 4;
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum>
 pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
-    // "hashing.Checksum" of "sha256.Sum256"
-    let checksum = hash::sha256(d);
-    let checksum_length = checksum.len();
-    let checksum = &checksum[checksum_length - CHECKSUM_LENGTH..];
-
-    let mut checked = d.to_vec();
-    let mut checksum = checksum.to_vec();
-    checked.append(&mut checksum);
-
-    // ref. "utils/formatting encode.CB58"
-    // ref. "base58.Encode"
-    bs58::encode(&checked).into_string()
+    EncodeBuilder::new(d, Alphabet::DEFAULT)
+        .as_cb58(None)
+        .into_string()
 }
 
 /// Implements "formatting.EncodeWithChecksum" with "formatting.CB58".
@@ -29,50 +21,28 @@ pub fn encode_cb58_with_checksum_string(d: &[u8]) -> String {
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#EncodeWithChecksum>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/hashing#Checksum>
 pub fn encode_cb58_with_checksum_vec(d: &[u8]) -> Vec<u8> {
-    // "hashing.Checksum" of "sha256.Sum256"
-    let checksum = hash::sha256(d);
-    let checksum_length = checksum.len();
-    let checksum = &checksum[checksum_length - CHECKSUM_LENGTH..];
-
-    let mut checked = d.to_vec();
-    let mut checksum = checksum.to_vec();
-    checked.append(&mut checksum);
-
-    // ref. "utils/formatting encode.CB58"
-    // ref. "base58.Encode"
-    bs58::encode(&checked).into_vec()
+    EncodeBuilder::new(d, Alphabet::DEFAULT)
+        .as_cb58(None)
+        .into_vec()
 }
 
 /// Implements "formatting.Decode" with "formatting.CB58".
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/utils/formatting#Decode>
 pub fn decode_cb58_with_checksum(d: &str) -> io::Result<Vec<u8>> {
-    let decoded = match bs58::decode(d).into_vec() {
-        Ok(v) => v,
-        Err(e) => {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("failed to decode base58 ({})", e),
-            ));
-        }
-    };
-    let decoded_length = decoded.len();
+    DecodeBuilder::new(d, Alphabet::DEFAULT)
+        .as_cb58(None)
+        .into_vec()
+        .map_err(|err| {
+            let msg = match err {
+                bs58::decode::Error::InvalidChecksum {
+                    checksum,
+                    expected_checksum,
+                } => format!("invalid checksum {checksum:?} != {expected_checksum:?}"),
+                _ => format!("failed to decode base58 ({err})"),
+            };
 
-    // verify checksum
-    let checksum = &decoded[decoded_length - CHECKSUM_LENGTH..];
-    let orig = &decoded[..decoded_length - CHECKSUM_LENGTH];
-
-    // "hashing.Checksum" of "sha256.Sum256"
-    let orig_checksum = hash::sha256(orig);
-    let orig_checksum_length = orig_checksum.len();
-    let orig_checksum = &orig_checksum[orig_checksum_length - CHECKSUM_LENGTH..];
-    if !cmp_manager::eq_vectors(checksum, orig_checksum) {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            format!("invalid checksum {:?} != {:?}", checksum, orig_checksum),
-        ));
-    }
-
-    Ok(orig.to_vec())
+            Error::new(ErrorKind::InvalidInput, msg)
+        })
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- formatting::test_encode_c58_with_checksum --exact --show-output
