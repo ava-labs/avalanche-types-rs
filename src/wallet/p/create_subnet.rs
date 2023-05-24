@@ -16,6 +16,10 @@ where
 {
     pub inner: crate::wallet::p::P<T>,
 
+    /// In order to add a validator to this Subnet, threshold signatures are required from the addresses in controlKeys
+    pub control_keys: Vec<ids::short::Id>,
+    pub threshold: u32,
+
     /// Set "true" to poll transaction status after issuance for its acceptance.
     pub check_acceptance: bool,
 
@@ -37,12 +41,28 @@ where
     pub fn new(p: &crate::wallet::p::P<T>) -> Self {
         Self {
             inner: p.clone(),
+            control_keys: vec![p.inner.short_address.clone()],
+            threshold: 1,
             check_acceptance: false,
             poll_initial_wait: Duration::from_millis(1500),
             poll_interval: Duration::from_secs(1),
             poll_timeout: Duration::from_secs(300),
             dry_mode: false,
         }
+    }
+
+    /// Sets the control keys.
+    #[must_use]
+    pub fn control_keys(mut self, control_keys: Vec<ids::short::Id>) -> Self {
+        self.control_keys = control_keys;
+        self
+    }
+
+    /// Sets the threshold.
+    #[must_use]
+    pub fn threshold(mut self, threshold: u32) -> Self {
+        self.threshold = threshold;
+        self
     }
 
     /// Sets the check acceptance boolean flag.
@@ -100,8 +120,8 @@ where
             },
             owner: key::secp256k1::txs::OutputOwners {
                 locktime: 0,
-                threshold: 1,
-                addresses: vec![self.inner.inner.short_address.clone()],
+                threshold: self.threshold,
+                addresses: self.control_keys.clone(),
             },
             ..Default::default()
         };
