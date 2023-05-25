@@ -110,6 +110,7 @@ where
 pub struct Builder<T: key::secp256k1::ReadOnly + key::secp256k1::SignOnly + Clone> {
     pub key: T,
     pub base_http_urls: Vec<String>,
+    pub only_evm: bool,
 }
 
 impl<T> Builder<T>
@@ -120,6 +121,7 @@ where
         Self {
             key: key.clone(),
             base_http_urls: Vec::new(),
+            only_evm: false,
         }
     }
 
@@ -146,6 +148,12 @@ where
         } else {
             self.base_http_urls.push(rpc_url);
         }
+        self
+    }
+
+    #[must_use]
+    pub fn only_evm(mut self) -> Self {
+        self.only_evm = true;
         self
     }
 
@@ -184,28 +192,62 @@ where
         let keychain = key::secp256k1::keychain::Keychain::new(vec![self.key.clone()]);
         let h160_address = keychain.keys[0].h160_address();
 
-        let resp = api_info::get_network_id(&self.base_http_urls[0]).await?;
-        let network_id = resp.result.unwrap().network_id;
-        let resp = api_info::get_network_name(&self.base_http_urls[0]).await?;
-        let network_name = resp.result.unwrap().network_name;
+        let (
+            network_id,
+            network_name,
+            blockchain_id_x,
+            blockchain_id_p,
+            avax_asset_id,
+            tx_fee,
+            create_subnet_tx_fee,
+            create_blockchain_tx_fee,
+        ) = if self.only_evm {
+            log::warn!("wallet is only used for EVM thus skipping querying info API");
+            (
+                0,
+                String::new(),
+                ids::Id::empty(),
+                ids::Id::empty(),
+                ids::Id::empty(),
+                0,
+                0,
+                0,
+            )
+        } else {
+            let resp = api_info::get_network_id(&self.base_http_urls[0]).await?;
+            let network_id = resp.result.unwrap().network_id;
+            let resp = api_info::get_network_name(&self.base_http_urls[0]).await?;
+            let network_name = resp.result.unwrap().network_name;
 
-        let resp = api_info::get_blockchain_id(&self.base_http_urls[0], "X").await?;
-        let blockchain_id_x = resp.result.unwrap().blockchain_id;
+            let resp = api_info::get_blockchain_id(&self.base_http_urls[0], "X").await?;
+            let blockchain_id_x = resp.result.unwrap().blockchain_id;
 
-        let resp = api_info::get_blockchain_id(&self.base_http_urls[0], "P").await?;
-        let blockchain_id_p = resp.result.unwrap().blockchain_id;
+            let resp = api_info::get_blockchain_id(&self.base_http_urls[0], "P").await?;
+            let blockchain_id_p = resp.result.unwrap().blockchain_id;
 
-        let resp = api_x::get_asset_description(&self.base_http_urls[0], "AVAX").await?;
-        let resp = resp
-            .result
-            .expect("unexpected None GetAssetDescriptionResult");
-        let avax_asset_id = resp.asset_id;
+            let resp = api_x::get_asset_description(&self.base_http_urls[0], "AVAX").await?;
+            let resp = resp
+                .result
+                .expect("unexpected None GetAssetDescriptionResult");
+            let avax_asset_id = resp.asset_id;
 
-        let resp = api_info::get_tx_fee(&self.base_http_urls[0]).await?;
-        let get_tx_fee_result = resp.result.unwrap();
-        let tx_fee = get_tx_fee_result.tx_fee;
-        let create_subnet_tx_fee = get_tx_fee_result.create_subnet_tx_fee;
-        let create_blockchain_tx_fee = get_tx_fee_result.create_blockchain_tx_fee;
+            let resp = api_info::get_tx_fee(&self.base_http_urls[0]).await?;
+            let get_tx_fee_result = resp.result.unwrap();
+            let tx_fee = get_tx_fee_result.tx_fee;
+            let create_subnet_tx_fee = get_tx_fee_result.create_subnet_tx_fee;
+            let create_blockchain_tx_fee = get_tx_fee_result.create_blockchain_tx_fee;
+
+            (
+                network_id,
+                network_name,
+                blockchain_id_x,
+                blockchain_id_p,
+                avax_asset_id,
+                tx_fee,
+                create_subnet_tx_fee,
+                create_blockchain_tx_fee,
+            )
+        };
 
         let w = Wallet {
             key_type: self.key.key_type(),

@@ -235,8 +235,8 @@ impl Request {
             name.clone()
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.domain missing 'name' field",
+                ErrorKind::InvalidInput,
+                "forward_request.domain missing 'name' field",
             ));
         };
 
@@ -244,8 +244,8 @@ impl Request {
             version.clone()
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.domain missing 'version' field",
+                ErrorKind::InvalidInput,
+                "forward_request.domain missing 'version' field",
             ));
         };
 
@@ -253,8 +253,8 @@ impl Request {
             chain_id
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.domain missing 'chain_id' field",
+                ErrorKind::InvalidInput,
+                "forward_request.domain missing 'chain_id' field",
             ));
         };
 
@@ -263,100 +263,149 @@ impl Request {
                 verifying_contract.clone()
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.domain missing 'verifying_contract' field",
+                    ErrorKind::InvalidInput,
+                    "forward_request.domain missing 'verifying_contract' field",
                 ));
             };
 
         let from = if let Some(from) = self.forward_request.message.get("from") {
             if let Some(v) = from.as_str() {
-                H160::from_str(v).unwrap()
+                H160::from_str(v).map_err(|e| {
+                    Error::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "forward_request.message.from[{v}] H160::from_str parse failed {:?}",
+                            e
+                        ),
+                    )
+                })?
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'from'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'from'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'from' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'from' field",
             ));
         };
 
         let to = if let Some(to) = self.forward_request.message.get("to") {
             if let Some(v) = to.as_str() {
-                H160::from_str(v).unwrap()
+                H160::from_str(v).map_err(|e| {
+                    Error::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "forward_request.message.to[{v}] H160::from_str parse failed {:?}",
+                            e
+                        ),
+                    )
+                })?
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'to'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'to'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'to' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'to' field",
             ));
         };
 
         let value = if let Some(value) = self.forward_request.message.get("value") {
             if let Some(v) = value.as_str() {
                 if v.starts_with("0x") {
-                    U256::from_str_radix(v, 16).unwrap()
+                    U256::from_str_radix(v, 16).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!("forward_request.message.value[{v}] U256::from_str_radix parse failed {:?}", e),
+                        )
+                    })?
                 } else {
-                    U256::from_str(v).unwrap()
+                    U256::from_str(v).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!("forward_request.message.value[{v}] U256::from_str parse failed {:?}", e),
+                        )
+                    })?
                 }
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'value'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'value'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'value' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'value' field",
             ));
         };
 
         let gas = if let Some(gas) = self.forward_request.message.get("gas") {
             if let Some(v) = gas.as_str() {
                 if v.starts_with("0x") {
-                    U256::from_str_radix(v, 16).unwrap()
+                    U256::from_str_radix(v, 16).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!("forward_request.message.gas[{v}] U256::from_str_radix parse failed {:?}", e),
+                        )
+                    })?
                 } else {
-                    U256::from_str(v).unwrap()
+                    U256::from_str(v).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!(
+                                "forward_request.message.gas[{v}] U256::from_str parse failed {:?}",
+                                e
+                            ),
+                        )
+                    })?
                 }
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'gas'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'gas'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'gas' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'gas' field",
             ));
         };
 
         let nonce = if let Some(nonce) = self.forward_request.message.get("nonce") {
             if let Some(v) = nonce.as_str() {
                 if v.starts_with("0x") {
-                    U256::from_str_radix(v, 16).unwrap()
+                    U256::from_str_radix(v, 16).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!("forward_request.message.nonce[{v}] U256::from_str_radix parse failed {:?}", e),
+                        )
+                    })?
                 } else {
-                    U256::from_str(v).unwrap()
+                    U256::from_str(v).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!("forward_request.message.nonce[{v}] U256::from_str parse failed {:?}", e),
+                        )
+                    })?
                 }
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'nonce'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'nonce'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'nonce' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'nonce' field",
             ));
         };
 
@@ -364,43 +413,60 @@ impl Request {
             if let Some(v) = data.as_str() {
                 hex::decode(v.trim_start_matches("0x")).map_err(|e| {
                     Error::new(
-                        ErrorKind::Other,
+                        ErrorKind::InvalidInput,
                         format!("failed hex::decode on 'data' field '{}'", e),
                     )
                 })?
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message expected type 'data'",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'data'",
                 ));
             }
         } else {
             return Err(Error::new(
-                ErrorKind::Other,
-                "self.forward_request.message missing 'data' field",
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'data' field",
             ));
         };
 
-        let valid_until_time =
-            if let Some(valid_until_time) = self.forward_request.message.get("validUntilTime") {
-                if let Some(v) = valid_until_time.as_str() {
-                    if v.starts_with("0x") {
-                        U256::from_str_radix(v, 16).unwrap()
-                    } else {
-                        U256::from_str(v).unwrap()
-                    }
+        let valid_until_time = if let Some(valid_until_time) =
+            self.forward_request.message.get("validUntilTime")
+        {
+            if let Some(v) = valid_until_time.as_str() {
+                if v.starts_with("0x") {
+                    U256::from_str_radix(v, 16).map_err(|e| {
+                            Error::new(
+                                ErrorKind::InvalidInput,
+                                format!(
+                            "forward_request.message.validUntilTime[{v}] U256::from_str_radix parse failed {:?}",
+                            e
+                        ),
+                            )
+                        })?
                 } else {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        "self.forward_request.message expected type 'validUntilTime'",
-                    ));
+                    U256::from_str(v).map_err(|e| {
+                        Error::new(
+                            ErrorKind::InvalidInput,
+                            format!(
+                                "forward_request.message.validUntilTime[{v}] U256::from_str parse failed {:?}",
+                                e
+                            ),
+                        )
+                    })?
                 }
             } else {
                 return Err(Error::new(
-                    ErrorKind::Other,
-                    "self.forward_request.message missing 'validUntilTime' field",
+                    ErrorKind::InvalidInput,
+                    "forward_request.message expected type 'validUntilTime'",
                 ));
-            };
+            }
+        } else {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "forward_request.message missing 'validUntilTime' field",
+            ));
+        };
 
         Ok(super::Tx::new()
             .domain_name(domain_name)

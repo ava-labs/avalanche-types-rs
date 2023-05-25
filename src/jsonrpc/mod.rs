@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod avm;
 pub mod common;
 pub mod evm;
