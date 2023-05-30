@@ -7,6 +7,7 @@ pub mod info;
 pub mod platformvm;
 
 #[cfg(feature = "jsonrpc_client")]
+#[cfg_attr(docsrs, doc(cfg(feature = "jsonrpc_client")))]
 pub mod client;
 
 use std::{

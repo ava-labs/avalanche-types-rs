@@ -7,9 +7,11 @@ pub mod signature;
 pub mod txs;
 
 #[cfg(feature = "libsecp256k1")]
+#[cfg_attr(docsrs, doc(cfg(feature = "libsecp256k1")))]
 pub mod libsecp256k1;
 
 #[cfg(feature = "mnemonic")]
+#[cfg_attr(docsrs, doc(cfg(feature = "mnemonic")))]
 pub mod mnemonic;
 
 use std::{

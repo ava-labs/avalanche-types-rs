@@ -237,6 +237,7 @@ impl Key {
 
     /// Derives the private key that uses libsecp256k1.
     #[cfg(feature = "libsecp256k1")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "libsecp256k1")))]
     pub fn to_libsecp256k1(&self) -> Result<crate::key::secp256k1::libsecp256k1::PrivateKey> {
         let b = self.to_bytes();
         crate::key::secp256k1::libsecp256k1::PrivateKey::from_bytes(&b)
