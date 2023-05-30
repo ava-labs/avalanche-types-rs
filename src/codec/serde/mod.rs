@@ -8,7 +8,9 @@ pub mod ip_port;
 pub mod rfc_3339;
 
 #[cfg(feature = "codec_base64")]
+#[cfg_attr(docsrs, doc(cfg(feature = "codec_base64")))]
 pub mod base64_bytes;
 
 #[cfg(feature = "codec_big_int")]
+#[cfg_attr(docsrs, doc(cfg(feature = "codec_big_int")))]
 pub mod hex_0x_big_int;

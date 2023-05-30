@@ -2,6 +2,7 @@ pub mod p;
 pub mod x;
 
 #[cfg(feature = "wallet_evm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "wallet_evm")))]
 pub mod evm;
 
 use std::{

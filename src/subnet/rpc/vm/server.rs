@@ -45,6 +45,7 @@ pub struct Server<V> {
     pub vm: Arc<RwLock<V>>,
 
     #[cfg(feature = "subnet_metrics")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "subnet_metrics")))]
     /// Subnet Prometheus process metrics.
     pub process_metrics: Arc<RwLock<prometheus::Registry>>,
 
@@ -57,6 +58,7 @@ impl<V: ChainVm> Server<V> {
         Self {
             vm: Arc::new(RwLock::new(vm)),
             #[cfg(feature = "subnet_metrics")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "subnet_metrics")))]
             process_metrics: Arc::new(RwLock::new(prometheus::default_registry().to_owned())),
             stop_ch,
         }
@@ -710,6 +712,7 @@ where
     }
 
     #[cfg(feature = "subnet_metrics")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "subnet_metrics")))]
     async fn gather(
         &self,
         _req: Request<Empty>,
