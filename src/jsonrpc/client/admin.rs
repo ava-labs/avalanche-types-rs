@@ -24,12 +24,12 @@ pub async fn alias_chain(
 
     let u = if let Some(scheme) = scheme {
         if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
+            format!("{scheme}://{host}:{port}/ext/admin")
         } else {
-            format!("{scheme}://{host}/ext/info")
+            format!("{scheme}://{host}/ext/admin")
         }
     } else {
-        format!("http://{host}/ext/info")
+        format!("http://{host}/ext/admin")
     };
     log::info!("getting network name for {u}");
 
