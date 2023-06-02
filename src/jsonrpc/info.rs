@@ -348,93 +348,65 @@ pub struct GetNodeVersionResponse {
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetNodeVersionResult {
     pub version: String,
     pub database_version: String,
     pub git_commit: String,
     pub vm_versions: VmVersions,
-}
-
-impl Default for GetNodeVersionResult {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
-impl GetNodeVersionResult {
-    pub fn default() -> Self {
-        Self {
-            version: String::new(),
-            database_version: String::new(),
-            git_commit: String::new(),
-            vm_versions: VmVersions::default(),
-        }
-    }
+    pub rpc_protocol_version: String,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnodeversion>
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct VmVersions {
     pub avm: String,
     pub evm: String,
     pub platform: String,
-}
-
-impl Default for VmVersions {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
-impl VmVersions {
-    pub fn default() -> Self {
-        Self {
-            avm: String::new(),
-            evm: String::new(),
-            platform: String::new(),
-        }
-    }
+    #[serde(flatten)]
+    pub subnets: HashMap<String, String>,
 }
 
 /// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::info::test_get_node_version --exact --show-output
 #[test]
 fn test_get_node_version() {
     let resp: GetNodeVersionResponse = serde_json::from_str(
-        "
-
+        r#"
 {
-    \"jsonrpc\": \"2.0\",
-    \"result\": {
-        \"version\": \"avalanche/1.4.10\",
-        \"databaseVersion\": \"v1.4.5\",
-        \"gitCommit\": \"a3930fe3fa115c018e71eb1e97ca8cec34db67f1\",
-        \"vmVersions\": {
-          \"avm\": \"v1.4.10\",
-          \"evm\": \"v0.5.5-rc.1\",
-          \"platform\": \"v1.4.10\"
+    "jsonrpc": "2.0",
+    "result": {
+        "version": "avalanche/1.10.1",
+        "databaseVersion": "v1.4.5",
+        "rpcProtocolVersion": "26",
+        "gitCommit": "ef6a2a2f7facd8fbefd5fb2ac9c4908c2bcae3e2",
+        "vmVersions": {
+          "avm": "v1.10.1",
+          "evm": "v0.12.1",
+          "platform": "v1.10.1",
+          "subnet-evm": "v0.5.1"
         }
     },
-    \"id\": 1
+    "id": 1
 }
-
-",
+"#,
     )
     .unwrap();
     let expected = GetNodeVersionResponse {
         jsonrpc: "2.0".to_string(),
         id: 1,
         result: Some(GetNodeVersionResult {
-            version: String::from("avalanche/1.4.10"),
+            version: String::from("avalanche/1.10.1"),
             database_version: String::from("v1.4.5"),
-            git_commit: String::from("a3930fe3fa115c018e71eb1e97ca8cec34db67f1"),
+            git_commit: String::from("ef6a2a2f7facd8fbefd5fb2ac9c4908c2bcae3e2"),
             vm_versions: VmVersions {
-                avm: String::from("v1.4.10"),
-                evm: String::from("v0.5.5-rc.1"),
-                platform: String::from("v1.4.10"),
+                avm: String::from("v1.10.1"),
+                evm: String::from("v0.12.1"),
+                platform: String::from("v1.10.1"),
+                subnets: HashMap::from([(String::from("subnet-evm"), String::from("v0.5.1"))]),
             },
+            rpc_protocol_version: String::from("26"),
         }),
         error: None,
     };
