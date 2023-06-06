@@ -6,7 +6,7 @@ if ! [[ "$0" =~ scripts/examples.sh ]]; then
   exit 255
 fi
 
-cargo run --example key_cert --features="cert" -- /tmp/test.insecure.key /tmp/test.insecure.cert
+cargo run --example key_cert -- /tmp/test.insecure.key /tmp/test.insecure.cert
 
 # cargo run --example key_secp256k1_kms_aws --features="kms_aws"
 

@@ -3,7 +3,7 @@
 # protocol version is the version of the gRPC proto definitions
 # as defined by the avalanchego rpcchainvm.
 # ref. https://github.com/ava-labs/avalanchego/blob/v1.9.11/version/constants.go#L15-L17
-PROTOCOL_VERSION='24'
+PROTOCOL_VERSION='26'
 
 if ! [[ "$0" =~ scripts/protobuf_codegen.sh ]]; then
   echo "must be run from repository root"
@@ -11,7 +11,7 @@ if ! [[ "$0" =~ scripts/protobuf_codegen.sh ]]; then
 fi
 
 # ref. https://docs.buf.build/installation
-BUF_VERSION='1.15.1'
+BUF_VERSION='1.19.0'
 if [[ $(buf --version | cut -f2 -d' ') != "${BUF_VERSION}" ]]; then
   echo "could not find buf ${BUF_VERSION}, is it installed + in PATH?"
   exit 255

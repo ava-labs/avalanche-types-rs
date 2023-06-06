@@ -55,6 +55,11 @@ pub mod keystore {
     include!("keystore.rs");
     // @@protoc_insertion_point(keystore)
 }
+// @@protoc_insertion_point(attribute:message)
+pub mod message {
+    include!("message.rs");
+    // @@protoc_insertion_point(message)
+}
 // @@protoc_insertion_point(attribute:messenger)
 pub mod messenger {
     include!("messenger.rs");
@@ -81,6 +86,11 @@ pub mod rpcdb {
 pub mod sharedmemory {
     include!("sharedmemory.rs");
     // @@protoc_insertion_point(sharedmemory)
+}
+// @@protoc_insertion_point(attribute:sync)
+pub mod sync {
+    include!("sync.rs");
+    // @@protoc_insertion_point(sync)
 }
 // @@protoc_insertion_point(attribute:validatorstate)
 pub mod validatorstate {

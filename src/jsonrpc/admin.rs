@@ -78,15 +78,15 @@ mod tests {
 
     #[test]
     fn test_deserialization() {
-        let resp = ChainAliasResponse {
+        let expected = ChainAliasResponse {
             jsonrpc: String::from(DEFAULT_VERSION),
             id: DEFAULT_ID,
         };
 
-        let expected = r#"{"jsonrpc": "2.0","id": 1,"result": {}}"#.as_bytes();
+        let response = r#"{"jsonrpc": "2.0","id": 1,"result": {}}"#.as_bytes();
         let deserialized: ChainAliasResponse =
-            serde_json::from_slice(expected).expect("failed deserialization");
+            serde_json::from_slice(response).expect("failed deserialization");
 
-        assert_eq!(resp, deserialized);
+        assert_eq!(expected, deserialized);
     }
 }
