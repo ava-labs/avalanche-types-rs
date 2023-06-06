@@ -1,8 +1,12 @@
 //! RPC Chain VM Server.
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use crate::{
     ids,
+    packer::U32_LEN,
     proto::pb::{
         self,
         aliasreader::alias_reader_client::AliasReaderClient,
@@ -20,6 +24,7 @@ use crate::{
             corruptabledb,
             manager::{versioned_database, DatabaseManager},
         },
+        errors,
         http::server::Server as HttpServer,
         snow::{
             engine::common::{appsender::client::AppSenderClient, message::Message},
@@ -62,6 +67,25 @@ impl<V: ChainVm> Server<V> {
             process_metrics: Arc::new(RwLock::new(prometheus::default_registry().to_owned())),
             stop_ch,
         }
+    }
+
+    /// Attempts to get the ancestors of a block from the underlying Vm.
+    pub async fn vm_ancestors(
+        &self,
+        block_id_bytes: &[u8],
+        max_block_num: i32,
+        max_block_size: i32,
+        max_block_retrival_time: Duration,
+    ) -> std::io::Result<Vec<Bytes>> {
+        let inner_vm = self.vm.read().await;
+        inner_vm
+            .get_ancestors(
+                ids::Id::from_slice(block_id_bytes),
+                max_block_num,
+                max_block_size,
+                max_block_retrival_time,
+            )
+            .await
     }
 }
 
@@ -246,7 +270,7 @@ where
                 })?;
 
             let resp_handler = vm::Handler {
-                prefix: prefix,
+                prefix,
                 lock_options: http_handler.lock_option as u32,
                 server_addr: server_addr.to_string(),
             };
@@ -682,20 +706,127 @@ where
 
     async fn get_ancestors(
         &self,
-        _req: Request<vm::GetAncestorsRequest>,
+        req: Request<vm::GetAncestorsRequest>,
     ) -> std::result::Result<Response<vm::GetAncestorsResponse>, tonic::Status> {
         log::debug!("get_ancestors called");
+        let req = req.into_inner();
 
-        Err(tonic::Status::unimplemented("get_ancestors"))
+        let block_id = ids::Id::from_slice(req.blk_id.as_ref());
+        let max_blocks_size = usize::try_from(req.max_blocks_size).expect("cast from i32");
+        let max_blocks_num = usize::try_from(req.max_blocks_num).expect("cast from i32");
+        let max_blocks_retrival_time = Duration::from_secs(
+            req.max_blocks_retrival_time
+                .try_into()
+                .expect("valid timestamp"),
+        );
+
+        let ancestors = self
+            .vm_ancestors(
+                req.blk_id.as_ref(),
+                req.max_blocks_num,
+                req.max_blocks_size,
+                max_blocks_retrival_time,
+            )
+            .await
+            .map(|blks_bytes| Response::new(vm::GetAncestorsResponse { blks_bytes }));
+
+        let e = match ancestors {
+            Ok(ancestors) => return Ok(ancestors),
+            Err(e) => e,
+        };
+
+        if e.kind() != std::io::ErrorKind::Unsupported {
+            return Err(tonic::Status::unknown(e.to_string()));
+        }
+
+        // not supported by underlying vm use local logic
+        let start = Instant::now();
+        let mut block = match self.vm.read().await.get_block(block_id).await {
+            Ok(b) => b,
+            Err(e) => {
+                // special case ErrNotFound as an empty response: this signals
+                // the client to avoid contacting this node for further ancestors
+                // as they may have been pruned or unavailable due to state-sync.
+                return if errors::is_not_found(&e) {
+                    log::debug!("get_ancestors local get_block returned: not found");
+
+                    Ok(Response::new(vm::GetAncestorsResponse {
+                        blks_bytes: Vec::new(),
+                    }))
+                } else {
+                    Err(e.into())
+                };
+            }
+        };
+
+        let mut ancestors = Vec::with_capacity(max_blocks_num);
+        let block_bytes = block.bytes().await;
+
+        // length, in bytes, of all elements of ancestors
+        let mut ancestors_bytes_len = block_bytes.len() + U32_LEN;
+        ancestors.push(Bytes::from(block_bytes.to_owned()));
+
+        while ancestors.len() < max_blocks_num {
+            if start.elapsed() < max_blocks_retrival_time {
+                log::debug!("get_ancestors exceeded max block retrival time");
+                break;
+            }
+
+            let parent_id = block.parent().await;
+
+            block = match self.vm.read().await.get_block(parent_id).await {
+                Ok(b) => b,
+                Err(e) => {
+                    if errors::is_not_found(&e) {
+                        // after state sync we may not have the full chain
+                        log::debug!("failed to get block during ancestors lookup parentId: {parent_id}: {e}");
+                    }
+
+                    break;
+                }
+            };
+
+            let block_bytes = block.bytes().await;
+
+            // Ensure response size isn't too large. Include U32_LEN because
+            // the size of the message is included with each container, and the size
+            // is repr. by 4 bytes.
+            ancestors_bytes_len += block_bytes.len() + U32_LEN;
+
+            if ancestors_bytes_len > max_blocks_size {
+                log::debug!("get_ancestors reached maximum response size: {ancestors_bytes_len}");
+                break;
+            }
+
+            ancestors.push(Bytes::from(block_bytes.to_owned()));
+        }
+
+        Ok(Response::new(vm::GetAncestorsResponse {
+            blks_bytes: ancestors,
+        }))
     }
 
     async fn batched_parse_block(
         &self,
-        _req: Request<vm::BatchedParseBlockRequest>,
+        req: Request<vm::BatchedParseBlockRequest>,
     ) -> std::result::Result<Response<vm::BatchedParseBlockResponse>, tonic::Status> {
         log::debug!("batched_parse_block called");
+        let req = req.into_inner();
 
-        Err(tonic::Status::unimplemented("batched_parse_block"))
+        let to_parse = req
+            .request
+            .into_iter()
+            .map(|bytes| Request::new(vm::ParseBlockRequest { bytes }))
+            .map(|request| async {
+                self.parse_block(request)
+                    .await
+                    .map(|block| block.into_inner())
+            });
+        let blocks = futures::future::try_join_all(to_parse).await?;
+
+        Ok(Response::new(vm::BatchedParseBlockResponse {
+            response: blocks,
+        }))
     }
 
     #[cfg(not(feature = "subnet_metrics"))]
