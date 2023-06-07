@@ -1,4 +1,6 @@
-use std::io::Result;
+use std::{io::Result, time::Duration};
+
+use bytes::Bytes;
 
 use crate::{
     ids::Id,
@@ -7,7 +9,7 @@ use crate::{
 
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVm>
 #[tonic::async_trait]
-pub trait ChainVm: CommonVm + Getter + Parser {
+pub trait ChainVm: CommonVm + BatchedChainVm + Getter + Parser {
     type Block: snowman::Block;
 
     /// Attempt to create a new block from ChainVm data
@@ -93,4 +95,26 @@ pub trait WithVerifyContext {
     ///
     /// This method may be called again with a different context.
     async fn verify_with_context(&self, blk_context: &Context) -> Result<()>;
+}
+
+/// Extends the minimal functionalities exposed by [`ChainVm`] for VMs
+/// communicating over network (gRPC in our case). This allows more efficient
+/// operations since calls over network can be batched.
+///
+/// ref <https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#BatchedChainVM>
+#[tonic::async_trait]
+pub trait BatchedChainVm {
+    type Block: snowman::Block;
+
+    /// Attempts to obtain the ancestors of a block.
+    async fn get_ancestors(
+        &self,
+        block_id: Id,
+        max_block_num: i32,
+        max_block_size: i32,
+        max_block_retrival_time: Duration,
+    ) -> Result<Vec<Bytes>>;
+
+    /// Attempts to batch parse_block requests.
+    async fn batched_parse_block(&self, blocks: &[Vec<u8>]) -> Result<Vec<Self::Block>>;
 }

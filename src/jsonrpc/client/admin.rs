@@ -22,16 +22,12 @@ pub async fn alias_chain(
             }
         })?;
 
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/admin")
-        } else {
-            format!("{scheme}://{host}/ext/admin")
-        }
-    } else {
-        format!("http://{host}/ext/admin")
+    let url = match (scheme, port) {
+        (Some(scheme), Some(port)) => format!("{scheme}://{host}:{port}/ext/admin"),
+        (Some(scheme), _) => format!("{scheme}://{host}/ext/admin"),
+        _ => format!("http://{host}/ext/admin"),
     };
-    log::info!("getting network name for {u}");
+    log::info!("getting network name for {url}");
 
     let data = ChainAliasRequest {
         params: Some(ChainAliasParams { chain, alias }),
@@ -58,7 +54,7 @@ pub async fn alias_chain(
         })?;
 
     let resp = req_cli_builder
-        .post(&u)
+        .post(&url)
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -77,9 +73,8 @@ pub async fn alias_chain(
             retryable: false,
         }
     })?;
-    let out: Vec<u8> = out.into();
 
-    let response: ChainAliasResponse = serde_json::from_slice(&out)
+    let response: ChainAliasResponse = serde_json::from_slice(out.as_ref())
         .map_err(|e| Error::Other {
             message: format!("failed serde_json::from_slice '{}'", e),
             retryable: false,
