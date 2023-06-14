@@ -768,6 +768,39 @@ impl GetCurrentValidatorsResult {
     }
 }
 
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetpendingvalidators>
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct GetPendingValidatorsResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<GetPendingValidatorsResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
+}
+
+impl Default for GetPendingValidatorsResponse {
+    fn default() -> Self {
+        Self {
+            jsonrpc: "2.0".to_string(),
+            id: 1,
+            result: Some(GetPendingValidatorsResult::default()),
+            error: None,
+        }
+    }
+}
+
+/// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetpendingvalidators>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
+/// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker>
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct GetPendingValidatorsResult {
+    pub validators: Vec<ApiPrimaryValidator>,
+    pub delegators: Vec<ApiPrimaryDelegator>,
+}
+
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetcurrentvalidators>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientPermissionlessValidator>
 /// ref. <https://pkg.go.dev/github.com/ava-labs/avalanchego/vms/platformvm#ClientStaker>
@@ -783,52 +816,54 @@ pub struct ApiPrimaryValidator {
     #[serde_as(as = "DisplayFromStr")]
     pub end_time: u64,
 
-    /// None for subnet validator.
+    /// None for elastic Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<u64>,
 
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stake_amount: Option<u64>,
 
     #[serde(rename = "nodeID")]
     pub node_id: node::Id,
 
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation_reward_owner: Option<ApiOwner>,
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegation_reward_owner: Option<ApiOwner>,
 
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub potential_reward: Option<u64>,
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegation_fee: Option<f32>,
 
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uptime: Option<f32>,
     pub connected: bool,
 
-    /// None if the validator doesn't have a BLS public key.
+    /// None for permissioned Subnet validator
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signer: Option<bls::ProofOfPossession>,
 
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegator_count: Option<u64>,
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegator_weight: Option<u64>,
 
-    /// None for subnet validator.
+    /// None for permissioned Subnet validator
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delegators: Option<Vec<ApiPrimaryDelegator>>,
 }
@@ -852,7 +887,7 @@ impl ApiPrimaryValidator {
             delegation_reward_owner: None,
             potential_reward: None,
             delegation_fee: None,
-            uptime: Some(0_f32),
+            uptime: None,
             connected: false,
             signer: None,
             delegator_count: None,
@@ -910,12 +945,11 @@ pub struct ApiPrimaryDelegator {
     #[serde(rename = "nodeID")]
     pub node_id: node::Id,
 
-    /// None for subnet validator.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reward_owner: Option<ApiOwner>,
 
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(rename = "potentialReward")]
+    #[serde(rename = "potentialReward", skip_serializing_if = "Option::is_none")]
     pub potential_reward: Option<u64>,
 }
 
@@ -1083,6 +1117,75 @@ fn test_get_current_validators() {
                     ..ApiPrimaryValidator::default()
                 },
             ])),
+        }),
+        error: None,
+    };
+    assert_eq!(resp, expected);
+}
+
+/// RUST_LOG=debug cargo test --package avalanche-types --lib -- jsonrpc::platformvm::test_get_pending_validators --exact --show-output
+#[test]
+
+fn test_get_pending_validators() {
+    use std::str::FromStr;
+
+    // ref. <https://docs.avax.network/apis/avalanchego/apis/p-chain#platformgetcurrentvalidators>
+    let resp: GetPendingValidatorsResponse = serde_json::from_str(
+        r#"
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "validators": [
+      {
+        "txID": "2NNkpYTGfTFLSGXJcHtVv6drwVU2cczhmjK2uhvwDyxwsjzZMm",
+        "startTime": "1600368632",
+        "endTime": "1602960455",
+        "stakeAmount": "200000000000",
+        "nodeID": "NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD",
+        "delegationFee": "10.0000",
+        "connected": false
+      }
+    ],
+    "delegators": [
+      {
+        "txID": "Bbai8nzGVcyn2VmeYcbS74zfjJLjDacGNVuzuvAQkHn1uWfoV",
+        "startTime": "1600368523",
+        "endTime": "1602960342",
+        "stakeAmount": "20000000000",
+        "nodeID": "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"
+      }
+    ]
+  },
+  "id": 1
+}
+        "#,
+    )
+    .unwrap();
+
+    let expected = GetPendingValidatorsResponse {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        result: Some(GetPendingValidatorsResult {
+            validators: <Vec<ApiPrimaryValidator>>::from([ApiPrimaryValidator {
+                tx_id: ids::Id::from_str("2NNkpYTGfTFLSGXJcHtVv6drwVU2cczhmjK2uhvwDyxwsjzZMm")
+                    .unwrap(),
+                start_time: 1600368632,
+                end_time: 1602960455,
+                stake_amount: Some(200000000000),
+                node_id: node::Id::from_str("NodeID-5mb46qkSBj81k9g9e4VFjGGSbaaSLFRzD").unwrap(),
+                delegation_fee: Some(10.0),
+                connected: false,
+                ..ApiPrimaryValidator::default()
+            }]),
+            delegators: <Vec<ApiPrimaryDelegator>>::from([ApiPrimaryDelegator {
+                tx_id: ids::Id::from_str("Bbai8nzGVcyn2VmeYcbS74zfjJLjDacGNVuzuvAQkHn1uWfoV")
+                    .unwrap(),
+                start_time: 1600368523,
+                end_time: 1602960342,
+                stake_amount: 20000000000,
+                node_id: node::Id::from_str("NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg").unwrap(),
+                ..ApiPrimaryDelegator::default()
+            }]),
         }),
         error: None,
     };
