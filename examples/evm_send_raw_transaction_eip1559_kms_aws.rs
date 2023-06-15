@@ -30,7 +30,7 @@ async fn main() -> io::Result<()> {
     let max_fee_per_gas = U256::from(random_manager::u64() % 10000);
     let value = U256::from(random_manager::u64() % 100000);
 
-    let shared_config = aws_manager::load_config(None, None).await;
+    let shared_config = aws_manager::load_config(None, None, None).await;
     let kms_manager = kms::Manager::new(&shared_config);
     let k1 =
         avalanche_types::key::secp256k1::kms::aws::Key::from_arn(kms_manager.clone(), &kms_key_arn)
