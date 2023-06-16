@@ -14,7 +14,7 @@ async fn main() -> io::Result<()> {
     );
 
     log::info!("creating AWS KMS resources!");
-    let shared_config = aws_manager::load_config(None, None).await;
+    let shared_config = aws_manager::load_config(None, None, None).await;
     let kms_manager = kms::Manager::new(&shared_config);
 
     let key_name = id_manager::time::with_prefix("test");

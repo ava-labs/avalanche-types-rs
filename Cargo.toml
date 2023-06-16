@@ -1,6 +1,6 @@
 [package]
 name = "avalanche-types"
-version = "0.0.396" # https://crates.io/crates/avalanche-types
+version = "0.0.397" # https://crates.io/crates/avalanche-types
 edition = "2021"
 rust-version = "1.69" # use "rustup override set stable" to overwrite current toolchain
 publish = true
@@ -48,7 +48,7 @@ zeroize = "1.6.0" # for "BLS
 secp256k1 = { version = "0.27.0", features = ["global-context", "rand-std", "recovery"], optional = true } # https://crates.io/crates/secp256k1
 
 # [OPTIONAL] for "kms_aws"
-aws-manager = { version = "0.28.1", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
+aws-manager = { version = "0.28.26", features = ["kms"], optional = true } # https://github.com/gyuho/aws-manager/tags
 aws-sdk-kms = { version = "0.28.0", optional = true } # https://crates.io/crates/aws-sdk-kms/versions
 
 # [OPTIONAL] for "message"
