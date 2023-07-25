@@ -318,4 +318,4 @@ doctest = false
 [package.metadata.cargo-udeps.ignore]
 build = ["protoc-gen-prost", "protoc-gen-tonic"]
 development = ["id-manager", "tokio", "tokio-test", "tonic-reflection", "random-manager", "tempfile"]
-normal = []
+normal = ["hyper"]
