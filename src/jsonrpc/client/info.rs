@@ -3,6 +3,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     errors::{Error, Result},
     ids,
+    jsonrpc::client::url,
     jsonrpc::{self, info},
     utils,
 };
@@ -18,16 +19,8 @@ pub async fn get_network_name(http_rpc: &str) -> Result<info::GetNetworkNameResp
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting network name for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting network name for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkName");
@@ -50,7 +43,7 @@ pub async fn get_network_name(http_rpc: &str) -> Result<info::GetNetworkNameResp
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -86,16 +79,8 @@ pub async fn get_network_id(http_rpc: &str) -> Result<info::GetNetworkIdResponse
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting network Id for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting network Id for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNetworkID");
@@ -118,7 +103,7 @@ pub async fn get_network_id(http_rpc: &str) -> Result<info::GetNetworkIdResponse
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -157,16 +142,8 @@ pub async fn get_blockchain_id(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting blockchain Id for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting blockchain Id for {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("info.getBlockchainID");
@@ -193,7 +170,7 @@ pub async fn get_blockchain_id(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -229,16 +206,7 @@ pub async fn get_node_id(http_rpc: &str) -> Result<info::GetNodeIdResponse> {
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting node Id for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeID");
@@ -261,7 +229,7 @@ pub async fn get_node_id(http_rpc: &str) -> Result<info::GetNodeIdResponse> {
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -327,16 +295,8 @@ pub async fn get_node_version(http_rpc: &str) -> Result<info::GetNodeVersionResp
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting node version for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting node version for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getNodeVersion");
@@ -359,7 +319,7 @@ pub async fn get_node_version(http_rpc: &str) -> Result<info::GetNodeVersionResp
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -395,16 +355,8 @@ pub async fn get_vms(http_rpc: &str) -> Result<info::GetVmsResponse> {
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting VMs for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting VMs for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getVMs");
@@ -427,7 +379,7 @@ pub async fn get_vms(http_rpc: &str) -> Result<info::GetVmsResponse> {
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -463,16 +415,8 @@ pub async fn is_bootstrapped(http_rpc: &str) -> Result<info::IsBootstrappedRespo
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting bootstrapped for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting bootstrapped for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.isBootstrapped");
@@ -495,7 +439,7 @@ pub async fn is_bootstrapped(http_rpc: &str) -> Result<info::IsBootstrappedRespo
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -533,16 +477,8 @@ pub async fn get_tx_fee(http_rpc: &str) -> Result<info::GetTxFeeResponse> {
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting tx fee for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting tx fee for {url}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
     data.method = String::from("info.getTxFee");
@@ -565,7 +501,7 @@ pub async fn get_tx_fee(http_rpc: &str) -> Result<info::GetTxFeeResponse> {
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -604,16 +540,8 @@ pub async fn peers(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/info")
-        } else {
-            format!("{scheme}://{host}/ext/info")
-        }
-    } else {
-        format!("http://{host}/ext/info")
-    };
-    log::info!("getting peers for {u}");
+    let url = url::try_create_url(url::Path::Info, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting peers for {url}");
 
     let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
     data.method = String::from("info.peers");
@@ -645,7 +573,7 @@ pub async fn peers(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()

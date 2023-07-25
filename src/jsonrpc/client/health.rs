@@ -2,7 +2,9 @@ use std::{sync::Arc, time::Duration};
 
 use crate::{
     errors::{Error, Result},
+    jsonrpc::client::url,
     jsonrpc::health,
+    utils::urls::extract_scheme_host_port_path_chain_alias,
 };
 use reqwest::ClientBuilder;
 
@@ -10,13 +12,17 @@ use reqwest::ClientBuilder;
 /// concurrently, then it must be shared using synchronization primitives such as Arc."
 /// ref. <https://tokio.rs/tokio/tutorial/spawning>
 pub async fn check(http_rpc: Arc<String>, liveness: bool) -> Result<health::Response> {
-    let url_path = {
-        if liveness {
-            "ext/health/liveness"
-        } else {
-            "ext/health"
-        }
-    };
+    let (scheme, host, port, _, _) =
+        extract_scheme_host_port_path_chain_alias(&http_rpc).map_err(|e| Error::Other {
+            message: format!("failed extract_scheme_host_port_path_chain_alias '{}'", e),
+            retryable: false,
+        })?;
+
+    let mut url = url::try_create_url(url::Path::Health, scheme.as_deref(), host.as_str(), port)?;
+    if liveness {
+        url = url::try_create_url(url::Path::Liveness, scheme.as_deref(), host.as_str(), port)?;
+    }
+    log::info!("getting network name for {url}");
 
     let req_cli_builder = ClientBuilder::new()
         .user_agent(env!("CARGO_PKG_NAME"))
@@ -32,7 +38,7 @@ pub async fn check(http_rpc: Arc<String>, liveness: bool) -> Result<health::Resp
             }
         })?;
     let resp = req_cli_builder
-        .get(format!("{}/{}", http_rpc, url_path).as_str())
+        .get(url.to_string())
         .send()
         .await
         .map_err(|e|

@@ -3,12 +3,12 @@ mod database;
 mod shutdown;
 
 use crate::rpc::common::*;
-use avalanche_types::subnet::rpc::http::{
-    client::Client as HttpClient, server::Server as HttpServer,
+use avalanche_types::subnet::rpc::{
+    http::{client::Client as HttpClient, server::Server as HttpServer},
+    utils,
 };
 use jsonrpc_core::Response as JsonResp;
 use tokio::net::TcpListener;
-use tonic::transport::Endpoint;
 
 #[tokio::test]
 async fn test_http_service() {
@@ -22,7 +22,8 @@ async fn test_http_service() {
 
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-    let client_conn = Endpoint::from_static("http://127.0.0.1:1234")
+    let client_conn = utils::grpc::default_client("127.0.0.1:1234")
+        .unwrap()
         .connect()
         .await
         .unwrap();
