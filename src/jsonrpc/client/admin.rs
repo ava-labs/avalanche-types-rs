@@ -5,6 +5,7 @@ use reqwest::{header::CONTENT_TYPE, ClientBuilder};
 use crate::{
     errors::{Error, Result},
     jsonrpc::admin::{ChainAliasParams, ChainAliasRequest, ChainAliasResponse},
+    jsonrpc::client::url,
     utils,
 };
 
@@ -22,11 +23,7 @@ pub async fn alias_chain(
             }
         })?;
 
-    let url = match (scheme, port) {
-        (Some(scheme), Some(port)) => format!("{scheme}://{host}:{port}/ext/admin"),
-        (Some(scheme), _) => format!("{scheme}://{host}/ext/admin"),
-        _ => format!("http://{host}/ext/admin"),
-    };
+    let url = url::try_create_url(url::Path::Admin, scheme.as_deref(), host.as_str(), port)?;
     log::info!("getting network name for {url}");
 
     let data = ChainAliasRequest {
@@ -54,7 +51,7 @@ pub async fn alias_chain(
         })?;
 
     let resp = req_cli_builder
-        .post(&url)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()

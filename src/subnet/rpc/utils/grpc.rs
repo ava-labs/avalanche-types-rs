@@ -66,9 +66,10 @@ pub fn default_server() -> tonic::transport::Server {
         .tcp_keepalive(Some(DEFAULT_KEEP_ALIVE_MIN_TIME))
 }
 
-/// Creates a tonic Endpoint with avalanche defaults.
+/// Creates a tonic Endpoint with avalanche defaults. The endpoint input is
+/// expected in <ip>:<port> format.
 pub fn default_client(endpoint: &str) -> Result<Endpoint> {
-    let endpoint = Channel::from_shared(format!("http://{}", endpoint.to_string()))
+    let endpoint = Channel::from_shared(format!("http://{endpoint}"))
         .map_err(|e| Error::new(ErrorKind::Other, format!("invalid endpoint: {e}")))?
         .keep_alive_timeout(DEFAULT_KEEP_ALIVE_TIMEOUT)
         .http2_keep_alive_interval(DEFAULT_KEEP_ALIVE_INTERVAL)

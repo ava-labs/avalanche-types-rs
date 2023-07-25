@@ -2,6 +2,7 @@ use std::{collections::HashMap, time::Duration};
 
 use crate::{
     errors::{Error, Result},
+    jsonrpc::client::url,
     jsonrpc::{self, avm},
     utils,
 };
@@ -17,16 +18,8 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> Result<avm::IssueTxResponse> 
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("issuing a transaction via {u}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("issuing a transaction via {url}");
 
     let mut data = avm::IssueTxRequest::default();
     data.method = String::from("avm.issueTx");
@@ -54,7 +47,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> Result<avm::IssueTxResponse> 
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -90,16 +83,8 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> Result<avm::GetTxStat
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("getting tx status via {u}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting tx status via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getTxStatus");
@@ -125,7 +110,7 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> Result<avm::GetTxStat
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -161,16 +146,8 @@ pub async fn get_balance(http_rpc: &str, xaddr: &str) -> Result<avm::GetBalanceR
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("getting balance via {u} for {xaddr}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting balance via {url} for {xaddr}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getBalance");
@@ -197,7 +174,7 @@ pub async fn get_balance(http_rpc: &str, xaddr: &str) -> Result<avm::GetBalanceR
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -236,16 +213,8 @@ pub async fn get_asset_description(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("getting asset description via {u}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting asset description via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("avm.getAssetDescription");
@@ -271,7 +240,7 @@ pub async fn get_asset_description(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -308,16 +277,8 @@ pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> Result<avm::GetUtxosRespo
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("getting UTXOs via {u} for {xaddr}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting UTXOs via {url} for {xaddr}");
 
     let mut data = avm::GetUtxosRequest::default();
     data.method = String::from("avm.getUTXOs");
@@ -346,7 +307,7 @@ pub async fn get_utxos(http_rpc: &str, xaddr: &str) -> Result<avm::GetUtxosRespo
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -382,16 +343,8 @@ pub async fn issue_stop_vertex(http_rpc: &str) -> Result<()> {
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/bc/X")
-        } else {
-            format!("{scheme}://{host}/ext/bc/X")
-        }
-    } else {
-        format!("http://{host}/ext/bc/X")
-    };
-    log::info!("issuing a stop vertex transaction via {u}");
+    let url = url::try_create_url(url::Path::X, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("issuing a stop vertex transaction via {url}");
 
     let mut data = avm::IssueStopVertexRequest::default();
     data.method = String::from("avm.issueStopVertex");
@@ -416,7 +369,7 @@ pub async fn issue_stop_vertex(http_rpc: &str) -> Result<()> {
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()

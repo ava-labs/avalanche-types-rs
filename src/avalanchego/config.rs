@@ -84,7 +84,7 @@ pub struct Config {
     pub public_ip: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub staking_enabled: Option<bool>,
+    pub sybil_protection_enabled: Option<bool>,
     /// Staking port.
     #[serde(default)]
     pub staking_port: u32,
@@ -208,7 +208,7 @@ pub struct Config {
     pub snow_mixed_query_num_push_vdr: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub consensus_gossip_frequency: Option<i64>,
+    pub consensus_accepted_frontier_gossip_frequency: Option<i64>,
     /// ref. <https://github.com/ava-labs/avalanchego/pull/1322>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub consensus_app_concurrency: Option<i64>,
@@ -247,6 +247,9 @@ pub const DEFAULT_CONFIG_FILE_PATH: &str = "/data/avalanche-configs/config.json"
 /// Default "genesis" path on the remote linux machines.
 /// MUST BE a valid path in remote host machine.
 pub const DEFAULT_GENESIS_PATH: &str = "/data/avalanche-configs/genesis.json";
+/// Default "chain aliases" path on the remote linux machine.
+/// MUST BE a valid path in remote host machine.
+pub const DEFAULT_CHAIN_ALIASES_PATH: &str = "/data/avalanche-configs/chains/aliases.json";
 
 pub const DEFAULT_DB_TYPE: &str = "leveldb";
 /// Default "db-dir" directory path for remote linux machines.
@@ -277,7 +280,7 @@ pub const DEFAULT_HTTP_PORT: u32 = 9650;
 pub const DEFAULT_HTTP_HOST: &str = "0.0.0.0";
 pub const DEFAULT_HTTP_TLS_ENABLED: bool = false;
 
-pub const DEFAULT_STAKING_ENABLED: bool = true;
+pub const DEFAULT_SYBIL_PROTECTION_ENABLED: bool = true;
 /// Default staking port.
 /// NOTE: keep default value in sync with "avalanchego/config/flags.go".
 pub const DEFAULT_STAKING_PORT: u32 = 9651;
@@ -374,7 +377,7 @@ impl Config {
             http_tls_cert_file: None,
             public_ip: None,
 
-            staking_enabled: Some(DEFAULT_STAKING_ENABLED),
+            sybil_protection_enabled: Some(DEFAULT_SYBIL_PROTECTION_ENABLED),
             staking_port: DEFAULT_STAKING_PORT,
             staking_tls_key_file: Some(String::from(DEFAULT_STAKING_TLS_KEY_FILE)),
             staking_tls_cert_file: Some(String::from(DEFAULT_STAKING_TLS_CERT_FILE)),
@@ -436,7 +439,7 @@ impl Config {
 
             snow_mixed_query_num_push_vdr: Some(10),
 
-            consensus_gossip_frequency: Some(10000000000), // 10-second
+            consensus_accepted_frontier_gossip_frequency: Some(10000000000), // 10-second
             consensus_app_concurrency: Some(2),
 
             consensus_on_accept_gossip_validator_size: Some(0),
@@ -632,10 +635,10 @@ impl Config {
         }
 
         // staking
-        if self.staking_enabled.is_some() && !self.staking_enabled.unwrap() {
+        if self.sybil_protection_enabled.is_some() && !self.sybil_protection_enabled.unwrap() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
-                "'staking-enabled' must be true",
+                "'sybil_protection_enabled' must be true",
             ));
         }
         if self.staking_tls_cert_file.is_none() {

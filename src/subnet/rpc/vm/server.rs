@@ -43,7 +43,7 @@ use pb::vm::vm_server::Vm;
 use prost::bytes::Bytes;
 use semver::Version;
 use tokio::sync::{broadcast, mpsc, RwLock};
-use tonic::{transport::Endpoint, Request, Response};
+use tonic::{Request, Response};
 
 pub struct Server<V> {
     /// Underlying Vm implementation.
@@ -107,13 +107,13 @@ where
         log::info!("initialize called");
 
         let req = req.into_inner();
-        let client_conn = utils::grpc::default_client(&req.server_addr)?
+        let server_addr = req.server_addr.as_str();
+        let client_conn = utils::grpc::default_client(server_addr)?
             .connect()
             .await
             .map_err(|e| {
                 tonic::Status::unknown(format!(
-                    "failed to create client conn from {}: {}",
-                    &req.server_addr, e
+                    "failed to create client conn from: {server_addr}: {e}",
                 ))
             })?;
 
@@ -144,14 +144,17 @@ where
             let semver = db_server.version.trim_start_matches('v');
             let version =
                 Version::parse(semver).map_err(|e| tonic::Status::unknown(e.to_string()))?;
-            let server_addr = db_server.server_addr.clone();
+            let server_addr = db_server.server_addr.as_str();
 
             // Create a client connection with the server address
-            let client_conn = Endpoint::from_shared(format!("http://{}", server_addr))
-                .map_err(|e| tonic::Status::unknown(e.to_string()))?
+            let client_conn = utils::grpc::default_client(server_addr)?
                 .connect()
                 .await
-                .map_err(|e| tonic::Status::unknown(e.to_string()))?;
+                .map_err(|e| {
+                    tonic::Status::unknown(format!(
+                        "failed to create client conn from: {server_addr}: {e}",
+                    ))
+                })?;
 
             let vdb = versioned_database::VersionedDatabase::new(
                 corruptabledb::Database::new(DatabaseClient::new(client_conn)),

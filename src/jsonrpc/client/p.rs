@@ -3,6 +3,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     errors::{Error, Result},
     ids,
+    jsonrpc::client::url,
     jsonrpc::{self, platformvm},
     utils,
 };
@@ -18,16 +19,8 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> Result<platformvm::IssueTxRes
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("issuing a transaction via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("issuing a transaction via {url}");
 
     let mut data = platformvm::IssueTxRequest::default();
     data.method = String::from("platform.issueTx");
@@ -55,7 +48,7 @@ pub async fn issue_tx(http_rpc: &str, tx: &str) -> Result<platformvm::IssueTxRes
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -91,16 +84,8 @@ pub async fn get_tx(http_rpc: &str, tx_id: &str) -> Result<platformvm::GetTxResp
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting tx via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting tx via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getTx");
@@ -127,7 +112,7 @@ pub async fn get_tx(http_rpc: &str, tx_id: &str) -> Result<platformvm::GetTxResp
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -163,16 +148,8 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> Result<platformvm::Ge
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting tx status via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting tx status via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getTxStatus");
@@ -198,7 +175,7 @@ pub async fn get_tx_status(http_rpc: &str, tx_id: &str) -> Result<platformvm::Ge
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -234,16 +211,8 @@ pub async fn get_height(http_rpc: &str) -> Result<platformvm::GetHeightResponse>
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting height via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting height via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getHeight");
@@ -269,7 +238,7 @@ pub async fn get_height(http_rpc: &str) -> Result<platformvm::GetHeightResponse>
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -306,16 +275,8 @@ pub async fn get_balance(http_rpc: &str, paddr: &str) -> Result<platformvm::GetB
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting balance via {u} for {}", paddr);
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting balance via {url} for {}", paddr);
 
     let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
     data.method = String::from("platform.getBalance");
@@ -341,7 +302,7 @@ pub async fn get_balance(http_rpc: &str, paddr: &str) -> Result<platformvm::GetB
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -377,16 +338,8 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> Result<platformvm::GetUtx
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting UTXOs via {u} for {}", paddr);
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting UTXOs via {url} for {}", paddr);
 
     let mut data = platformvm::GetUtxosRequest::default();
     data.method = String::from("platform.getUTXOs");
@@ -415,7 +368,7 @@ pub async fn get_utxos(http_rpc: &str, paddr: &str) -> Result<platformvm::GetUtx
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -454,16 +407,8 @@ pub async fn get_primary_network_validators(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting primary network validators via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting primary network validators via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getCurrentValidators");
@@ -488,7 +433,7 @@ pub async fn get_primary_network_validators(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -528,16 +473,8 @@ pub async fn get_subnet_validators(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting subnet validators via {u} for {subnet_id}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting subnet validators via {url} for {subnet_id}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getCurrentValidators");
@@ -563,7 +500,7 @@ pub async fn get_subnet_validators(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -602,16 +539,8 @@ pub async fn get_subnets(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting subnets via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting subnets via {url}");
 
     let mut data = jsonrpc::RequestWithParamsHashMapToArray::default();
     data.method = String::from("platform.getSubnets");
@@ -643,7 +572,7 @@ pub async fn get_subnets(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -679,16 +608,8 @@ pub async fn get_blockchains(http_rpc: &str) -> Result<platformvm::GetBlockchain
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting blockchain via {u}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting blockchain via {url}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getBlockchains");
@@ -713,7 +634,7 @@ pub async fn get_blockchains(http_rpc: &str) -> Result<platformvm::GetBlockchain
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
@@ -752,16 +673,8 @@ pub async fn get_blockchain_status(
                 retryable: false,
             }
         })?;
-    let u = if let Some(scheme) = scheme {
-        if let Some(port) = port {
-            format!("{scheme}://{host}:{port}/ext/P")
-        } else {
-            format!("{scheme}://{host}/ext/P")
-        }
-    } else {
-        format!("http://{host}/ext/P")
-    };
-    log::info!("getting blockchain status via {u} for {blockchain_id}");
+    let url = url::try_create_url(url::Path::P, scheme.as_deref(), host.as_str(), port)?;
+    log::info!("getting blockchain status via {url} for {blockchain_id}");
 
     let mut data = jsonrpc::Request::default();
     data.method = String::from("platform.getBlockchainStatus");
@@ -787,7 +700,7 @@ pub async fn get_blockchain_status(
             }
         })?;
     let resp = req_cli_builder
-        .post(&u)
+        .post(url.to_string())
         .header(CONTENT_TYPE, "application/json")
         .body(d)
         .send()
