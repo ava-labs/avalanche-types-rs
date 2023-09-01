@@ -3,6 +3,9 @@
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-avalanche_types-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/avalanche-types)
 ![Github Actions](https://github.com/ava-labs/avalanche-types-rs/actions/workflows/test-and-release.yml/badge.svg)
 
+> :warning: avalanche-types has moved to [avalanche-rs](https://github.com/ava-labs/avalanche-rs). This repository is now read-only and deprecated.
+> Please use the avalanche-rs [avalanche-types](https://github.com/ava-labs/avalanche-rs/tree/main/crates/avalanche-types) crate instead. 
+
 ## AvalancheGo Compatibility
 
 | Crate Version(s) | AvalancheGo Version(s) | Protocol Version |
