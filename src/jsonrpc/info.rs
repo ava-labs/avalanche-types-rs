@@ -55,6 +55,9 @@ pub struct GetNetworkIdResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetNetworkIdResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetnetworkid>
@@ -103,6 +106,7 @@ fn test_get_network_id() {
         result: Some(GetNetworkIdResult {
             network_id: 9999999_u32,
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
@@ -115,6 +119,9 @@ pub struct GetBlockchainIdResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetBlockchainIdResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetblockchainid>
@@ -166,6 +173,7 @@ fn test_get_blockchain_id() {
             blockchain_id: ids::Id::from_str("sV6o671RtkGBcno1FiaDbVcFv2sG5aVXMZYzKdP4VQAWmJQnM")
                 .unwrap(),
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
@@ -421,6 +429,9 @@ pub struct GetVmsResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetVmsResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogetvms>
@@ -485,6 +496,9 @@ pub struct GetTxFeeResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<GetTxFeeResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/build/avalanchego-apis/info/#infogettxfee>
@@ -576,6 +590,7 @@ fn test_get_tx_fee() {
             add_subnet_validator_fee: 1000000,
             add_subnet_delegator_fee: 1000000,
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
@@ -699,6 +714,9 @@ pub struct PeersResponse {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<PeersResult>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<jsonrpc::ResponseError>,
 }
 
 /// ref. <https://docs.avax.network/apis/avalanchego/apis/info#infopeers>
@@ -889,6 +907,7 @@ fn test_peers() {
             ]),
             ..PeersResult::default()
         }),
+        error: None,
     };
     assert_eq!(resp, expected);
 }
